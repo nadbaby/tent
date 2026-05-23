@@ -1,0 +1,70 @@
+.brands-section {
+  padding: var(--space-16) 0;
+  background-color: var(--color-bg-base);
+  overflow: hidden;
+}
+
+.brands-header {
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+
+.brands-marquee-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  /* Soft fade on edges */
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+.brands-track {
+  display: flex;
+  gap: var(--space-8);
+  width: max-content;
+  animation: scrollMarquee 30s linear infinite;
+}
+
+/* Pause on hover */
+.brands-track:hover {
+  animation-play-state: paused;
+}
+
+.brand-logo-card {
+  width: 180px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-bg-card);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  padding: 0;
+  overflow: hidden;
+  transition: all var(--transition-normal);
+  cursor: pointer;
+}
+
+.brand-logo-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.brand-logo {
+  width: 100%;
+  height: 100%;
+  padding: 0; /* Changed from 12px to cover whole card */
+  object-fit: cover;
+  display: block;
+  mix-blend-mode: multiply; /* Keeps the dynamic pastel backgrounds seamless with jpgs */
+}
+
+@keyframes scrollMarquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    /* Since we duped the items, we scroll left by exactly half the width to seamlessly loop */
+    transform: translateX(calc(-50% - var(--space-4)));
+  }
+}

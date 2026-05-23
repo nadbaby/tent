@@ -1,0 +1,191 @@
+/* Staff Operations Dashboard - Professional B2B Styles */
+
+.employee-management-screen {
+  padding: 110px 24px 80px;
+  background-color: #f1f5f9;
+  min-height: 100vh;
+  color: #1e293b;
+}
+
+.mgmt-header {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-info h1 {
+  font-size: 1.875rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  margin-bottom: 0.25rem;
+}
+
+.header-info p {
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+/* Common Dashboard Components */
+.dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.stat-pill {
+  background: white;
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.stat-pill .label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.05em;
+}
+
+.stat-pill .value {
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.stat-pill.success .value { color: #16a34a; }
+.stat-pill.warning .value { color: #ea580c; }
+
+.admin-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 2px;
+}
+
+.admin-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: 12px 12px 0 0;
+  color: #64748b;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  border-bottom: none;
+}
+
+.admin-tab:hover { background: #f1f5f9; color: #0f172a; }
+
+.admin-tab.active {
+  background: white;
+  color: #ea580c;
+  border-color: #e2e8f0;
+  position: relative;
+}
+
+.admin-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: white;
+}
+
+/* Form Card */
+.mgmt-form-card {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 2rem;
+  margin-bottom: 2.5rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.form-header h3 { font-size: 1.25rem; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+.form-header p { font-size: 0.9rem; color: #64748b; margin-bottom: 1.5rem; }
+
+.form-sections { display: flex; flex-direction: column; gap: 2rem; }
+.form-section h4 { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 1.25rem; }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 0.85rem; font-weight: 700; color: #334155; }
+.form-group input { padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; background: #f8fafc; }
+
+.role-options { display: flex; gap: 10px; margin-top: 8px; }
+.role-opt { padding: 8px 24px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+.role-opt.active { background: #1e293b; color: white; border-color: #1e293b; }
+
+.permissions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem; }
+.perm-box {
+  display: flex;
+  gap: 12px;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.perm-box.checked { border-color: #ea580c; background: #fff7ed; }
+.perm-info .perm-label { display: block; font-weight: 700; font-size: 0.9rem; }
+.perm-info .perm-desc { font-size: 0.75rem; color: #64748b; }
+
+.form-footer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 1rem; }
+
+/* Team Grid */
+.team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+.team-card {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  transition: transform 0.2s;
+}
+
+.team-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+
+.card-top { display: flex; align-items: center; gap: 12px; }
+.user-avatar { width: 48px; height: 48px; border-radius: 12px; background: #1e293b; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.25rem; }
+.user-meta h4 { font-weight: 800; font-size: 1.1rem; }
+.role-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+.role-badge.admin { background: #1e293b; color: white; }
+.role-badge.staff { background: #f1f5f9; color: #475569; }
+
+.card-body { display: flex; flex-direction: column; gap: 8px; }
+.info-row { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #64748b; }
+
+.card-perms { margin-top: 8px; }
+.card-perms p { font-size: 0.75rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 0.7rem; font-weight: 700; background: #f8fafc; color: #475569; padding: 2px 8px; border-radius: 4px; text-transform: capitalize; border: 1px solid #e2e8f0; }
+
+.card-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 1rem; border-top: 1px solid #f1f5f9; }
+.action-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer; border: 1px solid #e2e8f0; background: white; }
+.action-btn.edit { color: #0369a1; }
+.action-btn.delete { color: #dc2626; }
+
+.btn-primary { padding: 10px 20px; background: #1e293b; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.btn-outline { padding: 10px 20px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 700; cursor: pointer; }
+
+.animate-in { animation: fadeIn 0.3s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 600px) {
+  .form-grid { grid-template-columns: 1fr; }
+}

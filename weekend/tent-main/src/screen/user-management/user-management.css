@@ -1,0 +1,237 @@
+/* Customer Operations Dashboard - Professional B2B Styles */
+
+.user-management-screen {
+  padding: 110px 24px 80px;
+  background-color: #f1f5f9;
+  min-height: 100vh;
+  color: #1e293b;
+}
+
+.mgmt-header {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-info h1 {
+  font-size: 1.875rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  margin-bottom: 0.25rem;
+}
+
+.header-info p {
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+/* Common Dashboard Components */
+.dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.stat-pill {
+  background: white;
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.stat-pill .label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.05em;
+}
+
+.stat-pill .value {
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.stat-pill.success .value { color: #16a34a; }
+
+.admin-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 2px;
+}
+
+.admin-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: 12px 12px 0 0;
+  color: #64748b;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  border-bottom: none;
+}
+
+.admin-tab:hover { background: #f1f5f9; color: #0f172a; }
+
+.admin-tab.active {
+  background: white;
+  color: #ea580c;
+  border-color: #e2e8f0;
+  position: relative;
+}
+
+.admin-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: white;
+}
+
+/* Toolbar */
+.mgmt-toolbar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.search-box {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-box svg {
+  position: absolute;
+  left: 12px;
+  color: #94a3b8;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 10px 12px 10px 40px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: white;
+}
+
+/* Table */
+.users-table-container {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow-x: auto;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-table th {
+  background: #f8fafc;
+  padding: 1rem 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.users-table td {
+  padding: 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.user-cell { display: flex; align-items: center; gap: 12px; }
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ea580c;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.user-info { display: flex; flex-direction: column; }
+.user-name { font-weight: 700; color: #1e293b; }
+.user-id { font-size: 0.75rem; color: #94a3b8; font-family: monospace; }
+
+.contact-cell, .email-cell, .company-cell, .date-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+/* Inputs */
+.mgmt-gst-input {
+  width: 150px;
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-family: monospace;
+}
+
+.discount-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.input-wrapper { position: relative; width: 80px; }
+.input-wrapper input {
+  width: 100%;
+  padding: 6px 24px 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-weight: 800;
+  color: #ea580c;
+}
+
+.percent-icon { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+
+.mini-success-icon { color: #16a34a; }
+
+.empty-state {
+  padding: 4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: #94a3b8;
+}
+
+.btn-outline {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-outline:hover { background: #f8fafc; }
