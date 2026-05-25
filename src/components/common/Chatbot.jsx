@@ -76,7 +76,7 @@ const Chatbot = () => {
           <div className="chatbot-header-info">
             <Bot size={24} color="white" />
             <div>
-              <h3>Fine AI Assistant</h3>
+              <h3>Fine Assistant</h3>
               <p>Product Expert</p>
             </div>
           </div>

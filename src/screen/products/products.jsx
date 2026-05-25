@@ -705,7 +705,11 @@ const Products = () => {
                         <button className="close-modal" onClick={() => setShowImportModal(false)}><X size={20} /></button>
                       </div>
                       <div className="modal-body">
-                        <p>Manage your inventory efficiently. Download our template, fill in your product details, and upload it back.</p>
+                        <p style={{ marginBottom: '1.25rem', color: '#64748b', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                          Manage your inventory efficiently. Download our template, fill in your product details, and upload it back.
+                          <br />
+                          <strong style={{ color: '#0f172a' }}>💡 Smart Update:</strong> Existing products matching by <strong>Product ID</strong>, <strong>SKU</strong>, or <strong>Name</strong> will be updated automatically. Empty Excel cells will not overwrite existing database fields, ensuring no data loss.
+                        </p>
                         
                         <div className="import-options">
                           <div className="import-option-card" onClick={downloadTemplate}>
