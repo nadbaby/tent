@@ -1,6 +1,9 @@
 {
   "name": "b2b-ecommerce",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "version": "0.0.0",
   "main": "index.html",
   "type": "module",
