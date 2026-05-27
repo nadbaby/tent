@@ -108,7 +108,7 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
           alt={product.name}
           className="product-image"
         />
-        <div className="product-badges">
+        <div className="product-badges desktop-only-badges">
           {product.isNew && <span className="badge badge-new">New</span>}
           {product.isFeatured && <span className="badge badge-featured">Featured</span>}
         </div>
@@ -126,7 +126,16 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
           <p className="product-category">{highlightText(product.category, searchTerm)}</p>
           {product.sku && <span className="product-sku">SKU: {highlightText(product.sku, searchTerm)}</span>}
         </div>
-        <h3 className="product-name" style={{ fontSize: '1.25rem', fontWeight: '800' }}>{highlightText(product.subcategory || 'Sub Category', searchTerm)}</h3>
+        
+        {/* Mobile Badges - Visible only on mobile inside info section, ensuring 0% image overlap */}
+        {(product.isNew || product.isFeatured) && (
+          <div className="product-badges mobile-only-badges">
+            {product.isNew && <span className="badge badge-new">New</span>}
+            {product.isFeatured && <span className="badge badge-featured">Featured</span>}
+          </div>
+        )}
+
+        <h3 className="product-name">{highlightText(product.subcategory || 'Sub Category', searchTerm)}</h3>
         <p className="product-specs">{product.specs}</p>
 
         <div className="product-footer">
@@ -145,7 +154,6 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
                     navigate('/quote');
                   }
                 }}
-                style={{ cursor: 'pointer' }}
               >
                 Request Quote
               </span>
@@ -169,7 +177,7 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
                 </button>
               </>
             ) : (
-              <span className="admin-view-only" style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>View Only</span>
+              <span className="admin-view-only">View Only</span>
             )}
           </div>
         </div>

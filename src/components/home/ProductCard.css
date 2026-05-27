@@ -339,3 +339,327 @@
   border-color: #ef4444 !important;
   box-shadow: 0 0 20px rgba(239, 68, 68, 0.25) !important;
 }
+
+/* --- Premium Desktop/Default Styles for New Classes --- */
+.product-mobile-title {
+  display: none;
+}
+
+.mobile-only-badges {
+  display: none;
+}
+
+.admin-view-only {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.product-price.quote {
+  cursor: pointer;
+  color: var(--color-accent);
+  font-weight: 700;
+  transition: color var(--transition-fast);
+}
+
+.product-price.quote:hover {
+  color: var(--color-accent-hover);
+}
+
+/* ==========================================================================
+   MOBILE-FIRST ENHANCED DESIGN CONCEPT (ONLY FOR MOBILE SCREENS)
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .product-card {
+    border-radius: 16px;
+    background-color: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03), 0 1px 2px rgba(15, 23, 42, 0.02);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  /* Tactile Tap Feedback on Mobile */
+  .product-card:active {
+    transform: scale(0.975);
+    border-color: rgba(234, 88, 12, 0.3);
+    box-shadow: 0 8px 16px rgba(234, 88, 12, 0.06), 0 2px 4px rgba(234, 88, 12, 0.02);
+  }
+
+  /* Clean Image Showcase - Center, Paddings, Containment (No Cropping) */
+  .product-image-container {
+    aspect-ratio: 1 / 1 !important; /* Perfect square for balanced grids */
+    background-color: #f8fafc;
+    padding: 12px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.03);
+  }
+
+  .product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain !important; /* Never crop the hydraulic motor details! */
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .product-card:active .product-image {
+    transform: scale(1.02);
+  }
+
+  /* Beautiful mobile overlay style - keeping visual brand identity without motor obstruction */
+  .product-name-overlay {
+    display: -webkit-box !important;
+    position: absolute !important;
+    top: 10px !important;
+    left: 0 !important;
+    z-index: 10 !important;
+    font-size: 0.72rem !important; /* Smaller, crisp font for narrow grid card */
+    font-weight: 800 !important;
+    color: var(--color-primary, #0f172a) !important;
+    background: rgba(255, 255, 255, 0.9) !important; /* Semi-transparent white backing */
+    backdrop-filter: blur(4px) !important;
+    padding: 4px 10px 4px 12px !important;
+    max-width: 85% !important;
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-transform: uppercase !important;
+    border-radius: 0 6px 6px 0 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+    border-left: none !important;
+    letter-spacing: 0.02em !important;
+  }
+
+  /* Hide Desktop Absolute Badges on Mobile */
+  .desktop-only-badges {
+    display: none !important;
+  }
+
+  /* Mobile Inline Badges - 0% image overlap */
+  .mobile-only-badges {
+    position: static !important;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    margin-top: 6px !important;
+    margin-bottom: 4px !important;
+    padding: 0 !important;
+    z-index: 1;
+  }
+
+  .mobile-only-badges .badge {
+    position: static !important;
+    padding: 3px 8px !important;
+    font-size: 0.62rem !important;
+    font-weight: 700 !important;
+    border-radius: 6px !important;
+    letter-spacing: 0.02em !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    display: inline-block !important;
+  }
+
+  .badge-new {
+    background-color: #10b981 !important; /* solid color without transparency on mobile for pop */
+    color: #ffffff !important;
+  }
+
+  .badge-featured {
+    background-color: #ea580c !important; /* solid brand orange */
+    color: #ffffff !important;
+  }
+
+  /* Info Section & Spacing */
+  .product-info {
+    padding: 12px 10px 10px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .product-meta {
+    margin-bottom: 4px;
+    gap: 4px;
+  }
+
+  .product-category {
+    font-size: 0.68rem;
+    color: #64748b;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  /* Monospace Industrial SKU Label */
+  .product-sku {
+    font-size: 0.65rem;
+    color: #475569;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    letter-spacing: -0.01em;
+  }
+
+  /* Main Title in the Info block (Displays subcategory on mobile) */
+  .product-name {
+    display: -webkit-box !important;
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    color: var(--color-primary) !important;
+    margin-bottom: 6px !important;
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden;
+    min-height: 2.5em !important; /* Guarantees exactly two lines of height constraint for perfect card grids */
+    line-height: 1.25 !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+  }
+
+  /* Specifications Single-Line Badge */
+  .product-specs {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-bottom: 10px;
+    line-height: 1.3;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    height: 1.3em;
+  }
+
+  /* Equal-Height aligned Footer section */
+  .product-footer {
+    margin-top: auto; /* Always align to bottom */
+    border-top: 1px dashed rgba(226, 232, 240, 0.8);
+    padding-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Price Area */
+  .product-pricing {
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+
+  .product-price {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+  }
+
+  .product-price.quote {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-accent);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Two-column touch-friendly micro-grid action area */
+  .product-action-row {
+    display: grid !important;
+    grid-template-columns: 1.05fr 1fr !important;
+    gap: 6px !important;
+    width: 100%;
+    margin: 0;
+  }
+
+  /* Tactile Quantity Selector */
+  .product-qty-control {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background-color: #f8fafc;
+    height: 36px;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .qty-btn-small {
+    width: 26px;
+    height: 100%;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    transition: background 0.1s ease;
+  }
+
+  .qty-btn-small:active {
+    background-color: #e2e8f0;
+  }
+
+  .qty-display-small {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #0f172a;
+    width: auto;
+    flex: 1;
+    text-align: center;
+  }
+
+  /* conversion-focused Accent Add Button */
+  .add-to-cart-btn {
+    width: 100%;
+    height: 36px;
+    border-radius: 8px;
+    background-color: #ea580c;
+    box-shadow: 0 2px 4px rgba(234, 88, 12, 0.12);
+    font-size: 0.8rem;
+    font-weight: 700;
+    gap: 4px;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+  }
+
+  .add-to-cart-btn:hover {
+    background-color: #ea580c; /* override desktop hover scale/transform on mobile */
+    transform: none;
+    box-shadow: 0 2px 4px rgba(234, 88, 12, 0.12);
+  }
+
+  .add-to-cart-btn:active {
+    background-color: #c2410c;
+    transform: scale(0.95);
+    box-shadow: 0 1px 2px rgba(234, 88, 12, 0.08);
+  }
+
+  .add-to-cart-btn svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .admin-quick-actions {
+    top: 8px;
+    right: 8px;
+    gap: 4px;
+  }
+
+  .admin-btn {
+    padding: 4px 8px;
+    font-size: 0.65rem;
+    border-radius: 6px;
+  }
+}
