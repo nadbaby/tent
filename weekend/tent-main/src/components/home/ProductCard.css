@@ -411,30 +411,31 @@
     transform: scale(1.02);
   }
 
-  /* Beautiful mobile overlay style - keeping visual brand identity without motor obstruction */
+  /* Ultra-compact name strip - minimal image coverage */
   .product-name-overlay {
-    display: -webkit-box !important;
+    display: block !important;
     position: absolute !important;
-    top: 10px !important;
+    top: 0 !important;
     left: 0 !important;
+    right: 0 !important;
     z-index: 10 !important;
-    font-size: 0.72rem !important; /* Smaller, crisp font for narrow grid card */
-    font-weight: 800 !important;
-    color: var(--color-primary, #0f172a) !important;
-    background: rgba(255, 255, 255, 0.9) !important; /* Semi-transparent white backing */
+    font-size: 0.6rem !important;
+    font-weight: 700 !important;
+    color: #1e293b !important;
+    background: rgba(255, 255, 255, 0.85) !important;
     backdrop-filter: blur(4px) !important;
-    padding: 4px 10px 4px 12px !important;
-    max-width: 85% !important;
-    -webkit-line-clamp: 2 !important;
-    line-clamp: 2 !important;
-    -webkit-box-orient: vertical !important;
+    padding: 3px 8px !important;
+    max-width: 100% !important;
+    white-space: nowrap !important;
     overflow: hidden !important;
+    text-overflow: ellipsis !important;
     text-transform: uppercase !important;
-    border-radius: 0 6px 6px 0 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
-    border: 1px solid rgba(226, 232, 240, 0.8) !important;
-    border-left: none !important;
-    letter-spacing: 0.02em !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5) !important;
+    letter-spacing: 0.03em !important;
+    line-height: 1.3 !important;
   }
 
   /* Hide Desktop Absolute Badges on Mobile */
