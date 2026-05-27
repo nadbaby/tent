@@ -390,9 +390,9 @@
 
   /* Clean Image Showcase - Center, Paddings, Containment (No Cropping) */
   .product-image-container {
-    aspect-ratio: 1 / 1 !important; /* Perfect square for balanced grids */
+    aspect-ratio: 4 / 3 !important; /* Keep original ratio - taller images, more product visibility */
     background-color: #f8fafc;
-    padding: 12px;
+    padding: 8px;
     overflow: hidden;
     display: flex;
     align-items: center;
