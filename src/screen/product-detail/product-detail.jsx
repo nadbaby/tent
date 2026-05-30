@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { isAdmin } from '../../utils/auth';
+import { toggleWishlist } from '../../redux/wishlistSlice';
 import ProductCard, { resolveImageUrl } from '../../components/home/ProductCard';
 import { Skeleton } from '../../components/common/Skeleton/Skeleton';
 import './product-detail.css';
@@ -32,6 +33,7 @@ const ProductDetail = () => {
   const { showToast } = useToast();
   const cartItems = useSelector((state) => state.cart.items);
   const isAdminUser = isAdmin();
+  const isWishlisted = useSelector((state) => state.wishlist?.items?.some(item => String(item.id) === String(id)));
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,7 +64,7 @@ const ProductDetail = () => {
 
   const handleViewCatalogue = () => {
     if (!product || !product.catalogue) return;
-    
+
     if (product.catalogue.startsWith('data:application/pdf;base64,')) {
       try {
         const base64Data = product.catalogue.split(',')[1];
@@ -365,6 +367,34 @@ const ProductDetail = () => {
 
               {!isAdminUser && (
                 <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const user = localStorage.getItem('user');
+                      if (!user) { navigate('/login'); return; }
+                      dispatch(toggleWishlist(product));
+                      showToast(
+                        isWishlisted ? 'Removed from wishlist' : 'Added to wishlist',
+                        isWishlisted ? 'info' : 'success'
+                      );
+                    }}
+                    title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+                    style={{
+                      width: '56px',
+                      background: isWishlisted ? '#fef2f2' : '#f8fafc',
+                      color: isWishlisted ? '#ef4444' : '#64748b',
+                      border: isWishlisted ? '1px solid #fecaca' : '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      flexShrink: 0
+                    }}
+                  >
+                    <Heart size={22} fill={isWishlisted ? '#ef4444' : 'none'} />
+                  </button>
                   <button
                     onClick={handleAddToCart}
                     style={{

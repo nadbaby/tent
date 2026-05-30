@@ -11,7 +11,7 @@ import { Skeleton, SkeletonProductGrid } from '../../components/common/Skeleton/
 import './products.css';
 
 const Products = () => {
-// ... existing state
+  // ... existing state
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const brandParam = queryParams.get('brand');
@@ -26,7 +26,7 @@ const Products = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState(subcategoryParam || 'All');
   const [selectedBrand, setSelectedBrand] = useState(brandParam || 'All');
   const [sortBy, setSortBy] = useState('default');
-  
+
   // Pagination / Infinite Scroll
   const [visibleCount, setVisibleCount] = useState(12);
   const observerTarget = useRef(null);
@@ -197,7 +197,7 @@ const Products = () => {
     }
 
     setUploadingCatalogue(true);
-    
+
     try {
       // Cloudinary Raw Upload - Extremely reliable, bypasses most restrictions
       const result = await uploadToCloudinary(file, 'catalogues', 'raw');
@@ -230,13 +230,13 @@ const Products = () => {
       const result = await response.json();
       if (response.ok) {
         let msg = `Bulk Import Result:\n- Total rows processed: ${result.totalRows}\n- Successfully imported/updated: ${result.importedCount}`;
-        
+
         if (result.errors && result.errors.length > 0) {
           msg += `\n\n⚠️ Some rows had issues:\n${result.errors.slice(0, 5).join('\n')}`;
           if (result.errors.length > 5) msg += `\n...and ${result.errors.length - 5} more errors.`;
           msg += `\n\nPlease check your headers and data types.`;
         }
-        
+
         alert(msg);
         fetchProducts(); // Refresh the list
       } else {
@@ -301,7 +301,7 @@ const Products = () => {
       width: payload.width === "" ? 0 : Number(payload.width),
       height: payload.height === "" ? 0 : Number(payload.height),
     };
-    
+
     // Cleanup flat dimensions for payload
     delete payload.length;
     delete payload.width;
@@ -422,7 +422,7 @@ const Products = () => {
   const subcategories = ['All', ...new Set(products.filter(p => selectedCategory === 'All' || p.category === selectedCategory).map(p => p.subcategory).filter(Boolean))];
   const searchParam = queryParams.get('search');
   const [debouncedSearch, setDebouncedSearch] = useState('');
- 
+
   useEffect(() => {
     if (searchParam) setSearchTerm(searchParam);
     if (categoryParam) {
@@ -474,7 +474,7 @@ const Products = () => {
         }
       });
     });
-    
+
     allTerms = [...new Set(allTerms)];
 
     allTerms.forEach(term => {
@@ -507,7 +507,7 @@ const Products = () => {
       if (sortBy === 'default' && debouncedSearch) {
         if (b.searchScore !== a.searchScore) return b.searchScore - a.searchScore;
       }
-      
+
       switch (sortBy) {
         case 'price-low':
           return (Number(a.price) || 0) - (Number(b.price) || 0);
@@ -530,9 +530,9 @@ const Products = () => {
   useEffect(() => {
     if (debouncedSearch && filteredProducts.length === 0) {
       const words = debouncedSearch.toLowerCase().split(' ');
-      const suggestion = products.find(p => 
+      const suggestion = products.find(p =>
         words.some(w => w.length > 3 && (
-          (p.name && p.name.toLowerCase().includes(w)) || 
+          (p.name && p.name.toLowerCase().includes(w)) ||
           (p.category && p.category.toLowerCase().includes(w))
         ))
       );
@@ -567,7 +567,7 @@ const Products = () => {
         observer.unobserve(target);
       }
     };
-  }, [products, filteredProducts, visibleCount]); 
+  }, [products, filteredProducts, visibleCount]);
 
 
   if (loading) {
@@ -710,7 +710,7 @@ const Products = () => {
                           <br />
                           <strong style={{ color: '#0f172a' }}>💡 Smart Update:</strong> Existing products matching by <strong>Product ID</strong>, <strong>SKU</strong>, or <strong>Name</strong> will be updated automatically. Empty Excel cells will not overwrite existing database fields, ensuring no data loss.
                         </p>
-                        
+
                         <div className="import-options">
                           <div className="import-option-card" onClick={downloadTemplate}>
                             <div className="option-icon"><Download size={32} /></div>
@@ -756,12 +756,12 @@ const Products = () => {
                       </div>
                       <div className="form-group">
                         <label>Technical PDF Catalogue Link</label>
-                        <input 
-                          className="form-input" 
-                          name="catalogue" 
-                          value={formData.catalogue} 
-                          onChange={handleInputChange} 
-                          placeholder="Paste PDF URL here (e.g. https://example.com/spec.pdf)" 
+                        <input
+                          className="form-input"
+                          name="catalogue"
+                          value={formData.catalogue}
+                          onChange={handleInputChange}
+                          placeholder="Paste PDF URL here (e.g. https://example.com/spec.pdf)"
                         />
                       </div>
                       <div className="form-group">
@@ -834,7 +834,7 @@ const Products = () => {
               {filteredProducts.slice(0, visibleCount).map(product => (
                 <ProductCard key={product.id} product={product} isAdmin={admin} onEdit={handleEditClick} onDelete={handleDeleteProduct} searchTerm={debouncedSearch} />
               ))}
-              
+
               {/* Observer Target for Infinite Scroll */}
               {filteredProducts.length > visibleCount && (
                 <div ref={observerTarget} className="scroll-sentinel" style={{ height: '20px', gridColumn: '1 / -1' }}></div>

@@ -162,7 +162,8 @@
   color: var(--color-accent);
 }
 
-.cart-btn {
+.cart-btn,
+.wishlist-nav-btn {
   position: relative;
 }
 

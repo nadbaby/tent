@@ -3,7 +3,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { Search, ShoppingCart, User, Users, Menu, X, ChevronDown, LogOut, Shield, Package, Settings } from 'lucide-react';
+import { Search, ShoppingCart, User, Users, Menu, X, ChevronDown, LogOut, Shield, Package, Settings, Heart } from 'lucide-react';
 import CartDrawer from './CartDrawer';
 import fineLogo from '../../assets/Fine LOGO.png';
 import './Navbar.css';
@@ -21,12 +21,13 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const totalQuantity = useSelector((state) => state.cart.totalQuantity);
+  const wishlistCount = useSelector((state) => state.wishlist?.items?.length || 0);
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    
+
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         setIsSearchVisible(false);
@@ -173,7 +174,11 @@ const Navbar = () => {
               <ShoppingCart size={22} />
               {totalQuantity > 0 && <span className="cart-badge">{totalQuantity}</span>}
             </button>
-            
+            <Link to="/wishlist" className="icon-btn wishlist-nav-btn" title="My Wishlist">
+              <Heart size={20} />
+              {wishlistCount > 0 && <span className="cart-badge">{wishlistCount}</span>}
+            </Link>
+
             <button className="icon-btn mobile-search-toggle" onClick={() => setIsSearchVisible(true)}>
               <Search size={22} />
             </button>

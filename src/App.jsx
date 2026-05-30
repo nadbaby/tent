@@ -23,6 +23,7 @@ import QuoteFloat from './components/common/QuoteFloat';
 import Chatbot from './components/common/Chatbot';
 import ScrollToTop from './components/common/ScrollToTop';
 import CheckoutPage from './screen/checkout/checkout';
+import WishlistPage from './screen/wishlist/wishlist';
 import UserTickets from './screen/tickets/UserTickets';
 import TicketCreate from './screen/tickets/TicketCreate';
 import TicketDetail from './screen/tickets/TicketDetail';
@@ -99,6 +100,7 @@ const AppLayout = () => {
           <Route path="/ticket/:id" element={<TicketDetail />} />
           <Route path="/admin/shipping" element={<ShippingManagement />} />
           <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
         </Routes>
       </main>
       <Footer />
