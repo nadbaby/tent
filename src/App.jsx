@@ -37,6 +37,7 @@ import AnalyticsDashboard from './screen/analytics/AnalyticsDashboard';
 import CartSync from './components/common/CartSync';
 import PWAInstallPrompt from './components/common/PWAInstallPrompt';
 import OfflineStatus from './components/common/OfflineStatus';
+import OfflineScreen from './screen/offline/OfflineScreen';
 import './App.css';
 
 import { ToastProvider } from './context/ToastContext';
@@ -68,8 +69,40 @@ const AppLayout = () => {
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
 
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isOfflineScreenDismissed, setIsOfflineScreenDismissed] = useState(false);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      setIsOfflineScreenDismissed(false); // Reset dismissal so it shows next time they go offline
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Custom event listener for custom wishlist navigation trigger inside OfflineScreen
+    const handleWishlistTrigger = () => {
+      // Trigger navigation
+      window.location.href = '/wishlist';
+    };
+    window.addEventListener('navigate-wishlist', handleWishlistTrigger);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('navigate-wishlist', handleWishlistTrigger);
+    };
+  }, []);
+
   return (
     <div className={`app ${isLoginPage ? 'auth-layout' : 'standard-layout'}`}>
+      {!isOnline && !isOfflineScreenDismissed && (
+        <OfflineScreen onDismiss={() => setIsOfflineScreenDismissed(true)} />
+      )}
       <OfflineStatus />
       <Navbar />
       <WhatsAppFloat />
