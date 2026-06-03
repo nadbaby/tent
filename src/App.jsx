@@ -35,6 +35,7 @@ import ShippingManagement from './screen/shipping-management/ShippingManagement'
 import AnalyticsDashboard from './screen/analytics/AnalyticsDashboard';
 
 import CartSync from './components/common/CartSync';
+import PWAInstallPrompt from './components/common/PWAInstallPrompt';
 import './App.css';
 
 import { ToastProvider } from './context/ToastContext';
@@ -116,6 +117,7 @@ function App() {
           <Router>
             <ScrollToTop />
             <CartSync />
+            <PWAInstallPrompt />
             <AppLayout />
           </Router>
         </AppInitializer>
