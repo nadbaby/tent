@@ -245,66 +245,68 @@ const Navbar = () => {
             {/* Desktop Autocomplete Suggestions Dropdown */}
             {showSuggestions && ((suggestions.suggestions && suggestions.suggestions.length > 0) || (suggestions.products && suggestions.products.length > 0)) && (
               <div className="search-suggestions-dropdown">
-                {/* 1. Recommended search names / terms */}
-                {suggestions.suggestions && suggestions.suggestions.length > 0 && (
-                  <div className="suggestions-terms-section">
-                    <div className="suggestions-header">Search Suggestions</div>
-                    <div className="suggestions-terms-list">
-                      {suggestions.suggestions.map((term, idx) => {
-                        const isFocused = idx === activeIndex;
-                        return (
-                          <div
-                            key={term}
-                            className={`suggestion-term-row ${isFocused ? 'active' : ''}`}
-                            onClick={() => handleKeywordClick(term)}
-                            onMouseEnter={() => setActiveIndex(idx)}
-                          >
-                            <Search size={14} className="suggestion-term-icon" />
-                            <span className="suggestion-term-text">{term}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* 2. Direct product items */}
-                {suggestions.products && suggestions.products.length > 0 && (
-                  <div className="suggestions-products-section">
-                    <div className="suggestions-header">Product Matches</div>
-                    <div className="suggestions-list-container">
-                      {suggestions.products.map((product, idx) => {
-                        const offsetIdx = (suggestions.suggestions ? suggestions.suggestions.length : 0) + idx;
-                        const isFocused = offsetIdx === activeIndex;
-                        return (
-                          <div
-                            key={product.id}
-                            className={`suggestion-item-row ${isFocused ? 'active' : ''}`}
-                            onClick={() => handleSuggestionClick(product)}
-                            onMouseEnter={() => setActiveIndex(offsetIdx)}
-                          >
-                            <div className="suggestion-img-wrapper">
-                              <img 
-                                src={product.image || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=50'} 
-                                alt={product.name} 
-                              />
+                <div className="suggestions-dropdown-content">
+                  {/* Left Column: Keyword suggestions */}
+                  {suggestions.suggestions && suggestions.suggestions.length > 0 && (
+                    <div className="suggestions-left-col">
+                      <div className="suggestions-header">Search Suggestions</div>
+                      <div className="suggestions-terms-list">
+                        {suggestions.suggestions.map((term, idx) => {
+                          const isFocused = idx === activeIndex;
+                          return (
+                            <div
+                              key={term}
+                              className={`suggestion-term-row ${isFocused ? 'active' : ''}`}
+                              onClick={() => handleKeywordClick(term)}
+                              onMouseEnter={() => setActiveIndex(idx)}
+                            >
+                              <Search size={14} className="suggestion-term-icon" />
+                              <span className="suggestion-term-text">{term}</span>
                             </div>
-                            <div className="suggestion-details">
-                              <span className="suggestion-name">{product.name}</span>
-                              <div className="suggestion-meta-row">
-                                <span className="suggestion-brand-tag">{product.brand}</span>
-                                {product.sku && <span className="suggestion-sku-tag">SKU: {product.sku}</span>}
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Right Column: Direct product items */}
+                  {suggestions.products && suggestions.products.length > 0 && (
+                    <div className="suggestions-right-col">
+                      <div className="suggestions-header">Product Matches</div>
+                      <div className="suggestions-list-container">
+                        {suggestions.products.map((product, idx) => {
+                          const offsetIdx = (suggestions.suggestions ? suggestions.suggestions.length : 0) + idx;
+                          const isFocused = offsetIdx === activeIndex;
+                          return (
+                            <div
+                              key={product.id}
+                              className={`suggestion-item-row ${isFocused ? 'active' : ''}`}
+                              onClick={() => handleSuggestionClick(product)}
+                              onMouseEnter={() => setActiveIndex(offsetIdx)}
+                            >
+                              <div className="suggestion-img-wrapper">
+                                <img 
+                                  src={product.image || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=50'} 
+                                  alt={product.name} 
+                                />
+                              </div>
+                              <div className="suggestion-details">
+                                <span className="suggestion-name">{product.name}</span>
+                                <div className="suggestion-meta-row">
+                                  <span className="suggestion-brand-tag">{product.brand}</span>
+                                  {product.sku && <span className="suggestion-sku-tag">{product.sku}</span>}
+                                </div>
+                              </div>
+                              <div className="suggestion-price-col">
+                                ₹{Number(product.price).toLocaleString('en-IN')}
                               </div>
                             </div>
-                            <div className="suggestion-price-col">
-                              ₹{Number(product.price).toLocaleString('en-IN')}
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 <div 
                   className="suggestions-view-all"
