@@ -36,6 +36,7 @@ import AnalyticsDashboard from './screen/analytics/AnalyticsDashboard';
 
 import CartSync from './components/common/CartSync';
 import PWAInstallPrompt from './components/common/PWAInstallPrompt';
+import OfflineStatus from './components/common/OfflineStatus';
 import './App.css';
 
 import { ToastProvider } from './context/ToastContext';
@@ -69,6 +70,7 @@ const AppLayout = () => {
 
   return (
     <div className={`app ${isLoginPage ? 'auth-layout' : 'standard-layout'}`}>
+      <OfflineStatus />
       <Navbar />
       <WhatsAppFloat />
       <QuoteFloat />
