@@ -151,16 +151,16 @@ const Chatbot = () => {
         {/* Suggestion Chips - Only show when no user queries have been made yet */}
         {messages.length === 1 && !isTyping && (
           <div className="chatbot-suggestions">
-            <div className="suggestions-header">
+            <div className="chatbot-suggestions-header">
               <HelpCircle size={14} />
               <span>Common Questions:</span>
             </div>
-            <div className="suggestions-list">
+            <div className="chatbot-suggestions-list">
               {suggestions.map((sug, idx) => (
                 <button
                   key={idx}
                   type="button"
-                  className="suggestion-chip"
+                  className="chatbot-suggestion-chip"
                   onClick={() => handleSend(null, sug.query)}
                 >
                   {sug.label}
