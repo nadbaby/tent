@@ -388,7 +388,7 @@
 
 .suggestion-term-row.active,
 .suggestion-term-row:hover {
-  background-color: rgba(234, 88, 12, 0.04);
+  background: linear-gradient(90deg, rgba(234, 88, 12, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
 }
 
 .suggestion-term-icon {
@@ -433,7 +433,7 @@
 
 .suggestion-item-row.active,
 .suggestion-item-row:hover {
-  background-color: rgba(234, 88, 12, 0.04);
+  background: linear-gradient(90deg, rgba(234, 88, 12, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
 }
 
 .suggestion-img-wrapper {
@@ -453,6 +453,11 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.suggestion-item-row:hover .suggestion-img-wrapper img {
+  transform: scale(1.1);
 }
 
 .suggestion-details {
@@ -724,4 +729,9 @@
 
 .ios-suggestions-products-section:last-of-type {
   border-bottom: none;
+}
+
+.search-highlight {
+  font-weight: 800;
+  color: #ea580c;
 }

@@ -103,6 +103,20 @@ const Navbar = () => {
     setMobileMenuOpen(false);
   };
 
+  const highlightMatch = (text, query) => {
+    if (!query) return <span>{text}</span>;
+    const parts = text.split(new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi'));
+    return (
+      <span>
+        {parts.map((part, i) => 
+          part.toLowerCase() === query.toLowerCase() ? 
+            <strong key={i} className="search-highlight">{part}</strong> : 
+            <span key={i}>{part}</span>
+        )}
+      </span>
+    );
+  };
+
   const handleKeywordClick = (keyword) => {
     navigate(`/products?search=${encodeURIComponent(keyword)}`);
     setSearchQuery('');
@@ -261,7 +275,7 @@ const Navbar = () => {
                               onMouseEnter={() => setActiveIndex(idx)}
                             >
                               <Search size={14} className="suggestion-term-icon" />
-                              <span className="suggestion-term-text">{term}</span>
+                              <span className="suggestion-term-text">{highlightMatch(term, searchQuery)}</span>
                             </div>
                           );
                         })}
@@ -291,7 +305,7 @@ const Navbar = () => {
                                 />
                               </div>
                               <div className="suggestion-details">
-                                <span className="suggestion-name">{product.name}</span>
+                                <span className="suggestion-name">{highlightMatch(product.name, searchQuery)}</span>
                                 <div className="suggestion-meta-row">
                                   <span className="suggestion-brand-tag">{product.brand}</span>
                                   {product.sku && <span className="suggestion-sku-tag">{product.sku}</span>}
@@ -406,7 +420,7 @@ const Navbar = () => {
                         onClick={() => handleKeywordClick(term)}
                       >
                         <Search size={16} className="ios-term-icon" />
-                        <span className="ios-term-text">{term}</span>
+                        <span className="ios-term-text">{highlightMatch(term, searchQuery)}</span>
                       </div>
                     ))}
                   </div>
@@ -431,7 +445,7 @@ const Navbar = () => {
                           />
                         </div>
                         <div className="ios-result-info">
-                          <span className="ios-result-name">{product.name}</span>
+                          <span className="ios-result-name">{highlightMatch(product.name, searchQuery)}</span>
                           <div className="ios-result-meta">
                             <span className="ios-brand-badge">{product.brand}</span>
                             {product.sku && <span className="ios-sku-text">SKU: {product.sku}</span>}
