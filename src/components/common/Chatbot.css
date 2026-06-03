@@ -56,7 +56,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  z-index: 1000;
+  z-index: 100000; /* Ensure it is above the fixed navbar (9999) */
   transform: translateY(30px) scale(0.95);
   opacity: 0;
   pointer-events: none;
@@ -433,19 +433,28 @@
 @media (max-width: 480px) {
   .chatbot-window {
     width: 100vw !important;
+    max-width: 100% !important; /* Override desktop max-width: calc(100vw - 60px) */
     height: 100dvh !important; /* Dynamic Viewport Height prevents keyboard cuts */
     max-height: 100dvh !important;
+    top: 0 !important; /* Pin to top of screen */
     bottom: 0 !important;
     right: 0 !important;
     left: 0 !important;
     border-radius: 0 !important;
     border: none !important;
+    z-index: 100000 !important;
   }
 
   /* Safe Area paddings for iPhone notches & home indicator */
   .chatbot-header {
-    padding-top: calc(18px + env(safe-area-inset-top, 0px));
+    padding-top: calc(20px + env(safe-area-inset-top, 0px));
+    padding-bottom: 16px;
     border-radius: 0;
+  }
+
+  .chatbot-close-btn {
+    width: 36px;
+    height: 36px;
   }
 
   .chatbot-messages {
