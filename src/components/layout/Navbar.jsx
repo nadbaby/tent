@@ -406,7 +406,7 @@ const Navbar = () => {
           </div>
 
           {/* Mobile Autocomplete Suggestions */}
-          {searchQuery.trim() && ((suggestions.suggestions && suggestions.suggestions.length > 0) || (suggestions.products && suggestions.products.length > 0)) && (
+          {isSearchVisible && searchQuery.trim() && ((suggestions.suggestions && suggestions.suggestions.length > 0) || (suggestions.products && suggestions.products.length > 0)) && (
             <div className="ios-search-results">
               {/* 1. Mobile Keyword recommendations */}
               {suggestions.suggestions && suggestions.suggestions.length > 0 && (
