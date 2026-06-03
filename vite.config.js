@@ -151,7 +151,25 @@ export default defineConfig(({ mode }) => {
     },
     preview: {
       port: process.env.PORT ? parseInt(process.env.PORT) : 5173,
-      host: true
+      host: true,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:5000',
+          changeOrigin: true,
+          secure: true,
+          configure: (proxy, options) => {
+            // Inject the airoShareToken on every proxied request
+            proxy.on('proxyReq', (proxyReq, req) => {
+              const token = env.AIRO_SHARE_TOKEN;
+              if (token) {
+                const url = new URL(proxyReq.path, 'http://localhost');
+                url.searchParams.set('airoShareToken', token);
+                proxyReq.path = url.pathname + url.search;
+              }
+            });
+          }
+        }
+      }
     }
   }
 })
