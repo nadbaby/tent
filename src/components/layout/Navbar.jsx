@@ -8,6 +8,7 @@ import CartDrawer from './CartDrawer';
 import fineLogo from '../../assets/Fine LOGO.png';
 import './Navbar.css';
 import PromoMarquee from './PromoMarquee';
+import { apiUrl } from '../../utils/api';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -17,11 +18,98 @@ const Navbar = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [suggestions, setSuggestions] = useState({ suggestions: [], products: [] });
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  
   const searchRef = useRef(null);
+  const desktopSearchRef = useRef(null);
+  
   const location = useLocation();
   const navigate = useNavigate();
   const totalQuantity = useSelector((state) => state.cart.totalQuantity);
   const wishlistCount = useSelector((state) => state.wishlist?.items?.length || 0);
+
+  // Debounced search suggestion fetch
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSuggestions({ suggestions: [], products: [] });
+      setShowSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(apiUrl(`/api/products/autocomplete?q=${encodeURIComponent(searchQuery.trim())}`));
+        if (res.ok) {
+          const data = await res.json();
+          setSuggestions(data);
+          setShowSuggestions(data.suggestions.length > 0 || data.products.length > 0);
+          setActiveIndex(-1);
+        }
+      } catch (err) {
+        console.error('Failed to fetch suggestions:', err);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Click outside to close desktop suggestions
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (desktopSearchRef.current && !desktopSearchRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  // Keyboard navigation within suggestions (combines text suggestions and product suggestions)
+  const handleKeyDown = (e) => {
+    if (!showSuggestions) return;
+    const suggestionList = suggestions.suggestions || [];
+    const productList = suggestions.products || [];
+    const totalLength = suggestionList.length + productList.length;
+    if (totalLength === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev + 1 < totalLength ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev - 1 >= 0 ? prev - 1 : totalLength - 1));
+    } else if (e.key === 'Enter') {
+      if (activeIndex >= 0 && activeIndex < totalLength) {
+        e.preventDefault();
+        if (activeIndex < suggestionList.length) {
+          handleKeywordClick(suggestionList[activeIndex]);
+        } else {
+          handleSuggestionClick(productList[activeIndex - suggestionList.length]);
+        }
+      }
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSuggestionClick = (product) => {
+    navigate(`/product/${product.id}`);
+    setSearchQuery('');
+    setShowSuggestions(false);
+    setIsSearchVisible(false);
+    setMobileMenuOpen(false);
+  };
+
+  const handleKeywordClick = (keyword) => {
+    navigate(`/products?search=${encodeURIComponent(keyword)}`);
+    setSearchQuery('');
+    setShowSuggestions(false);
+    setIsSearchVisible(false);
+    setMobileMenuOpen(false);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -137,16 +225,98 @@ const Navbar = () => {
           </div>
 
           {/* Search Bar (Desktop) */}
-          <form className="navbar-search" onSubmit={handleSearch}>
+          <form 
+            className="navbar-search" 
+            onSubmit={handleSearch} 
+            ref={desktopSearchRef}
+            onKeyDown={handleKeyDown}
+          >
             <input
               type="text"
               placeholder="Search products, categories..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setShowSuggestions((suggestions.suggestions && suggestions.suggestions.length > 0) || (suggestions.products && suggestions.products.length > 0))}
             />
             <button type="submit" className="search-btn">
               <Search size={18} />
             </button>
+
+            {/* Desktop Autocomplete Suggestions Dropdown */}
+            {showSuggestions && ((suggestions.suggestions && suggestions.suggestions.length > 0) || (suggestions.products && suggestions.products.length > 0)) && (
+              <div className="search-suggestions-dropdown">
+                {/* 1. Recommended search names / terms */}
+                {suggestions.suggestions && suggestions.suggestions.length > 0 && (
+                  <div className="suggestions-terms-section">
+                    <div className="suggestions-header">Search Suggestions</div>
+                    <div className="suggestions-terms-list">
+                      {suggestions.suggestions.map((term, idx) => {
+                        const isFocused = idx === activeIndex;
+                        return (
+                          <div
+                            key={term}
+                            className={`suggestion-term-row ${isFocused ? 'active' : ''}`}
+                            onClick={() => handleKeywordClick(term)}
+                            onMouseEnter={() => setActiveIndex(idx)}
+                          >
+                            <Search size={14} className="suggestion-term-icon" />
+                            <span className="suggestion-term-text">{term}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Direct product items */}
+                {suggestions.products && suggestions.products.length > 0 && (
+                  <div className="suggestions-products-section">
+                    <div className="suggestions-header">Product Matches</div>
+                    <div className="suggestions-list-container">
+                      {suggestions.products.map((product, idx) => {
+                        const offsetIdx = (suggestions.suggestions ? suggestions.suggestions.length : 0) + idx;
+                        const isFocused = offsetIdx === activeIndex;
+                        return (
+                          <div
+                            key={product.id}
+                            className={`suggestion-item-row ${isFocused ? 'active' : ''}`}
+                            onClick={() => handleSuggestionClick(product)}
+                            onMouseEnter={() => setActiveIndex(offsetIdx)}
+                          >
+                            <div className="suggestion-img-wrapper">
+                              <img 
+                                src={product.image || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=50'} 
+                                alt={product.name} 
+                              />
+                            </div>
+                            <div className="suggestion-details">
+                              <span className="suggestion-name">{product.name}</span>
+                              <div className="suggestion-meta-row">
+                                <span className="suggestion-brand-tag">{product.brand}</span>
+                                {product.sku && <span className="suggestion-sku-tag">SKU: {product.sku}</span>}
+                              </div>
+                            </div>
+                            <div className="suggestion-price-col">
+                              ₹{Number(product.price).toLocaleString('en-IN')}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div 
+                  className="suggestions-view-all"
+                  onClick={() => {
+                    navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+                    setShowSuggestions(false);
+                  }}
+                >
+                  Show all results for "{searchQuery}" &rarr;
+                </div>
+              </div>
+            )}
           </form>
 
           {/* Actions */}
@@ -218,6 +388,74 @@ const Navbar = () => {
               Cancel
             </button>
           </div>
+
+          {/* Mobile Autocomplete Suggestions */}
+          {searchQuery.trim() && ((suggestions.suggestions && suggestions.suggestions.length > 0) || (suggestions.products && suggestions.products.length > 0)) && (
+            <div className="ios-search-results">
+              {/* 1. Mobile Keyword recommendations */}
+              {suggestions.suggestions && suggestions.suggestions.length > 0 && (
+                <div className="ios-suggestions-terms-section">
+                  <div className="ios-results-header">Search Suggestions</div>
+                  <div className="ios-results-list">
+                    {suggestions.suggestions.map((term) => (
+                      <div
+                        key={term}
+                        className="ios-term-item"
+                        onClick={() => handleKeywordClick(term)}
+                      >
+                        <Search size={16} className="ios-term-icon" />
+                        <span className="ios-term-text">{term}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 2. Mobile Product shortcuts */}
+              {suggestions.products && suggestions.products.length > 0 && (
+                <div className="ios-suggestions-products-section">
+                  <div className="ios-results-header">Suggested Products</div>
+                  <div className="ios-results-list">
+                    {suggestions.products.map((product) => (
+                      <div
+                        key={product.id}
+                        className="ios-result-item"
+                        onClick={() => handleSuggestionClick(product)}
+                      >
+                        <div className="ios-result-img-wrapper">
+                          <img 
+                            src={product.image || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=50'} 
+                            alt={product.name} 
+                          />
+                        </div>
+                        <div className="ios-result-info">
+                          <span className="ios-result-name">{product.name}</span>
+                          <div className="ios-result-meta">
+                            <span className="ios-brand-badge">{product.brand}</span>
+                            {product.sku && <span className="ios-sku-text">SKU: {product.sku}</span>}
+                          </div>
+                        </div>
+                        <span className="ios-result-price">
+                          ₹{Number(product.price).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div 
+                className="ios-results-footer"
+                onClick={() => {
+                  navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+                  setIsSearchVisible(false);
+                  setSearchQuery('');
+                }}
+              >
+                Show all results for "{searchQuery}" &rarr;
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Mobile Menu */}

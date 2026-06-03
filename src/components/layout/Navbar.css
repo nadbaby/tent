@@ -295,3 +295,358 @@
 .ios-search-field input { flex: 1; background: transparent; border: none; font-size: 17px; outline: none; color: #000; }
 .ios-clear-btn { background-color: #8e8e93; color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0.6; }
 .ios-cancel-btn { color: #007aff; font-size: 17px; font-weight: 400; background: transparent; white-space: nowrap; }
+
+/* Desktop Search Suggestions Autocomplete */
+.search-suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  margin-top: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  z-index: 10000;
+  overflow: hidden;
+  animation: slideSuggestionsDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideSuggestionsDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.suggestions-header {
+  padding: 10px 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+  background-color: rgba(248, 250, 252, 0.5);
+}
+
+.suggestions-list-container {
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.suggestion-item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.4);
+}
+
+.suggestion-item-row:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item-row.active,
+.suggestion-item-row:hover {
+  background-color: rgba(234, 88, 12, 0.04);
+}
+
+.suggestion-img-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.suggestion-img-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.suggestion-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.suggestion-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.suggestion-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.suggestion-brand-tag {
+  background-color: rgba(234, 88, 12, 0.08);
+  color: #ea580c;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.suggestion-sku-tag {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.suggestion-price-col {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+  flex-shrink: 0;
+}
+
+.suggestions-view-all {
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ea580c;
+  background-color: rgba(248, 250, 252, 0.8);
+  border-top: 1px solid rgba(226, 232, 240, 0.6);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.suggestions-view-all:hover {
+  background-color: rgba(234, 88, 12, 0.06);
+}
+
+/* iOS Style Mobile Search Bar Results overlay */
+.ios-search-overlay {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  max-height: 85vh;
+}
+
+.ios-search-results {
+  background: white;
+  width: 100%;
+  border-top: 1px solid #e5e5ea;
+  overflow-y: auto;
+  flex: 1;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.ios-results-header {
+  padding: 12px 16px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #8e8e93;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  text-align: left;
+}
+
+.ios-results-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ios-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f2f2f7;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ios-result-item:active {
+  background-color: #e5e5ea;
+}
+
+.ios-result-img-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #f2f2f7;
+  border: 1px solid #e5e5ea;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ios-result-img-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ios-result-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ios-result-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ios-result-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ios-brand-badge {
+  background-color: #f2f2f7;
+  color: #555;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.ios-sku-text {
+  font-size: 11px;
+  color: #8e8e93;
+  font-family: monospace;
+}
+
+.ios-result-price {
+  font-size: 15px;
+  font-weight: 700;
+  color: #000;
+}
+
+.ios-results-footer {
+  padding: 16px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #007aff;
+  cursor: pointer;
+  border-top: 1px solid #f2f2f7;
+}
+
+.ios-results-footer:active {
+  background-color: #e5e5ea;
+}
+
+/* Recommended Text Suggestions Styles */
+.suggestion-term-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.4);
+}
+
+.suggestion-term-row.active,
+.suggestion-term-row:hover {
+  background-color: rgba(234, 88, 12, 0.04);
+}
+
+.suggestion-term-icon {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.suggestion-term-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #334155;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-term-row.active .suggestion-term-text,
+.suggestion-term-row:hover .suggestion-term-text {
+  color: #ea580c;
+}
+
+/* Mobile iOS Term Suggestion Styles */
+.ios-term-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f2f2f7;
+  cursor: pointer;
+}
+
+.ios-term-item:active {
+  background-color: #e5e5ea;
+}
+
+.ios-term-icon {
+  color: #8e8e93;
+  flex-shrink: 0;
+}
+
+.ios-term-text {
+  font-size: 15px;
+  font-weight: 500;
+  color: #000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+/* Separator header styling for multiple sections */
+.suggestions-terms-section,
+.suggestions-products-section {
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+.suggestions-products-section:last-of-type {
+  border-bottom: none;
+}
+
+.ios-suggestions-terms-section,
+.ios-suggestions-products-section {
+  border-bottom: 4px solid #f2f2f7;
+}
+
+.ios-suggestions-products-section:last-of-type {
+  border-bottom: none;
+}
