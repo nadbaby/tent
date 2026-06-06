@@ -41,7 +41,8 @@ const QuoteOperationsDashboard = () => {
         const data = await response.json();
         setQuotes(data);
       } else {
-        setError("Failed to fetch B2B quotes. Permission denied.");
+        const errData = await response.json().catch(() => ({}));
+        setError(`Failed to fetch B2B quotes: ${errData.message || response.statusText || 'Permission denied'}`);
       }
     } catch (err) {
       setError("Failed to connect to backend server.");
