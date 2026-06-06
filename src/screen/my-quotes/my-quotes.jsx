@@ -153,22 +153,37 @@ const MyQuotes = () => {
 
     const token = localStorage.getItem('token');
     try {
-      // 1. Convert quote to order
-      const res = await fetch(apiUrl(`/api/quotes/${selectedQuote.id}/convert-to-order`), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      let currentOrderId = selectedQuote.orderId;
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || 'Order conversion failed');
+      // 1. Convert quote to order (only if not already converted)
+      if (selectedQuote.status === 'Accepted') {
+        const res = await fetch(apiUrl(`/api/quotes/${selectedQuote.id}/convert-to-order`), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || 'Order conversion failed');
+        }
+
+        const data = await res.json().catch(() => ({}));
+        currentOrderId = data.orderId;
+        
+        // Optimistically update status to show 'Converted to Order' in UI
+        setSelectedQuote(prev => ({
+          ...prev,
+          status: 'Converted to Order',
+          orderId: data.orderId
+        }));
+        
+        // Update parent quotes list
+        fetchQuotes();
       }
 
-      const { orderId } = await res.json();
-      
       // 2. Initialize Payment Flow
       const payRes = await fetch(apiUrl(`/api/quotes/${selectedQuote.id}/pay`), {
         method: 'POST',
@@ -179,11 +194,11 @@ const MyQuotes = () => {
       });
 
       if (!payRes.ok) {
-        const data = await payRes.json();
-        throw new Error(data.message || 'Payment initialization failed');
+        const errData = await payRes.json().catch(() => ({}));
+        throw new Error(errData.message || 'Payment initialization failed');
       }
 
-      const payData = await payRes.json();
+      const payData = await payRes.json().catch(() => ({}));
 
       // Load Razorpay
       const rzpOptions = {
@@ -209,7 +224,7 @@ const MyQuotes = () => {
             });
 
             if (verifyRes.ok) {
-              const verifyResult = await verifyRes.json();
+              const verifyResult = await verifyRes.json().catch(() => ({}));
               navigate('/order-success', { state: { order: verifyResult.order } });
             } else {
               navigate('/order-failure');
@@ -219,9 +234,9 @@ const MyQuotes = () => {
           }
         },
         prefill: {
-          name: user.name || user.username,
-          email: user.email || '',
-          contact: user.phone || ''
+          name: user?.name || user?.username || '',
+          email: user?.email || '',
+          contact: user?.phone || ''
         },
         theme: { color: "#ea580c" }
       };
@@ -419,14 +434,23 @@ const MyQuotes = () => {
                   </div>
 
                   {/* CONVERT TO ORDER & PAYMENT PANEL */}
-                  {selectedQuote.status === 'Accepted' && (
-                    <div className="payment-action-card">
+                  {['Accepted', 'Converted to Order'].includes(selectedQuote.status) && (
+                    <div className="payment-action-card" style={{ flexWrap: 'wrap' }}>
                       <div className="payment-card-icon">
                         <Award size={32} color="#16a34a" />
                       </div>
                       <div className="payment-card-body">
-                        <h4>Offer Accepted! Ready for Payment</h4>
-                        <p>Place this order immediately to secure your negotiated B2B discount rates.</p>
+                        {selectedQuote.status === 'Accepted' ? (
+                          <>
+                            <h4>Offer Accepted! Ready for Payment</h4>
+                            <p>Place this order immediately to secure your negotiated B2B discount rates.</p>
+                          </>
+                        ) : (
+                          <>
+                            <h4>Order Created! Pending Payment</h4>
+                            <p>Your bulk order has been generated (ID: {selectedQuote.orderId}). Complete the payment to begin processing.</p>
+                          </>
+                        )}
                       </div>
                       <button 
                         onClick={handleConvertToOrder} 
@@ -435,6 +459,11 @@ const MyQuotes = () => {
                       >
                         {submitting ? <Loader2 className="animate-spin" size={18} /> : <>Pay & Order Now <ArrowRight size={16} /></>}
                       </button>
+                      {error && (
+                        <div className="console-error-alert" style={{ width: '100%', marginTop: '12px' }}>
+                          {error}
+                        </div>
+                      )}
                     </div>
                   )}
 
