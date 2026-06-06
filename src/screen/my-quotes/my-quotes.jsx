@@ -24,12 +24,13 @@ const MyQuotes = () => {
   const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
-    if (!user) {
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) {
       navigate('/login?redirect=/my-quotes');
       return;
     }
     fetchQuotes();
-  }, [user]);
+  }, []);
 
   const fetchQuotes = async () => {
     setLoading(true);
