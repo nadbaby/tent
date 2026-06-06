@@ -23,6 +23,24 @@ const MyQuotes = () => {
 
   const user = JSON.parse(localStorage.getItem('user'));
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const formatDateShort = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString();
+  };
+
+  const formatTime = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? 'N/A' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (!storedUser) {
@@ -286,7 +304,7 @@ const MyQuotes = () => {
                     <div className="quote-card-footer">
                       <div className="quote-date">
                         <Calendar size={14} style={{ marginRight: '6px' }} />
-                        {new Date(quote.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {formatDate(quote.createdAt)}
                       </div>
                       <div className="view-details-link">
                         Negotiate Details <ChevronRight size={16} />
@@ -311,7 +329,7 @@ const MyQuotes = () => {
                   <div className="detail-header-row">
                     <div>
                       <h2>RFQ Details {selectedQuote.id}</h2>
-                      <span className="quote-timestamp">Created on {new Date(selectedQuote.createdAt).toLocaleDateString()}</span>
+                      <span className="quote-timestamp">Created on {formatDateShort(selectedQuote.createdAt)}</span>
                     </div>
                     <span className={`quote-status-badge ${getStatusClass(selectedQuote.status)}`}>
                       {selectedQuote.status}
@@ -489,7 +507,7 @@ const MyQuotes = () => {
                           <div key={idx} className={`chat-bubble-wrapper ${isAdmin ? 'admin-msg' : 'user-msg'}`}>
                             <div className="chat-meta">
                               <strong>{historyItem.senderName}</strong>
-                              <span>{new Date(historyItem.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                              <span>{formatTime(historyItem.createdAt)}</span>
                             </div>
                             <div className="chat-bubble">
                               {historyItem.message}
