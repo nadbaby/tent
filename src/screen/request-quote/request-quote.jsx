@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { clearCart } from '../../redux/cartSlice';
 import { Send, FileText, Package, CheckCircle, Loader2 } from 'lucide-react';
 import './request-quote.css';
 
 const RequestQuote = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const cartItems = useSelector((state) => state.cart.items);
+
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -59,6 +64,12 @@ const RequestQuote = () => {
     setLoading(true);
     setError('');
 
+    // Prepare payload. If cart has items, attach them.
+    const payload = {
+      ...formData,
+      items: cartItems.length > 0 ? cartItems : undefined
+    };
+
     try {
       const response = await fetch(apiUrl('/api/request-quote'), {
         method: 'POST',
@@ -66,11 +77,14 @@ const RequestQuote = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
         setSubmitted(true);
+        if (cartItems.length > 0) {
+          dispatch(clearCart());
+        }
         setFormData({
           name: currentUser?.name || '',
           company: currentUser?.company || '',
@@ -99,8 +113,15 @@ const RequestQuote = () => {
           <div className="success-card">
             <CheckCircle size={80} color="#10b981" />
             <h1>Quote Request Received!</h1>
-            <p>Our sales team will get back to you within 24 hours.</p>
-            <button onClick={() => setSubmitted(false)} className="btn btn-primary">Submit Another Request</button>
+            <p>Our sales team will review your B2B requirements and get back to you within 24 hours.</p>
+            <div className="success-actions">
+              <button onClick={() => navigate('/my-quotes')} className="btn btn-primary">
+                View My Quotes Dashboard
+              </button>
+              <button onClick={() => setSubmitted(false)} className="btn btn-secondary" style={{ marginLeft: '12px' }}>
+                Request Another Quote
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -113,7 +134,25 @@ const RequestQuote = () => {
         <div className="quote-container">
           <div className="quote-info">
             <h1>Request a Bulk Quote</h1>
-            <p>Get customized pricing for large volume orders.</p>
+            <p>Get customized pricing for large volume B2B orders or negotiated items.</p>
+            
+            {cartItems.length > 0 && (
+              <div className="quote-cart-items-box">
+                <h3>Items In Request ({cartItems.length})</h3>
+                <div className="quote-items-scroll">
+                  {cartItems.map((item) => (
+                    <div key={item.id} className="quote-item-row">
+                      <div className="item-name-col">{item.name}</div>
+                      <div className="item-qty-col">Qty: {item.quantity}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="quote-items-notice">
+                  These items will automatically be submitted for B2B pricing negotiation.
+                </div>
+              </div>
+            )}
+
             <div className="benefit-item">
               <Package size={24} />
               <div>
@@ -154,20 +193,22 @@ const RequestQuote = () => {
                 </div>
               </div>
 
-              <div className="form-grid-2">
-                <div className="form-group">
-                  <label>Product Name / Part No.</label>
-                  <input name="product" value={formData.product} onChange={handleChange} placeholder="e.g. SKF 6205 Bearing" />
+              {cartItems.length === 0 && (
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label>Product Name / Part No. *</label>
+                    <input name="product" value={formData.product} onChange={handleChange} required placeholder="e.g. SKF 6205 Bearing" />
+                  </div>
+                  <div className="form-group">
+                    <label>Expected Quantity *</label>
+                    <input name="quantity" value={formData.quantity} onChange={handleChange} required placeholder="e.g. 500 units" />
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Expected Quantity</label>
-                  <input name="quantity" value={formData.quantity} onChange={handleChange} placeholder="e.g. 500 units" />
-                </div>
-              </div>
+              )}
 
               <div className="form-group">
-                <label>Specific Requirements</label>
-                <textarea name="message" value={formData.message} onChange={handleChange} rows="4" placeholder="Tell us more about your requirement..."></textarea>
+                <label>Specific Requirements & Target Price</label>
+                <textarea name="message" value={formData.message} onChange={handleChange} rows="4" placeholder="Tell us more about your target pricing, delivery timelines, etc..."></textarea>
               </div>
 
               {error && <div className="form-error">{error}</div>}

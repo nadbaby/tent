@@ -151,11 +151,16 @@ const OrderOperationsDashboard = () => {
           </div>
         </header>
         <SkeletonStatsGrid count={4} />
-        <div className="admin-tabs">
-          <div className="admin-tab active"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
-          <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
-          <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
-        </div>
+        {(user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'manager') && (
+          <div className="admin-tabs">
+            <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
+            <div className="admin-tab active"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
+            <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
+            {user?.role?.toLowerCase() === 'admin' && (
+              <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
+            )}
+          </div>
+        )}
         <div className="orders-dashboard-table" style={{ border: 'none' }}>
           <SkeletonTable rows={10} columns={6} />
         </div>
@@ -176,20 +181,30 @@ const OrderOperationsDashboard = () => {
           </div>
         </header>
 
-        {user?.role?.toLowerCase() === 'admin' && (
+        {(user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'manager') && (
           <div className="admin-tabs">
+            <NavLink to="/admin/todays-orders" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+              <Calendar size={18} />
+              <span>Today's Orders</span>
+            </NavLink>
             <NavLink to="/employee-panel" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
               <Package size={18} />
               <span>Past Orders</span>
             </NavLink>
-            <NavLink to="/admin/users" className="admin-tab">
+            <NavLink to="/admin/quotes" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+              <Package size={18} />
+              <span>B2B RFQs</span>
+            </NavLink>
+            <NavLink to="/admin/users" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
               <Users size={18} />
               <span>Customer Discounts</span>
             </NavLink>
-            <NavLink to="/admin/employees" className="admin-tab">
-              <Shield size={18} />
-              <span>Team Management</span>
-            </NavLink>
+            {user?.role?.toLowerCase() === 'admin' && (
+              <NavLink to="/admin/employees" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+                <Shield size={18} />
+                <span>Team Management</span>
+              </NavLink>
+            )}
           </div>
         )}
 
@@ -227,7 +242,7 @@ const OrderOperationsDashboard = () => {
               <button className="btn-icon" onClick={() => setShowFilters(!showFilters)} title="Toggle Filters">
                 <Filter size={18} /> {showFilters ? 'Hide Filters' : 'Filters'}
               </button>
-              <button className="btn-icon" onClick={exportToCSV} title="Export CSV">
+              <button className="btn-export-premium" onClick={exportToCSV} title="Export CSV">
                 <Download size={18} /> Export
               </button>
               <button className="btn-icon refresh" onClick={fetchOrders} title="Refresh Data">
@@ -355,11 +370,13 @@ const OrderOperationsDashboard = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="empty-state-cell">
-                      <div className="empty-box">
-                        <AlertCircle size={48} />
+                    <td colSpan="6" className="empty-state-cell" style={{ borderBottom: 'none' }}>
+                      <div className="empty-state-premium animate-in">
+                        <div className="empty-icon-wrapper">
+                          <Package size={40} />
+                        </div>
                         <h3>No matching orders found</h3>
-                        <p>Adjust your filters or search terms.</p>
+                        <p>Adjust your filters or search terms to see more orders.</p>
                       </div>
                     </td>
                   </tr>
