@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { apiUrl } from '../../utils/api';
 import { useLocation } from 'react-router-dom';
 import ProductCard, { resolveImageUrl } from '../../components/home/ProductCard';
-import { Filter, ChevronDown, Search, Grid, List, SlidersHorizontal, Plus, X, Save, Download, Upload } from 'lucide-react';
+import { Filter, ChevronDown, Search, Grid, List, SlidersHorizontal, Plus, X, Save, Download, Upload, Camera, Loader2 } from 'lucide-react';
 import { isAdmin, getAuthToken } from '../../utils/auth';
 import * as XLSX from 'xlsx';
 import { storage } from '../../firebase';
@@ -11,7 +11,7 @@ import { Skeleton, SkeletonProductGrid } from '../../components/common/Skeleton/
 import './products.css';
 
 const Products = () => {
-// ... existing state
+  // ... existing state
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const brandParam = queryParams.get('brand');
@@ -26,7 +26,7 @@ const Products = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState(subcategoryParam || 'All');
   const [selectedBrand, setSelectedBrand] = useState(brandParam || 'All');
   const [sortBy, setSortBy] = useState('default');
-  
+
   // Pagination / Infinite Scroll
   const [visibleCount, setVisibleCount] = useState(12);
   const observerTarget = useRef(null);
@@ -45,6 +45,15 @@ const Products = () => {
   // Bulk Import States
   const [showImportModal, setShowImportModal] = useState(false);
   const [importing, setImporting] = useState(false);
+
+  // AI Visual Scanner States
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanImage, setScanImage] = useState(null);
+  const [scanningInProgress, setScanningInProgress] = useState(false);
+  const [scanError, setScanError] = useState('');
+  const [scanMatches, setScanMatches] = useState([]);
+  const [detectedBearingType, setDetectedBearingType] = useState('');
+  const [scanReasoning, setScanReasoning] = useState('');
 
   // Admin State
   const [showAdminForm, setShowAdminForm] = useState(false);
@@ -197,7 +206,7 @@ const Products = () => {
     }
 
     setUploadingCatalogue(true);
-    
+
     try {
       // Cloudinary Raw Upload - Extremely reliable, bypasses most restrictions
       const result = await uploadToCloudinary(file, 'catalogues', 'raw');
@@ -230,13 +239,13 @@ const Products = () => {
       const result = await response.json();
       if (response.ok) {
         let msg = `Bulk Import Result:\n- Total rows processed: ${result.totalRows}\n- Successfully imported/updated: ${result.importedCount}`;
-        
+
         if (result.errors && result.errors.length > 0) {
           msg += `\n\n⚠️ Some rows had issues:\n${result.errors.slice(0, 5).join('\n')}`;
           if (result.errors.length > 5) msg += `\n...and ${result.errors.length - 5} more errors.`;
           msg += `\n\nPlease check your headers and data types.`;
         }
-        
+
         alert(msg);
         fetchProducts(); // Refresh the list
       } else {
@@ -250,6 +259,63 @@ const Products = () => {
       // Clear the input
       e.target.value = "";
     }
+  };
+
+  const handleImageScanChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Show image preview
+    const reader = new FileReader();
+    reader.onload = () => {
+      setScanImage(reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    setScanningInProgress(true);
+    setScanError('');
+    setScanMatches([]);
+    setDetectedBearingType('');
+    setScanReasoning('');
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const response = await fetch(apiUrl('/api/products/search-image'), {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('AI Vision Scanner could not process this image. Please make sure the image is in JPG/PNG format.');
+      }
+
+      const data = await response.json();
+      if (data.matches && data.matches.length > 0) {
+        setScanMatches(data.matches);
+        setDetectedBearingType(data.detectedType || 'Bearing / Oil Seal');
+        setScanReasoning(data.reasoning || '');
+      } else {
+        setScanError('No matching products found in the catalog.');
+      }
+    } catch (err) {
+      setScanError(err.message || 'Failed to complete vision scan.');
+    } finally {
+      setScanningInProgress(false);
+    }
+  };
+
+  const handleApplyScanMatch = (sku) => {
+    setSearchTerm(sku);
+    setIsScanning(false);
+    setScanImage(null);
+    setScanMatches([]);
+    setDetectedBearingType('');
+    setScanReasoning('');
   };
 
   useEffect(() => {
@@ -301,7 +367,7 @@ const Products = () => {
       width: payload.width === "" ? 0 : Number(payload.width),
       height: payload.height === "" ? 0 : Number(payload.height),
     };
-    
+
     // Cleanup flat dimensions for payload
     delete payload.length;
     delete payload.width;
@@ -422,7 +488,7 @@ const Products = () => {
   const subcategories = ['All', ...new Set(products.filter(p => selectedCategory === 'All' || p.category === selectedCategory).map(p => p.subcategory).filter(Boolean))];
   const searchParam = queryParams.get('search');
   const [debouncedSearch, setDebouncedSearch] = useState('');
- 
+
   useEffect(() => {
     if (searchParam) setSearchTerm(searchParam);
     if (categoryParam) {
@@ -474,7 +540,7 @@ const Products = () => {
         }
       });
     });
-    
+
     allTerms = [...new Set(allTerms)];
 
     allTerms.forEach(term => {
@@ -507,7 +573,7 @@ const Products = () => {
       if (sortBy === 'default' && debouncedSearch) {
         if (b.searchScore !== a.searchScore) return b.searchScore - a.searchScore;
       }
-      
+
       switch (sortBy) {
         case 'price-low':
           return (Number(a.price) || 0) - (Number(b.price) || 0);
@@ -530,9 +596,9 @@ const Products = () => {
   useEffect(() => {
     if (debouncedSearch && filteredProducts.length === 0) {
       const words = debouncedSearch.toLowerCase().split(' ');
-      const suggestion = products.find(p => 
+      const suggestion = products.find(p =>
         words.some(w => w.length > 3 && (
-          (p.name && p.name.toLowerCase().includes(w)) || 
+          (p.name && p.name.toLowerCase().includes(w)) ||
           (p.category && p.category.toLowerCase().includes(w))
         ))
       );
@@ -567,7 +633,7 @@ const Products = () => {
         observer.unobserve(target);
       }
     };
-  }, [products, filteredProducts, visibleCount]); 
+  }, [products, filteredProducts, visibleCount]);
 
 
   if (loading) {
@@ -626,6 +692,15 @@ const Products = () => {
               <div className="search-wrapper">
                 <Search size={18} />
                 <input type="text" placeholder="SKU or Product Name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                <button 
+                  type="button" 
+                  className="scanner-btn" 
+                  title="Scan bearing image with AI" 
+                  onClick={() => setIsScanning(true)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 5px', color: '#64748b', display: 'flex', alignItems: 'center' }}
+                >
+                  <Camera size={18} />
+                </button>
               </div>
             </div>
             <div className="filter-group">
@@ -710,7 +785,7 @@ const Products = () => {
                           <br />
                           <strong style={{ color: '#0f172a' }}>💡 Smart Update:</strong> Existing products matching by <strong>Product ID</strong>, <strong>SKU</strong>, or <strong>Name</strong> will be updated automatically. Empty Excel cells will not overwrite existing database fields, ensuring no data loss.
                         </p>
-                        
+
                         <div className="import-options">
                           <div className="import-option-card" onClick={downloadTemplate}>
                             <div className="option-icon"><Download size={32} /></div>
@@ -756,12 +831,12 @@ const Products = () => {
                       </div>
                       <div className="form-group">
                         <label>Technical PDF Catalogue Link</label>
-                        <input 
-                          className="form-input" 
-                          name="catalogue" 
-                          value={formData.catalogue} 
-                          onChange={handleInputChange} 
-                          placeholder="Paste PDF URL here (e.g. https://example.com/spec.pdf)" 
+                        <input
+                          className="form-input"
+                          name="catalogue"
+                          value={formData.catalogue}
+                          onChange={handleInputChange}
+                          placeholder="Paste PDF URL here (e.g. https://example.com/spec.pdf)"
                         />
                       </div>
                       <div className="form-group">
@@ -834,7 +909,7 @@ const Products = () => {
               {filteredProducts.slice(0, visibleCount).map(product => (
                 <ProductCard key={product.id} product={product} isAdmin={admin} onEdit={handleEditClick} onDelete={handleDeleteProduct} searchTerm={debouncedSearch} />
               ))}
-              
+
               {/* Observer Target for Infinite Scroll */}
               {filteredProducts.length > visibleCount && (
                 <div ref={observerTarget} className="scroll-sentinel" style={{ height: '20px', gridColumn: '1 / -1' }}></div>
@@ -859,6 +934,111 @@ const Products = () => {
           </main>
         </div>
       </div>
+
+      {/* AI Visual Scanner Modal */}
+      {isScanning && (
+        <div className="scanner-modal-overlay" onClick={() => {
+          setIsScanning(false);
+          setScanImage(null);
+          setScanMatches([]);
+          setScanError('');
+          setDetectedBearingType('');
+          setScanReasoning('');
+        }}>
+          <div className="scanner-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>AI Bearing Visual Scanner</h3>
+              <button className="close-modal" onClick={() => {
+                setIsScanning(false);
+                setScanImage(null);
+                setScanMatches([]);
+                setScanError('');
+                setDetectedBearingType('');
+                setScanReasoning('');
+              }}><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              {!scanImage ? (
+                <div className="scanner-upload-placeholder">
+                  <div className="scanner-icon-container">
+                    <Camera size={48} className="scanner-icon" />
+                  </div>
+                  <p className="scanner-prompt">Upload or snap a photo of the bearing or oil seal to identify it instantly.</p>
+                  <label className="btn btn-primary scanner-select-btn">
+                    Take Photo / Upload Image
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      capture="environment" 
+                      style={{ display: 'none' }} 
+                      onChange={handleImageScanChange} 
+                    />
+                  </label>
+                </div>
+              ) : (
+                <div className="scanner-preview-container">
+                  <div className="image-preview-wrapper">
+                    <img src={scanImage} alt="Bearing preview" className="bearing-scan-preview" />
+                    {scanningInProgress && <div className="scanning-laser-line"></div>}
+                  </div>
+                  
+                  {scanningInProgress && (
+                    <div className="scanning-status">
+                      <Loader2 className="animate-spin" size={24} style={{ marginRight: '10px', color: 'var(--color-accent)' }} />
+                      <span>Analyzing visual specs and matching with catalog...</span>
+                    </div>
+                  )}
+
+                  {scanError && (
+                    <div className="scan-error-alert">
+                      <X size={18} style={{ marginRight: '8px' }} />
+                      <span>{scanError}</span>
+                    </div>
+                  )}
+
+                  {!scanningInProgress && !scanError && scanMatches.length > 0 && (
+                    <div className="scan-results-container">
+                      <div className="detected-header">
+                        <h4>Detected: <span className="highlight-text">{detectedBearingType}</span></h4>
+                      </div>
+                      <p className="scan-reasoning">{scanReasoning}</p>
+                      
+                      <h5 className="matches-title">Top Database Matches:</h5>
+                      <div className="scan-matches-list">
+                        {scanMatches.map((match, idx) => (
+                          <div key={idx} className="scan-match-item" onClick={() => handleApplyScanMatch(match.sku)}>
+                            <div className="match-info">
+                              <span className="match-sku">{match.sku}</span>
+                              <span className="match-reason">{match.reason}</span>
+                            </div>
+                            <div className="match-confidence">
+                              <span className="confidence-pill" style={{ background: match.confidence > 80 ? '#dcfce7' : '#fef9c3', color: match.confidence > 80 ? '#15803d' : '#854d0e', padding: '4px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>
+                                {match.confidence}% Match
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="scanner-actions">
+                    <button className="btn btn-outline" onClick={() => {
+                      setScanImage(null);
+                      setScanMatches([]);
+                      setScanError('');
+                      setDetectedBearingType('');
+                      setScanReasoning('');
+                    }}>
+                      Scan Different Photo
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

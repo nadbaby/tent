@@ -1070,23 +1070,63 @@
 }
 
 .shimmer {
-  background: linear-gradient(
+  position: relative;
+  overflow: hidden;
+  background-color: #f1f5f9;
+  border-radius: 8px;
+  animation: skeleton-pulse 2.5s infinite ease-in-out;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
     90deg,
-    #e2e8f0 25%,
-    #f1f5f9 50%,
-    #e2e8f0 75%
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 25%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0.4) 75%,
+    rgba(255, 255, 255, 0) 100%
   );
-  background-size: 200% 100%;
-  animation: shimmer-sweep 1.5s infinite linear;
+  animation: shimmer-sweep 1.8s infinite cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 @keyframes shimmer-sweep {
-  0% {
-    background-position: 200% 0;
-  }
   100% {
-    background-position: -200% 0;
+    transform: translateX(100%);
   }
+}
+
+/* Dark layout overrides for skeleton loader inside hero & tray */
+.skeleton-hero .shimmer,
+.skeleton-dashboard-tray .shimmer {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.skeleton-hero .shimmer::after,
+.skeleton-dashboard-tray .shimmer::after {
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.15) 25%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.15) 75%,
+    rgba(255, 255, 255, 0) 100%
+  );
 }
 
 .delay-1 {
@@ -1175,6 +1215,7 @@
 .skeleton-feature-card {
   height: 180px;
   background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 24px;
   padding: 2.5rem 1.75rem;
   display: flex;
@@ -1248,13 +1289,14 @@
 .skeleton-stat-card {
   height: 170px;
   background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.06);
   border-radius: 24px;
   padding: 2.25rem;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
+  box-shadow: 0 15px 40px -15px rgba(15, 23, 42, 0.04);
 }
 
 .skeleton-stat-icon {

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { addItem, removeItem, clearCart, deleteFromCart } from '../../redux/cartSlice';
 import { resolveImageUrl } from '../home/ProductCard';
 import { apiUrl } from '../../utils/api';
-import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, Truck } from 'lucide-react';
 import './CartDrawer.css';
 
 const CartDrawer = ({ isOpen, onClose }) => {
@@ -92,6 +92,24 @@ const CartDrawer = ({ isOpen, onClose }) => {
             </div>
           ) : (
             <div className="cart-items-list">
+              {/* Porter Delivery Notice */}
+              <div className="porter-cart-notice" style={{
+                background: '#fff7ed',
+                border: '1px solid #ffedd5',
+                borderRadius: '8px',
+                padding: '12px',
+                marginBottom: '16px',
+                fontSize: '0.85rem',
+                color: '#9a3412',
+                display: 'flex',
+                gap: '8px',
+                alignItems: 'flex-start'
+              }}>
+                <Truck size={16} style={{ color: '#ea580c', flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <strong>Fast Local Delivery</strong> is available for Ludhiana customers. Delivery charges depend on distance, product size, product weight and Porter availability.
+                </div>
+              </div>
               {items.map((item) => {
                 const displayImage = resolveImageUrl(item.image);
                 return (

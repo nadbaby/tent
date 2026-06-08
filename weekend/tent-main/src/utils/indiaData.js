@@ -34,4 +34,4 @@ export const indiaData = {
   "Puducherry": ["Puducherry", "Karaikal", "Mahe", "Yanam"],
   "Andaman and Nicobar Islands": ["Port Blair", "Diglipur", "Mayabunder"],
   "Dadra and Nagar Haveli and Daman and Diu": ["Daman", "Diu", "Silvassa"]
-};
+};                  
