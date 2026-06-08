@@ -327,7 +327,26 @@ const ProductDetail = () => {
                     <span style={{ fontWeight: '600' }}>Quantity:</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '5px' }}>
                       <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={{ padding: '5px 10px', background: 'none', border: 'none', cursor: 'pointer' }}>-</button>
-                      <span style={{ width: '30px', textAlign: 'center', fontWeight: 'bold' }}>{quantity}</span>
+                      <input
+                        type="number"
+                        value={quantity}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          if (!isNaN(val) && val >= 1) {
+                            setQuantity(val);
+                          }
+                        }}
+                        style={{
+                          width: '50px',
+                          textAlign: 'center',
+                          fontWeight: 'bold',
+                          border: 'none',
+                          outline: 'none',
+                          background: 'none',
+                          fontSize: '1rem',
+                          color: '#0f172a'
+                        }}
+                      />
                       <button onClick={() => setQuantity(quantity + 1)} style={{ padding: '5px 10px', background: 'none', border: 'none', cursor: 'pointer' }}>+</button>
                     </div>
                   </>
@@ -366,7 +385,7 @@ const ProductDetail = () => {
               )}
 
               {!isAdminUser && (
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
                   <button
                     onClick={(e) => {
                       e.preventDefault();
@@ -399,6 +418,7 @@ const ProductDetail = () => {
                     onClick={handleAddToCart}
                     style={{
                       flex: 1,
+                      minWidth: '140px',
                       padding: '16px',
                       background: '#f1f5f9',
                       color: '#0f172a',
@@ -415,6 +435,7 @@ const ProductDetail = () => {
                     onClick={handleBuyNow}
                     style={{
                       flex: 1,
+                      minWidth: '140px',
                       padding: '16px',
                       background: '#EA580C',
                       color: 'white',
@@ -426,6 +447,34 @@ const ProductDetail = () => {
                     }}
                   >
                     Buy Now
+                  </button>
+                  <button
+                    onClick={() => {
+                      const userStr = localStorage.getItem('user');
+                      if (!userStr) {
+                        navigate(`/login?redirect=${encodeURIComponent('/quote?product=' + encodeURIComponent(product.name) + '&quantity=' + quantity)}`);
+                      } else {
+                        navigate('/quote', { state: { product: product.name, quantity: quantity } });
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '16px',
+                      background: '#fff',
+                      color: '#ea580c',
+                      border: '1.5px solid #ea580c',
+                      borderRadius: '8px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      fontSize: '1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <FileText size={18} /> Request Bulk Quote
                   </button>
                 </div>
               )}

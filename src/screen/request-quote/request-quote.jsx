@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { clearCart } from '../../redux/cartSlice';
+import { clearCart, addItem } from '../../redux/cartSlice';
 import { Send, FileText, Package, CheckCircle, Loader2 } from 'lucide-react';
 import './request-quote.css';
 
 const RequestQuote = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const cartItems = useSelector((state) => state.cart.items);
 
@@ -37,15 +38,22 @@ const RequestQuote = () => {
     if (userData) {
       const user = JSON.parse(userData);
       setCurrentUser(user);
+      
+      const searchParams = new URLSearchParams(location.search);
+      const queryProduct = searchParams.get('product') || location.state?.product || '';
+      const queryQuantity = searchParams.get('quantity') || location.state?.quantity || '';
+
       setFormData(prev => ({
         ...prev,
         name: user.name || user.displayName || user.username || '',
         email: user.email || '',
         phone: user.phone || '',
-        company: user.company || ''
+        company: user.company || '',
+        product: queryProduct || prev.product,
+        quantity: queryQuantity || prev.quantity
       }));
     }
-  }, [navigate]);
+  }, [navigate, location]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -141,9 +149,40 @@ const RequestQuote = () => {
                 <h3>Items In Request ({cartItems.length})</h3>
                 <div className="quote-items-scroll">
                   {cartItems.map((item) => (
-                    <div key={item.id} className="quote-item-row">
+                    <div key={item.id} className="quote-item-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0' }}>
                       <div className="item-name-col">{item.name}</div>
-                      <div className="item-qty-col">Qty: {item.quantity}</div>
+                      <div className="item-qty-col" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '0.9rem', color: '#64748b' }}>Qty:</span>
+                        <input
+                          type="number"
+                          value={item.quantity}
+                          min="1"
+                          onChange={(e) => {
+                            const newQty = parseInt(e.target.value);
+                            if (!isNaN(newQty) && newQty >= 1) {
+                              dispatch(addItem({
+                                id: item.id,
+                                name: item.name,
+                                price: item.price,
+                                image: item.image,
+                                quantity: newQty,
+                                replace: true
+                              }));
+                            }
+                          }}
+                          style={{
+                            width: '80px',
+                            padding: '6px 10px',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '8px',
+                            textAlign: 'center',
+                            fontWeight: '700',
+                            fontSize: '0.95rem',
+                            color: '#1e293b',
+                            outline: 'none'
+                          }}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>

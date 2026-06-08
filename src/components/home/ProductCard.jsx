@@ -174,9 +174,9 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
                   e.stopPropagation();
                   const userStr = localStorage.getItem('user');
                   if (!userStr) {
-                    navigate('/login?redirect=/quote');
+                    navigate(`/login?redirect=${encodeURIComponent('/quote?product=' + encodeURIComponent(product.subcategory || product.name) + '&quantity=' + quantity)}`);
                   } else {
-                    navigate('/quote');
+                    navigate('/quote', { state: { product: product.subcategory || product.name, quantity: quantity } });
                   }
                 }}
               >
@@ -190,7 +190,28 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
               <>
                 <div className="product-qty-control">
                   <button className="qty-btn-small" onClick={(e) => handleQtyChange(e, -1)}>-</button>
-                  <span className="qty-display-small">{quantity}</span>
+                  <input
+                    type="number"
+                    className="qty-display-small"
+                    value={quantity}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (!isNaN(val) && val >= 1) {
+                        setQuantity(val);
+                      }
+                    }}
+                    style={{
+                      width: '40px',
+                      border: 'none',
+                      outline: 'none',
+                      background: 'transparent',
+                      textAlign: 'center',
+                      fontWeight: '800',
+                      fontSize: '0.9rem',
+                      color: '#1e293b',
+                      padding: 0
+                    }}
+                  />
                   <button className="qty-btn-small" onClick={(e) => handleQtyChange(e, 1)}>+</button>
                 </div>
                 <button
