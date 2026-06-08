@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { addItem } from '../../redux/cartSlice';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Heart } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { apiUrl } from '../../utils/api';
+import { toggleWishlist } from '../../redux/wishlistSlice';
 import ProtectedImage from '../common/ProtectedImage';
 import './ProductCard.css';
 
@@ -26,7 +27,7 @@ const highlightText = (text, highlight) => {
   const parts = String(text).split(new RegExp(`(${highlight})`, 'gi'));
   return (
     <>
-      {parts.map((part, i) => 
+      {parts.map((part, i) =>
         part.toLowerCase() === highlight.toLowerCase() ? (
           <mark key={i} style={{ backgroundColor: '#fde047', color: '#1e293b', padding: '0 2px', borderRadius: '2px' }}>{part}</mark>
         ) : (
@@ -43,6 +44,7 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
   const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
+  const isWishlisted = useSelector((state) => state.wishlist?.items?.some(item => item.id === product.id));
 
   const secureImageUrl = resolveImageUrl(product.image);
 
@@ -113,6 +115,29 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
           {product.isFeatured && <span className="badge badge-featured">Featured</span>}
         </div>
 
+        {!isAdmin && (
+          <button
+            className={`wishlist-heart-btn ${isWishlisted ? 'active' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              const user = localStorage.getItem('user');
+              if (!user) {
+                navigate('/login');
+                return;
+              }
+              dispatch(toggleWishlist(product));
+              showToast(
+                isWishlisted ? `Removed from wishlist` : `Added to wishlist`,
+                isWishlisted ? 'info' : 'success'
+              );
+            }}
+            title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+          >
+            <Heart size={18} fill={isWishlisted ? '#ef4444' : 'none'} color={isWishlisted ? '#ef4444' : '#64748b'} />
+          </button>
+        )}
+
         {isAdmin && (
           <div className="admin-quick-actions" onClick={(e) => e.stopPropagation()}>
             <button className="admin-btn edit" onClick={() => onEdit(product)}>Edit</button>
@@ -126,7 +151,7 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
           <p className="product-category">{highlightText(product.category, searchTerm)}</p>
           {product.sku && <span className="product-sku">SKU: {highlightText(product.sku, searchTerm)}</span>}
         </div>
-        
+
         {/* Mobile Badges - Visible only on mobile inside info section, ensuring 0% image overlap */}
         {(product.isNew || product.isFeatured) && (
           <div className="product-badges mobile-only-badges">
@@ -143,15 +168,15 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
             {product.price ? (
               <span className="product-price">₹{product.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             ) : (
-              <span 
-                className="product-price quote" 
-                onClick={(e) => { 
-                  e.stopPropagation(); 
+              <span
+                className="product-price quote"
+                onClick={(e) => {
+                  e.stopPropagation();
                   const userStr = localStorage.getItem('user');
                   if (!userStr) {
-                    navigate('/login?redirect=/quote');
+                    navigate(`/login?redirect=${encodeURIComponent('/quote?product=' + encodeURIComponent(product.subcategory || product.name) + '&quantity=' + quantity)}`);
                   } else {
-                    navigate('/quote');
+                    navigate('/quote', { state: { product: product.subcategory || product.name, quantity: quantity } });
                   }
                 }}
               >
@@ -165,7 +190,28 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
               <>
                 <div className="product-qty-control">
                   <button className="qty-btn-small" onClick={(e) => handleQtyChange(e, -1)}>-</button>
-                  <span className="qty-display-small">{quantity}</span>
+                  <input
+                    type="number"
+                    className="qty-display-small"
+                    value={quantity}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (!isNaN(val) && val >= 1) {
+                        setQuantity(val);
+                      }
+                    }}
+                    style={{
+                      width: '40px',
+                      border: 'none',
+                      outline: 'none',
+                      background: 'transparent',
+                      textAlign: 'center',
+                      fontWeight: '800',
+                      fontSize: '0.9rem',
+                      color: '#1e293b',
+                      padding: 0
+                    }}
+                  />
                   <button className="qty-btn-small" onClick={(e) => handleQtyChange(e, 1)}>+</button>
                 </div>
                 <button

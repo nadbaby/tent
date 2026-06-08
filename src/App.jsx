@@ -12,10 +12,13 @@ import OrderFailurePage from './screen/order-failure/order-failure';
 import OrdersPage from './screen/orders/orders';
 import ContactPage from './screen/contact/contact';
 import OrderOperationsDashboard from './screen/employee-panel/employee-panel';
+import QuoteOperationsDashboard from './screen/employee-quotes/employee-quotes';
 import StaffOperationsDashboard from './screen/employee-management/employee-management';
 import CustomerOperationsDashboard from './screen/user-management/user-management';
+import TodaysOrdersDashboard from './screen/todays-orders/todays-orders';
 import AboutPage from './screen/about/about';
 import RequestQuotePage from './screen/request-quote/request-quote';
+import MyQuotes from './screen/my-quotes/my-quotes';
 import LegalPage from './screen/legal/legal';
 import ProductDetailPage from './screen/product-detail/product-detail';
 import WhatsAppFloat from './components/common/WhatsAppFloat';
@@ -23,6 +26,7 @@ import QuoteFloat from './components/common/QuoteFloat';
 import Chatbot from './components/common/Chatbot';
 import ScrollToTop from './components/common/ScrollToTop';
 import CheckoutPage from './screen/checkout/checkout';
+import WishlistPage from './screen/wishlist/wishlist';
 import UserTickets from './screen/tickets/UserTickets';
 import TicketCreate from './screen/tickets/TicketCreate';
 import TicketDetail from './screen/tickets/TicketDetail';
@@ -34,6 +38,9 @@ import ShippingManagement from './screen/shipping-management/ShippingManagement'
 import AnalyticsDashboard from './screen/analytics/AnalyticsDashboard';
 
 import CartSync from './components/common/CartSync';
+import PWAInstallPrompt from './components/common/PWAInstallPrompt';
+import OfflineStatus from './components/common/OfflineStatus';
+import OfflineScreen from './screen/offline/OfflineScreen';
 import './App.css';
 
 import { ToastProvider } from './context/ToastContext';
@@ -65,8 +72,41 @@ const AppLayout = () => {
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
 
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isOfflineScreenDismissed, setIsOfflineScreenDismissed] = useState(false);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      setIsOfflineScreenDismissed(false); // Reset dismissal so it shows next time they go offline
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Custom event listener for custom wishlist navigation trigger inside OfflineScreen
+    const handleWishlistTrigger = () => {
+      // Trigger navigation
+      window.location.href = '/wishlist';
+    };
+    window.addEventListener('navigate-wishlist', handleWishlistTrigger);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('navigate-wishlist', handleWishlistTrigger);
+    };
+  }, []);
+
   return (
     <div className={`app ${isLoginPage ? 'auth-layout' : 'standard-layout'}`}>
+      {!isOnline && !isOfflineScreenDismissed && (
+        <OfflineScreen onDismiss={() => setIsOfflineScreenDismissed(true)} />
+      )}
+      <OfflineStatus />
       <Navbar />
       <WhatsAppFloat />
       <QuoteFloat />
@@ -85,11 +125,14 @@ const AppLayout = () => {
           <Route path="/order-success" element={<OrderSuccessPage />} />
           <Route path="/order-failure" element={<OrderFailurePage />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/admin/todays-orders" element={<TodaysOrdersDashboard />} />
           <Route path="/employee-panel" element={<OrderOperationsDashboard />} />
+          <Route path="/admin/quotes" element={<QuoteOperationsDashboard />} />
           <Route path="/admin/employees" element={<StaffOperationsDashboard />} />
           <Route path="/admin/users" element={<CustomerOperationsDashboard />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/quote" element={<RequestQuotePage />} />
+          <Route path="/my-quotes" element={<MyQuotes />} />
           <Route path="/privacy" element={<LegalPage />} />
           <Route path="/terms" element={<LegalPage />} />
           <Route path="/product/:id" element={<ProductDetailPage />} />
@@ -99,6 +142,7 @@ const AppLayout = () => {
           <Route path="/ticket/:id" element={<TicketDetail />} />
           <Route path="/admin/shipping" element={<ShippingManagement />} />
           <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
         </Routes>
       </main>
       <Footer />
@@ -114,6 +158,7 @@ function App() {
           <Router>
             <ScrollToTop />
             <CartSync />
+            <PWAInstallPrompt />
             <AppLayout />
           </Router>
         </AppInitializer>

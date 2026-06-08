@@ -15,15 +15,16 @@ const CustomerOperationsDashboard = () => {
   const [successState, setSuccessState] = useState({ id: null, type: null });
 
   const token = getAuthToken();
-  const isAdminUser = isAdmin();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isManagerOrAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'manager';
 
   useEffect(() => {
-    if (!isAdminUser) {
+    if (!isManagerOrAdmin) {
       window.location.href = '/login';
       return;
     }
     fetchUsers();
-  }, [isAdminUser]);
+  }, [isManagerOrAdmin]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -131,9 +132,12 @@ const CustomerOperationsDashboard = () => {
         </header>
         <SkeletonStatsGrid count={2} />
         <div className="admin-tabs">
+          <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
+          <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
           <div className="admin-tab active"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
-          <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
-          <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
+          {user?.role?.toLowerCase() === 'admin' && (
+            <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
+          )}
         </div>
         <div className="users-table-container" style={{ border: 'none' }}>
           <SkeletonTable rows={8} columns={7} />
@@ -162,20 +166,30 @@ const CustomerOperationsDashboard = () => {
           </div>
         </div>
 
-        <div className="admin-tabs">
-          <NavLink to="/employee-panel" className="admin-tab">
-            <Package size={18} />
-            <span>Past Orders</span>
-          </NavLink>
-          <NavLink to="/admin/users" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-            <Users size={18} />
-            <span>Customer Discounts</span>
-          </NavLink>
-          <NavLink to="/admin/employees" className="admin-tab">
-            <Shield size={18} />
-            <span>Team Management</span>
-          </NavLink>
-        </div>
+          <div className="admin-tabs">
+            <NavLink to="/admin/todays-orders" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+              <Calendar size={18} />
+              <span>Today's Orders</span>
+            </NavLink>
+            <NavLink to="/employee-panel" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+              <Package size={18} />
+              <span>Past Orders</span>
+            </NavLink>
+            <NavLink to="/admin/quotes" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+              <Package size={18} />
+              <span>B2B RFQs</span>
+            </NavLink>
+            <NavLink to="/admin/users" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+              <Users size={18} />
+              <span>Customer Discounts</span>
+            </NavLink>
+            {user?.role?.toLowerCase() === 'admin' && (
+              <NavLink to="/admin/employees" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+                <Shield size={18} />
+                <span>Team Management</span>
+              </NavLink>
+            )}
+          </div>
 
         <div className="mgmt-toolbar">
           <div className="search-box">
@@ -187,7 +201,7 @@ const CustomerOperationsDashboard = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <button className="btn btn-outline" onClick={fetchUsers}>Refresh List</button>
+          <button className="btn-export-premium" onClick={fetchUsers}><RefreshCw size={18} /> Refresh List</button>
         </div>
 
         {error && <div className="mgmt-error-alert">{error}</div>}

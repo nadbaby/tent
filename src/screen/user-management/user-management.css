@@ -235,3 +235,89 @@
 }
 
 .btn-outline:hover { background: #f8fafc; }
+
+
+/* --- PREMIUM ADMIN UI UPGRADES --- */
+.dashboard-controls-card, .mgmt-toolbar {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.04) !important;
+  border-radius: 16px !important;
+}
+
+.btn-export-premium {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  transition: all 0.3s ease;
+}
+
+.btn-export-premium:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+}
+
+.empty-state-premium {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: linear-gradient(to bottom, #ffffff, #f8fafc);
+  border-radius: 16px;
+  border: 1px dashed #cbd5e1;
+  margin: 20px;
+}
+
+.empty-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3b82f6;
+  margin-bottom: 20px;
+  animation: float 3s ease-in-out infinite;
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15), inset 0 0 0 4px #ffffff;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.dashboard-table tbody tr, .users-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.dashboard-table tbody tr:hover, .users-table tbody tr:hover {
+  background-color: #f8fafc !important;
+  transform: scale(1.002);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  z-index: 10;
+  position: relative;
+}
+
+.stat-pill {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.stat-pill:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+}

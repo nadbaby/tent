@@ -18,13 +18,73 @@ export const SkeletonProductCard = () => (
   </div>
 );
 
-export const SkeletonTableRow = ({ columns = 5 }) => (
-  <div className="skeleton-table-row">
-    {Array(columns).fill(0).map((_, i) => (
-      <Skeleton key={i} type="skeleton-text" />
-    ))}
-  </div>
-);
+export const SkeletonTableRow = ({ columns = 5 }) => {
+  if (columns === 6) {
+    return (
+      <div className="skeleton-table-row">
+        <div className="skeleton-cell cell-info">
+          <Skeleton type="skeleton-text" style={{ width: '60%', height: '14px' }} />
+          <Skeleton type="skeleton-text" style={{ width: '40%', height: '10px' }} />
+        </div>
+        <div className="skeleton-cell cell-customer">
+          <Skeleton type="skeleton-text" style={{ width: '80%', height: '14px' }} />
+          <Skeleton type="skeleton-text" style={{ width: '50%', height: '10px' }} />
+        </div>
+        <div className="skeleton-cell cell-financials">
+          <Skeleton type="skeleton-text" style={{ width: '50%', height: '14px' }} />
+          <Skeleton type="skeleton-text" style={{ width: '30%', height: '10px' }} />
+        </div>
+        <div className="skeleton-cell cell-badge">
+          <Skeleton type="skeleton-rect" style={{ width: '70px', height: '20px', borderRadius: '10px' }} />
+        </div>
+        <div className="skeleton-cell cell-badge">
+          <Skeleton type="skeleton-rect" style={{ width: '80px', height: '20px', borderRadius: '10px' }} />
+        </div>
+        <div className="skeleton-cell cell-actions">
+          <Skeleton type="skeleton-rect" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+          <Skeleton type="skeleton-rect" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+        </div>
+      </div>
+    );
+  }
+  
+  if (columns === 7) {
+    return (
+      <div className="skeleton-table-row">
+        <div className="skeleton-cell cell-customer" style={{ flex: 1.5 }}>
+          <Skeleton type="skeleton-text" style={{ width: '70%', height: '14px' }} />
+          <Skeleton type="skeleton-text" style={{ width: '40%', height: '10px' }} />
+        </div>
+        <div className="skeleton-cell" style={{ flex: 1.2 }}>
+          <Skeleton type="skeleton-text" style={{ width: '80%', height: '14px' }} />
+        </div>
+        <div className="skeleton-cell" style={{ flex: 1 }}>
+          <Skeleton type="skeleton-text" style={{ width: '90%', height: '14px' }} />
+        </div>
+        <div className="skeleton-cell" style={{ flex: 1.5 }}>
+          <Skeleton type="skeleton-text" style={{ width: '85%', height: '14px' }} />
+        </div>
+        <div className="skeleton-cell" style={{ flex: 1 }}>
+          <Skeleton type="skeleton-text" style={{ width: '60%', height: '14px' }} />
+        </div>
+        <div className="skeleton-cell" style={{ flex: 1 }}>
+          <Skeleton type="skeleton-text" style={{ width: '75%', height: '14px' }} />
+        </div>
+        <div className="skeleton-cell" style={{ flex: 1, alignItems: 'center' }}>
+          <Skeleton type="skeleton-rect" style={{ width: '60px', height: '24px', borderRadius: '6px' }} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="skeleton-table-row">
+      {Array(columns).fill(0).map((_, i) => (
+        <Skeleton key={i} type="skeleton-text" />
+      ))}
+    </div>
+  );
+};
 
 export const SkeletonTable = ({ rows = 5, columns = 5 }) => (
   <div className="skeleton-table-container">

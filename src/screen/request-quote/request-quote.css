@@ -152,3 +152,56 @@
   .quote-container { grid-template-columns: 1fr; gap: 3rem; }
   .form-grid-2 { grid-template-columns: 1fr; gap: 0; }
 }
+
+.quote-cart-items-box {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  margin-bottom: 2rem;
+  border: 1px solid #e2e8f0;
+}
+
+.quote-cart-items-box h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 0.5rem;
+}
+
+.quote-items-scroll {
+  max-height: 180px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.quote-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed #f1f5f9;
+  font-size: 0.9rem;
+}
+
+.item-name-col {
+  color: #334155;
+  font-weight: 600;
+  max-width: 70%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-qty-col {
+  color: #ea580c;
+  font-weight: 700;
+}
+
+.quote-items-notice {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-style: italic;
+}
