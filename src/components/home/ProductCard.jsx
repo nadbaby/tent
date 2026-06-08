@@ -10,7 +10,7 @@ import ProtectedImage from '../common/ProtectedImage';
 import './ProductCard.css';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || '';
-const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=600';
+const FALLBACK_IMAGE = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" style="background:%23f8fafc;"><circle cx="50" cy="50" r="30" fill="none" stroke="%23cbd5e1" stroke-width="4" stroke-dasharray="10 6"/><circle cx="50" cy="50" r="15" fill="none" stroke="%23cbd5e1" stroke-width="4"/><path d="M50 10 L50 25 M50 75 L50 90 M10 50 L25 50 M75 50 L90 50" stroke="%23cbd5e1" stroke-width="4" stroke-linecap="round"/></svg>`;
 
 /**
  * Resolves a product image path to a full displayable URL.
@@ -21,6 +21,11 @@ const resolveImageUrl = (imagePath) => {
     imagePath = imagePath[0];
   }
   if (typeof imagePath !== 'string' || imagePath.trim() === '') return FALLBACK_IMAGE;
+
+  // Convert Apple's HEIC format to standard JPG (Cloudinary converts this on-the-fly when changing file extension in URL)
+  if (imagePath.toLowerCase().includes('.heic')) {
+    imagePath = imagePath.replace(/\.heic/gi, '.jpg');
+  }
 
   // Extract first http:// or https:// URL if present (e.g. handles prefixes like "main: " or comma lists)
   const httpMatch = imagePath.match(/(https?:\/\/[^\s,]+)/);
