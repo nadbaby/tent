@@ -16,7 +16,18 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1581091226825-a6a2a5ae
  * Resolves a product image path to a full displayable URL.
  */
 const resolveImageUrl = (imagePath) => {
-  if (!imagePath || imagePath.trim() === '') return FALLBACK_IMAGE;
+  if (!imagePath) return FALLBACK_IMAGE;
+  if (Array.isArray(imagePath)) {
+    imagePath = imagePath[0];
+  }
+  if (typeof imagePath !== 'string' || imagePath.trim() === '') return FALLBACK_IMAGE;
+
+  // Extract first http:// or https:// URL if present (e.g. handles prefixes like "main: " or comma lists)
+  const httpMatch = imagePath.match(/(https?:\/\/[^\s,]+)/);
+  if (httpMatch) {
+    return httpMatch[0];
+  }
+
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
   const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
   return apiUrl(cleanPath);
