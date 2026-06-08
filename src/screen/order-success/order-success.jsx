@@ -31,14 +31,14 @@ const OrderSuccess = () => {
               fontSize: '1rem',
               lineHeight: '1.6'
             }}>
-              <strong>Fast Local Delivery Request Received:</strong> Thank you for your order. Your fast local delivery request has been received. Our team will verify product availability and delivery charges, then confirm your Porter delivery.
+              <strong>Porter Fast Delivery:</strong> Thank you for your order. You have selected Fast Local Delivery through Porter. Your product amount has been received/confirmed. Porter delivery charges are not included and will be paid directly by you to the Porter delivery partner after delivery.
             </div>
           ) : null}
 
           {isPorter && (
             <div style={{ marginBottom: '24px' }}>
               <a 
-                href={`https://wa.me/918146119761?text=${encodeURIComponent("Hello Fine Bearing, I have placed an order and selected Fast Local Delivery through Porter. Please confirm availability and delivery charges.")}`}
+                href={`https://wa.me/918146119761?text=${encodeURIComponent("Hello Fine Bearing, I selected Fast Local Delivery through Porter. I understand that Porter delivery charges are separate and will be paid directly to Porter after receiving the order. Please confirm my order.")}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-primary"
@@ -74,15 +74,16 @@ const OrderSuccess = () => {
             {isPorter && (
               <div style={{ 
                 padding: '12px 15px', 
-                background: '#f8fafc', 
-                borderTop: '1px dashed #e2e8f0', 
+                background: '#fff7ed', 
+                borderTop: '1px dashed #ffd8a8', 
                 fontSize: '0.85rem', 
-                color: '#64748b', 
+                color: '#c2410c', 
                 textAlign: 'left',
                 borderBottomLeftRadius: '8px',
-                borderBottomRightRadius: '8px'
+                borderBottomRightRadius: '8px',
+                fontWeight: '600'
               }}>
-                <strong>Delivery Charges:</strong> To be confirmed after verification
+                <strong>Delivery Charges:</strong> Pay directly to Porter after delivery
               </div>
             )}
           </div>

@@ -911,9 +911,19 @@ const Checkout = () => {
                       <p><strong>Preferred Time:</strong> {porterDetails.preferredTime}</p>
                       <p><strong>Urgency Level:</strong> <span style={{ color: '#ea580c', fontWeight: 'bold' }}>{porterDetails.urgency}</span></p>
                       {porterDetails.deliveryInstructions && <p><strong>Instructions:</strong> {porterDetails.deliveryInstructions}</p>}
-                      <p style={{ marginTop: '10px', fontSize: '0.8rem', color: '#c2410c', fontWeight: 'bold' }}>
-                        * Delivery charges will be confirmed after verification.
-                      </p>
+                      <div style={{
+                        marginTop: '12px',
+                        padding: '10px',
+                        background: '#fff7ed',
+                        border: '1px solid #ffedd5',
+                        borderRadius: '6px',
+                        fontSize: '0.85rem',
+                        color: '#c2410c',
+                        fontWeight: '600',
+                        lineHeight: '1.4'
+                      }}>
+                        Fast Local Delivery charges are not included in your website order amount. You only pay for the products online. Porter delivery charges will be paid directly by you to the Porter delivery partner after receiving the order.
+                      </div>
                     </div>
                   </div>
                 )}
@@ -956,23 +966,33 @@ const Checkout = () => {
                 ))}
               </div>
               <div className="summary-divider"></div>
-              <div className="summary-row"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
-              {discountAmount > 0 && (
-                <div className="summary-row discount"><span>Special Discount</span><span>-₹{discountAmount.toFixed(2)}</span></div>
-              )}
-              <div className="summary-row"><span>Taxable Value</span><span>₹{taxableAmount.toFixed(2)}</span></div>
-              <div className="summary-row"><span>GST (18%)</span><span>₹{gstAmount.toFixed(2)}</span></div>
+              {deliveryMethod === 'PORTER' ? (
+                <>
+                  <div className="summary-row"><span>Product Amount</span><span>₹{totalPrice.toFixed(2)}</span></div>
+                  <div className="summary-row">
+                    <span>Porter Delivery Charge</span>
+                    <span style={{ color: '#ea580c', fontWeight: 'bold' }}>Pay directly to Porter after delivery</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="summary-row"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
+                  {discountAmount > 0 && (
+                    <div className="summary-row discount"><span>Special Discount</span><span>-₹{discountAmount.toFixed(2)}</span></div>
+                  )}
+                  <div className="summary-row"><span>Taxable Value</span><span>₹{taxableAmount.toFixed(2)}</span></div>
+                  <div className="summary-row"><span>GST (18%)</span><span>₹{gstAmount.toFixed(2)}</span></div>
 
-              <div className={`summary-row shipping ${shippingData.loading ? 'loading' : ''}`}>
-                <span>Shipping {deliveryMethod === 'PORTER' ? '(Porter)' : (shippingData.days && `(${shippingData.days})`)}</span>
-                {shippingData.loading ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : deliveryMethod === 'PORTER' ? (
-                  <span style={{ color: '#ea580c', fontWeight: 'bold' }}>To be confirmed</span>
-                ) : (
-                  <span>₹{shippingCharge.toFixed(2)}</span>
-                )}
-              </div>
+                  <div className={`summary-row shipping ${shippingData.loading ? 'loading' : ''}`}>
+                    <span>Shipping {shippingData.days && `(${shippingData.days})`}</span>
+                    {shippingData.loading ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <span>₹{shippingCharge.toFixed(2)}</span>
+                    )}
+                  </div>
+                </>
+              )}
 
               {appliedCoupon && (
                 <div className="summary-row coupon-discount">
@@ -1048,10 +1068,24 @@ const Checkout = () => {
                 </div>
               )}
 
-              <div className="summary-total"><span>Total Payable</span><span className="amount">₹{totalPrice.toFixed(2)}</span></div>
+              <div className="summary-total">
+                <span>{deliveryMethod === 'PORTER' ? 'Total Payable on Website' : 'Total Payable'}</span>
+                <span className="amount">₹{totalPrice.toFixed(2)}</span>
+              </div>
               {deliveryMethod === 'PORTER' && (
-                <div style={{ fontSize: '0.8rem', color: '#c2410c', textAlign: 'right', marginTop: '4px', fontWeight: '600' }}>
-                  * Excludes Porter delivery charges (to be confirmed)
+                <div className="porter-delivery-notice-box" style={{ 
+                  marginTop: '12px', 
+                  padding: '12px', 
+                  background: '#fff7ed', 
+                  border: '1px solid #ffedd5', 
+                  borderRadius: '8px',
+                  fontSize: '0.85rem', 
+                  color: '#c2410c', 
+                  fontWeight: '500',
+                  lineHeight: '1.4',
+                  textAlign: 'left'
+                }}>
+                  Fast Local Delivery charges are not included in your website order amount. You only pay for the products online. Porter delivery charges will be paid directly by you to the Porter delivery partner after receiving the order.
                 </div>
               )}
             </div>
