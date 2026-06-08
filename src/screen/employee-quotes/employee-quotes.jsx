@@ -121,6 +121,17 @@ const QuoteOperationsDashboard = () => {
     });
   }, [quotes, searchTerm, statusFilter]);
 
+  const liveOfferedTotal = useMemo(() => {
+    if (!selectedQuote) return 0;
+    if (!selectedQuote.items || selectedQuote.items.length === 0) {
+      return selectedQuote.totalOfferedAmount || 0;
+    }
+    return selectedQuote.items.reduce((sum, item) => {
+      const price = Number(offeredPrices[item.productId]) || 0;
+      return sum + (price * item.quantity);
+    }, 0);
+  }, [selectedQuote, offeredPrices]);
+
   const getStatusClass = (status) => {
     switch (status) {
       case 'Pending Review': return 'status-pending';
@@ -318,6 +329,9 @@ const QuoteOperationsDashboard = () => {
                           <div className="item-info">
                             <strong>{item.name}</strong>
                             <span>Qty: {item.quantity} | Original unit price: ₹{item.originalPrice}</span>
+                            <span style={{ fontSize: '0.85rem', color: '#ea580c', fontWeight: '600', marginTop: '4px', display: 'block' }}>
+                              Offered Subtotal: ₹{((Number(offeredPrices[item.productId]) || 0) * item.quantity).toLocaleString('en-IN')}
+                            </span>
                           </div>
                           
                           <div className="offering-prices-inputs">
@@ -361,7 +375,7 @@ const QuoteOperationsDashboard = () => {
                     </div>
                     <div className="stat-offering-card orange">
                       <span>Offered Total</span>
-                      <strong>₹{selectedQuote.totalOfferedAmount?.toLocaleString('en-IN') || '-'}</strong>
+                      <strong>₹{liveOfferedTotal?.toLocaleString('en-IN') || '-'}</strong>
                     </div>
                     {selectedQuote.totalCounterAmount > 0 && (
                       <div className="stat-offering-card blue">
