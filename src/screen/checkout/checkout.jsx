@@ -60,6 +60,23 @@ const Checkout = () => {
     deliveryInstructions: ''
   });
 
+  const [deliveryMethod, setDeliveryMethod] = useState('STANDARD');
+  const [porterDetails, setPorterDetails] = useState({
+    fullAddress: '',
+    landmark: '',
+    contactName: '',
+    contactPhone: '',
+    preferredTime: '',
+    deliveryInstructions: '',
+    urgency: 'Normal'
+  });
+
+  useEffect(() => {
+    if (addressData.city?.trim().toLowerCase() !== 'ludhiana') {
+      setDeliveryMethod('STANDARD');
+    }
+  }, [addressData.city]);
+
   const GEOAPIFY_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY || '';
 
   // Debounced Search Effect
@@ -350,10 +367,25 @@ const Checkout = () => {
   };
 
   useEffect(() => {
+    if (deliveryMethod === 'PORTER') {
+      setShippingData(prev => ({
+        ...prev,
+        charge: 0,
+        days: 'Porter Delivery',
+        zone: 'Ludhiana Local',
+        billableWeight: 0,
+        weights: null,
+        breakdown: null,
+        isFreeShippingApplied: false,
+        apiIntegration: null,
+        loading: false
+      }));
+      return;
+    }
     if (addressData.city) {
       fetchShippingCharge(addressData.zip, addressData.state, addressData.city, selectedCourierId, paymentMethod);
     }
-  }, [addressData.zip, addressData.state, addressData.city, selectedCourierId, paymentMethod]);
+  }, [addressData.zip, addressData.state, addressData.city, selectedCourierId, paymentMethod, deliveryMethod]);
 
   const subtotal = items.reduce((sum, item) => sum + (item.totalPrice || (item.price * item.quantity) || 0), 0);
   const discountAmount = (subtotal * specialDiscount) / 100;
@@ -402,7 +434,9 @@ const Checkout = () => {
           shippingAddress: addressData,
           couponCode: appliedCoupon?.code,
           paymentMethod,
-          courierId: selectedCourierId
+          courierId: selectedCourierId,
+          deliveryMethod,
+          porterDeliveryDetails: deliveryMethod === 'PORTER' ? porterDetails : null
         }),
       });
 
@@ -656,8 +690,147 @@ const Checkout = () => {
                       <textarea required name="nearbyPlaces" value={addressData.nearbyPlaces} onChange={handleInputChange} placeholder="e.g. Near Metro Pillar 12, Leave at gate" rows="2" />
                     </div>
 
+                    {/* Delivery Method Selection - Ludhiana customers only */}
+                    {addressData.city?.trim().toLowerCase() === 'ludhiana' && (
+                      <div className="form-group full shipping-options-group">
+                        <label className="section-subtitle-label">Select Delivery Method</label>
+                        <div className="couriers-selection-grid">
+                          <div 
+                            className={`courier-option-card ${deliveryMethod === 'STANDARD' ? 'selected' : ''}`}
+                            onClick={() => setDeliveryMethod('STANDARD')}
+                          >
+                            <div className="courier-card-header">
+                              <div className={`custom-radio-dot ${deliveryMethod === 'STANDARD' ? 'active' : ''}`}></div>
+                              <span className="courier-name">Standard Delivery</span>
+                            </div>
+                            <p className="courier-desc">Best for regular orders. Delivery time depends on your location and order processing.</p>
+                          </div>
+
+                          <div 
+                            className={`courier-option-card ${deliveryMethod === 'PORTER' ? 'selected' : ''}`}
+                            onClick={() => {
+                              setDeliveryMethod('PORTER');
+                              setPorterDetails(prev => ({
+                                ...prev,
+                                contactName: prev.contactName || addressData.fullName,
+                                contactPhone: prev.contactPhone || addressData.phone,
+                                fullAddress: prev.fullAddress || (addressData.street ? `${addressData.street}, ${addressData.city}, ${addressData.state} - ${addressData.zip}` : '')
+                              }));
+                            }}
+                          >
+                            <div className="courier-card-header">
+                              <div className={`custom-radio-dot ${deliveryMethod === 'PORTER' ? 'active' : ''}`}></div>
+                              <span className="courier-name">Fast Local Delivery — Porter</span>
+                            </div>
+                            <p className="courier-desc">Recommended for urgent orders within Ludhiana. Your order will be delivered through Porter, subject to availability.</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Porter Extra Fields */}
+                    {deliveryMethod === 'PORTER' && (
+                      <div className="form-group full porter-details-section" style={{
+                        background: '#f8fafc',
+                        padding: '20px',
+                        borderRadius: '12px',
+                        border: '1px solid #ea580c',
+                        marginTop: '15px',
+                        marginBottom: '15px',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+                      }}>
+                        <h4 style={{ color: '#ea580c', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px', fontWeight: 'bold' }}>
+                          <Truck size={18} /> Porter Fast Delivery Details
+                        </h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                          <div className="form-group full" style={{ gridColumn: 'span 2' }}>
+                            <label>Full Delivery Address *</label>
+                            <textarea 
+                              required={deliveryMethod === 'PORTER'} 
+                              value={porterDetails.fullAddress} 
+                              onChange={(e) => setPorterDetails({ ...porterDetails, fullAddress: e.target.value })} 
+                              rows="2"
+                              placeholder="Complete street address for Porter rider"
+                              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Landmark *</label>
+                            <input 
+                              required={deliveryMethod === 'PORTER'} 
+                              type="text" 
+                              value={porterDetails.landmark} 
+                              onChange={(e) => setPorterDetails({ ...porterDetails, landmark: e.target.value })} 
+                              placeholder="e.g. Near main gate, opposite temple"
+                              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Contact Person Name *</label>
+                            <input 
+                              required={deliveryMethod === 'PORTER'} 
+                              type="text" 
+                              value={porterDetails.contactName} 
+                              onChange={(e) => setPorterDetails({ ...porterDetails, contactName: e.target.value })} 
+                              placeholder="Name of receiver"
+                              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Contact Phone Number *</label>
+                            <input 
+                              required={deliveryMethod === 'PORTER'} 
+                              type="text" 
+                              value={porterDetails.contactPhone} 
+                              onChange={(e) => setPorterDetails({ ...porterDetails, contactPhone: e.target.value })} 
+                              placeholder="10-digit mobile number"
+                              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Preferred Delivery Time *</label>
+                            <input 
+                              required={deliveryMethod === 'PORTER'} 
+                              type="text" 
+                              value={porterDetails.preferredTime} 
+                              onChange={(e) => setPorterDetails({ ...porterDetails, preferredTime: e.target.value })} 
+                              placeholder="e.g. Immediate / Today 4 PM / Tomorrow Morning"
+                              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Package Urgency *</label>
+                            <select 
+                              required={deliveryMethod === 'PORTER'}
+                              value={porterDetails.urgency} 
+                              onChange={(e) => setPorterDetails({ ...porterDetails, urgency: e.target.value })}
+                              className="checkout-select"
+                              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                            >
+                              <option value="Normal">Normal</option>
+                              <option value="Urgent">Urgent</option>
+                              <option value="Machine Breakdown">Machine Breakdown</option>
+                            </select>
+                          </div>
+                          <div className="form-group full" style={{ gridColumn: 'span 2' }}>
+                            <label>Delivery Instructions</label>
+                            <textarea 
+                              value={porterDetails.deliveryInstructions} 
+                              onChange={(e) => setPorterDetails({ ...porterDetails, deliveryInstructions: e.target.value })} 
+                              rows="2"
+                              placeholder="Instructions for Porter rider..."
+                              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                            />
+                          </div>
+                        </div>
+                        <div style={{ marginTop: '15px', padding: '12px', background: '#fff7ed', border: '1px solid #ffedd5', borderRadius: '8px', color: '#c2410c', fontSize: '0.85rem' }}>
+                          <strong>Note:</strong> Delivery charges will be confirmed after order verification based on distance, weight, package size and Porter availability.
+                        </div>
+                      </div>
+                    )}
+
                     {/* Courier selection & Payment selection */}
-                    {courierList.length > 0 && (
+                    {deliveryMethod !== 'PORTER' && courierList.length > 0 && (
                       <div className="form-group full shipping-options-group">
                         <label className="section-subtitle-label">Select Courier Partner</label>
                         <div className="couriers-selection-grid">
@@ -681,27 +854,14 @@ const Checkout = () => {
                     )}
 
                     <div className="form-group full payment-options-group">
-                      <label className="section-subtitle-label">Select Payment Option</label>
-                      <div className="payment-selection-grid">
-                        <div 
-                          className={`payment-option-card ${paymentMethod === 'PREPAID' ? 'selected' : ''}`}
-                          onClick={() => setPaymentMethod('PREPAID')}
-                        >
+                      <label className="section-subtitle-label">Payment Option</label>
+                      <div className="payment-selection-grid" style={{ gridTemplateColumns: '1fr' }}>
+                        <div className="payment-option-card selected">
                           <div className="payment-card-header">
-                            <div className={`custom-radio-dot ${paymentMethod === 'PREPAID' ? 'active' : ''}`}></div>
+                            <div className="custom-radio-dot active"></div>
                             <span className="payment-name">Prepaid (Pay Online)</span>
                           </div>
                           <p className="payment-desc">Pay instantly using Cards, UPI, Netbanking or Wallets securely.</p>
-                        </div>
-                        <div 
-                          className={`payment-option-card ${paymentMethod === 'COD' ? 'selected' : ''}`}
-                          onClick={() => setPaymentMethod('COD')}
-                        >
-                          <div className="payment-card-header">
-                            <div className={`custom-radio-dot ${paymentMethod === 'COD' ? 'active' : ''}`}></div>
-                            <span className="payment-name">Cash on Delivery (COD)</span>
-                          </div>
-                          <p className="payment-desc">Pay cash to delivery executive. Surcharge fee applies.</p>
                         </div>
                       </div>
                     </div>
@@ -738,6 +898,35 @@ const Checkout = () => {
                     {addressData.gstNumber && <p className="contact-info">GSTIN: {addressData.gstNumber}</p>}
                   </div>
                 </div>
+
+                {deliveryMethod === 'PORTER' && (
+                  <div className="review-section">
+                    <h4 className="section-title" style={{ color: '#ea580c', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Truck size={16} /> Porter Fast Local Delivery Details
+                    </h4>
+                    <div className="review-address-box" style={{ borderColor: '#ffedd5', background: '#fff7ed' }}>
+                      <p><strong>Contact Person:</strong> {porterDetails.contactName} ({porterDetails.contactPhone})</p>
+                      <p><strong>Full Address:</strong> {porterDetails.fullAddress}</p>
+                      <p><strong>Landmark:</strong> {porterDetails.landmark}</p>
+                      <p><strong>Preferred Time:</strong> {porterDetails.preferredTime}</p>
+                      <p><strong>Urgency Level:</strong> <span style={{ color: '#ea580c', fontWeight: 'bold' }}>{porterDetails.urgency}</span></p>
+                      {porterDetails.deliveryInstructions && <p><strong>Instructions:</strong> {porterDetails.deliveryInstructions}</p>}
+                      <div style={{
+                        marginTop: '12px',
+                        padding: '10px',
+                        background: '#fff7ed',
+                        border: '1px solid #ffedd5',
+                        borderRadius: '6px',
+                        fontSize: '0.85rem',
+                        color: '#c2410c',
+                        fontWeight: '600',
+                        lineHeight: '1.4'
+                      }}>
+                        Fast Local Delivery charges are not included in your website order amount. You only pay for the products online. Porter delivery charges will be paid directly by you to the Porter delivery partner after receiving the order.
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="review-section">
                   <h4 className="section-title">Order Items</h4>
@@ -777,17 +966,33 @@ const Checkout = () => {
                 ))}
               </div>
               <div className="summary-divider"></div>
-              <div className="summary-row"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
-              {discountAmount > 0 && (
-                <div className="summary-row discount"><span>Special Discount</span><span>-₹{discountAmount.toFixed(2)}</span></div>
-              )}
-              <div className="summary-row"><span>Taxable Value</span><span>₹{taxableAmount.toFixed(2)}</span></div>
-              <div className="summary-row"><span>GST (18%)</span><span>₹{gstAmount.toFixed(2)}</span></div>
+              {deliveryMethod === 'PORTER' ? (
+                <>
+                  <div className="summary-row"><span>Product Amount</span><span>₹{totalPrice.toFixed(2)}</span></div>
+                  <div className="summary-row">
+                    <span>Porter Delivery Charge</span>
+                    <span style={{ color: '#ea580c', fontWeight: 'bold' }}>Pay directly to Porter after delivery</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="summary-row"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
+                  {discountAmount > 0 && (
+                    <div className="summary-row discount"><span>Special Discount</span><span>-₹{discountAmount.toFixed(2)}</span></div>
+                  )}
+                  <div className="summary-row"><span>Taxable Value</span><span>₹{taxableAmount.toFixed(2)}</span></div>
+                  <div className="summary-row"><span>GST (18%)</span><span>₹{gstAmount.toFixed(2)}</span></div>
 
-              <div className={`summary-row shipping ${shippingData.loading ? 'loading' : ''}`}>
-                <span>Shipping {shippingData.days && `(${shippingData.days})`}</span>
-                {shippingData.loading ? <Loader2 size={14} className="animate-spin" /> : <span>₹{shippingCharge.toFixed(2)}</span>}
-              </div>
+                  <div className={`summary-row shipping ${shippingData.loading ? 'loading' : ''}`}>
+                    <span>Shipping {shippingData.days && `(${shippingData.days})`}</span>
+                    {shippingData.loading ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <span>₹{shippingCharge.toFixed(2)}</span>
+                    )}
+                  </div>
+                </>
+              )}
 
               {appliedCoupon && (
                 <div className="summary-row coupon-discount">
@@ -863,7 +1068,26 @@ const Checkout = () => {
                 </div>
               )}
 
-              <div className="summary-total"><span>Total Payable</span><span className="amount">₹{totalPrice.toFixed(2)}</span></div>
+              <div className="summary-total">
+                <span>{deliveryMethod === 'PORTER' ? 'Total Payable on Website' : 'Total Payable'}</span>
+                <span className="amount">₹{totalPrice.toFixed(2)}</span>
+              </div>
+              {deliveryMethod === 'PORTER' && (
+                <div className="porter-delivery-notice-box" style={{ 
+                  marginTop: '12px', 
+                  padding: '12px', 
+                  background: '#fff7ed', 
+                  border: '1px solid #ffedd5', 
+                  borderRadius: '8px',
+                  fontSize: '0.85rem', 
+                  color: '#c2410c', 
+                  fontWeight: '500',
+                  lineHeight: '1.4',
+                  textAlign: 'left'
+                }}>
+                  Fast Local Delivery charges are not included in your website order amount. You only pay for the products online. Porter delivery charges will be paid directly by you to the Porter delivery partner after receiving the order.
+                </div>
+              )}
             </div>
           </aside>
         </div>

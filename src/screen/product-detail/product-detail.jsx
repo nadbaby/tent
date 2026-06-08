@@ -321,6 +321,29 @@ const ProductDetail = () => {
                 ₹{product.price?.toLocaleString()}
               </div>
 
+              {/* Porter Delivery Badge */}
+              <div className="porter-delivery-badge" style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px',
+                background: '#fff7ed',
+                border: '1px solid #ffedd5',
+                borderRadius: '8px',
+                padding: '12px',
+                marginBottom: '1.5rem',
+                color: '#c2410c'
+              }}>
+                <Truck size={20} style={{ color: '#ea580c', flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <strong style={{ display: 'block', fontSize: '0.9rem', color: '#9a3412', fontWeight: '600' }}>
+                    Fast Local Delivery Available in Ludhiana
+                  </strong>
+                  <span style={{ display: 'block', fontSize: '0.8rem', color: '#c2410c', marginTop: '2px' }}>
+                    Urgent order? We can arrange local delivery through Porter.
+                  </span>
+                </div>
+              </div>
+
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '1.5rem' }}>
                 {!isAdminUser ? (
                   <>

@@ -23,14 +23,27 @@ const TodaysOrdersDashboard = () => {
   const [activeModalTab, setActiveModalTab] = useState('overview');
   const [newTrackingId, setNewTrackingId] = useState('');
   const [newTrackingLink, setNewTrackingLink] = useState('');
+  const [productsList, setProductsList] = useState([]);
 
   const token = localStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
     fetchOrders();
+    fetchProducts();
   }, []);
 
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch(apiUrl('/api/products'));
+      if (response.ok) {
+        const data = await response.json();
+        setProductsList(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch products for spec lookup:", err);
+    }
+  };
   const fetchOrders = async () => {
     setLoading(true);
     setError(null);
@@ -417,6 +430,11 @@ const TodaysOrdersDashboard = () => {
               <button className={activeModalTab === 'customer' ? 'active' : ''} onClick={() => setActiveModalTab('customer')}>Customer & Address</button>
               <button className={activeModalTab === 'items' ? 'active' : ''} onClick={() => setActiveModalTab('items')}>Products</button>
               <button className={activeModalTab === 'payment' ? 'active' : ''} onClick={() => setActiveModalTab('payment')}>Payment Details</button>
+              {selectedOrder.deliveryMethod === 'PORTER' && (
+                <button className={activeModalTab === 'porter' ? 'active' : ''} onClick={() => setActiveModalTab('porter')} style={{ borderBottomColor: '#ea580c', color: activeModalTab === 'porter' ? '#ea580c' : undefined }}>
+                  <Truck size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} /> Porter Delivery
+                </button>
+              )}
             </div>
 
             <div className="drawer-content">
@@ -531,6 +549,263 @@ const TodaysOrdersDashboard = () => {
                       <p><strong>Milestone:</strong> Order #{selectedOrder.purchaseCount || 'N/A'} for this customer/GST</p>
                     </div>
                   )}
+                </div>
+              )}
+
+              {activeModalTab === 'porter' && (
+                <div className="tab-pane animate-in">
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px' }} className="porter-admin-grid">
+                    
+                    {/* Left Column: Details & Products */}
+                    <div>
+                      <div className="porter-admin-details-card" style={{
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        padding: '20px',
+                        marginBottom: '20px'
+                      }}>
+                        <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0f172a', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '15px' }}>
+                          <Truck size={18} style={{ color: '#ea580c' }} /> Porter Fast Delivery Details
+                        </h3>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <tbody>
+                            <tr>
+                              <td style={{ padding: '8px 0', color: '#64748b', fontWeight: '500', width: '150px' }}>Customer Name:</td>
+                              <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: '600' }}>{selectedOrder.porterDeliveryDetails?.fullName || selectedOrder.shippingAddress?.fullName}</td>
+                            </tr>
+                            <tr>
+                              <td style={{ padding: '8px 0', color: '#64748b', fontWeight: '500' }}>Phone Number:</td>
+                              <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: '600' }}>
+                                {selectedOrder.porterDeliveryDetails?.phone || selectedOrder.shippingAddress?.phone}
+                                <a href={`tel:${selectedOrder.porterDeliveryDetails?.phone || selectedOrder.shippingAddress?.phone}`} style={{ marginLeft: '10px', color: '#ea580c', textDecoration: 'none', fontWeight: 'bold' }}>📞 Call</a>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style={{ padding: '8px 0', color: '#64748b', fontWeight: '500' }}>Full Address:</td>
+                              <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: '500' }}>{selectedOrder.porterDeliveryDetails?.fullAddress || selectedOrder.shippingAddress?.street}</td>
+                            </tr>
+                            <tr>
+                              <td style={{ padding: '8px 0', color: '#64748b', fontWeight: '500' }}>Landmark:</td>
+                              <td style={{ padding: '8px 0', color: '#0f172a', fontWeight: '600' }}>{selectedOrder.porterDeliveryDetails?.landmark || 'N/A'}</td>
+                            </tr>
+                            <tr>
+                              <td style={{ padding: '8px 0', color: '#64748b', fontWeight: '500' }}>Preferred Time:</td>
+                              <td style={{ padding: '8px 0', color: '#ea580c', fontWeight: '600' }}>{selectedOrder.porterDeliveryDetails?.preferredTime || 'Immediate'}</td>
+                            </tr>
+                            <tr>
+                              <td style={{ padding: '8px 0', color: '#64748b', fontWeight: '500' }}>Instructions:</td>
+                              <td style={{ padding: '8px 0', color: '#0f172a' }}>{selectedOrder.porterDeliveryDetails?.deliveryInstructions || 'None'}</td>
+                            </tr>
+                            <tr>
+                              <td style={{ padding: '8px 0', color: '#64748b', fontWeight: '500' }}>Urgency Level:</td>
+                              <td style={{ padding: '8px 0' }}>
+                                <span style={{
+                                  background: selectedOrder.porterDeliveryDetails?.urgency === 'Machine Breakdown' ? '#fee2e2' : selectedOrder.porterDeliveryDetails?.urgency === 'Urgent' ? '#ffedd5' : '#f1f5f9',
+                                  color: selectedOrder.porterDeliveryDetails?.urgency === 'Machine Breakdown' ? '#ef4444' : selectedOrder.porterDeliveryDetails?.urgency === 'Urgent' ? '#f97316' : '#64748b',
+                                  padding: '4px 10px',
+                                  borderRadius: '50px',
+                                  fontSize: '0.8rem',
+                                  fontWeight: '700'
+                                }}>
+                                  {selectedOrder.porterDeliveryDetails?.urgency || 'Normal'}
+                                </span>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        <div className="porter-admin-payment-notice" style={{
+                          marginTop: '15px',
+                          padding: '12px',
+                          background: '#fff7ed',
+                          border: '1px solid #ffedd5',
+                          borderRadius: '8px',
+                          fontSize: '0.85rem',
+                          color: '#c2410c',
+                          fontWeight: '600',
+                          lineHeight: '1.4'
+                        }}>
+                          Customer has selected Porter Fast Delivery. Product payment is collected through website/order process. Porter delivery charges will be paid directly by the customer to Porter after receiving the order.
+                        </div>
+                      </div>
+
+                      {/* Product Weights & Sizes Card */}
+                      <div style={{
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        padding: '20px'
+                      }}>
+                        <h4 style={{ color: '#0f172a', marginBottom: '15px', fontWeight: 'bold' }}>Ordered Products Package Specs</h4>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #cbd5e1' }}>
+                              <th style={{ padding: '10px', textAlign: 'left', fontSize: '0.85rem', color: '#64748b' }}>Product</th>
+                              <th style={{ padding: '10px', textAlign: 'center', fontSize: '0.85rem', color: '#64748b' }}>Qty</th>
+                              <th style={{ padding: '10px', textAlign: 'right', fontSize: '0.85rem', color: '#64748b' }}>Unit Weight</th>
+                              <th style={{ padding: '10px', textAlign: 'right', fontSize: '0.85rem', color: '#64748b' }}>Dimensions (L x W x H)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {selectedOrder.items?.map((item, index) => {
+                              const dbProd = productsList.find(p => String(p.id) === String(item.id));
+                              return (
+                                <tr key={index} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                  <td style={{ padding: '10px', fontSize: '0.9rem' }}>
+                                    <strong style={{ color: '#0f172a', display: 'block' }}>{item.name}</strong>
+                                    <small style={{ color: '#64748b' }}>ID: {item.id}</small>
+                                  </td>
+                                  <td style={{ padding: '10px', textAlign: 'center', fontSize: '0.9rem', color: '#0f172a' }}>{item.quantity}</td>
+                                  <td style={{ padding: '10px', textAlign: 'right', fontSize: '0.9rem', color: '#0f172a' }}>{dbProd?.weightKg ? `${dbProd.weightKg} kg` : '0.00 kg'}</td>
+                                  <td style={{ padding: '10px', textAlign: 'right', fontSize: '0.9rem', color: '#0f172a' }}>
+                                    {dbProd?.dimensions ? `${dbProd.dimensions.length || 0}x${dbProd.dimensions.width || 0}x${dbProd.dimensions.height || 0} mm` : 'N/A'}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                        <div style={{ marginTop: '15px', padding: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
+                          <span>Total Weight:</span>
+                          <span>
+                            {selectedOrder.items?.reduce((sum, item) => {
+                              const dbProd = productsList.find(p => String(p.id) === String(item.id));
+                              return sum + ((dbProd?.weightKg || 0) * item.quantity);
+                            }, 0).toFixed(2)} kg
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Porter Booking & Status Controls */}
+                    <div>
+                      <div style={{
+                        background: '#fff7ed',
+                        border: '1.5px solid #ffedd5',
+                        borderRadius: '12px',
+                        padding: '20px'
+                      }}>
+                        <h3 style={{ color: '#c2410c', fontSize: '1.2rem', marginBottom: '15px', fontWeight: '800' }}>Porter Booking Controls</h3>
+                        
+                        {/* Checkbox: Manual Booking */}
+                        <div style={{ marginBottom: '20px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: '600', color: '#9a3412', fontSize: '0.95rem' }}>
+                            <input 
+                              type="checkbox" 
+                              checked={selectedOrder.porterDeliveryDetails?.bookManually || false}
+                              onChange={async (e) => {
+                                const checked = e.target.checked;
+                                try {
+                                  const response = await fetch(apiUrl(`/api/admin/orders/${selectedOrder.orderId}/status`), {
+                                    method: 'PATCH',
+                                    headers: {
+                                      'Content-Type': 'application/json',
+                                      'Authorization': `Bearer ${token}`
+                                    },
+                                    body: JSON.stringify({ bookManually: checked })
+                                  });
+                                  if (response.ok) {
+                                    setSelectedOrder(prev => ({
+                                      ...prev,
+                                      porterDeliveryDetails: {
+                                        ...prev.porterDeliveryDetails,
+                                        bookManually: checked
+                                      }
+                                    }));
+                                    fetchOrders();
+                                  } else {
+                                    alert("Failed to update booking preference");
+                                  }
+                                } catch (err) {
+                                  alert("Error updating database");
+                                }
+                              }}
+                              style={{ width: '18px', height: '18px', accentColor: '#ea580c' }}
+                            />
+                            Book Porter Delivery Manually
+                          </label>
+                          <p style={{ fontSize: '0.8rem', color: '#c2410c', marginTop: '6px', marginLeft: '28px', lineHeight: '1.4' }}>
+                            Check this once you or your staff have manually booked the Porter vehicle for this order.
+                          </p>
+                        </div>
+
+                        <hr style={{ border: '0', borderTop: '1px solid #ffedd5', margin: '15px 0' }} />
+
+                        {/* Dropdown: Delivery Status */}
+                        <div style={{ marginBottom: '20px' }}>
+                          <label style={{ display: 'block', fontWeight: '700', color: '#9a3412', marginBottom: '8px', fontSize: '0.9rem' }}>Order Delivery Status</label>
+                          <select
+                            value={selectedOrder.porterDeliveryDetails?.porterStatus || 'Porter Booking Pending'}
+                            onChange={async (e) => {
+                              const newPorterStatus = e.target.value;
+                              
+                              let generalStatus = selectedOrder.status;
+                              if (newPorterStatus === 'Delivered') {
+                                generalStatus = 'Delivered';
+                              } else if (newPorterStatus === 'Cancelled') {
+                                generalStatus = 'Cancelled';
+                              } else if (newPorterStatus === 'Out for Delivery' || newPorterStatus === 'Picked Up') {
+                                generalStatus = 'Dispatched';
+                              } else if (newPorterStatus === 'Assigned') {
+                                generalStatus = 'Processing';
+                              }
+
+                              try {
+                                const response = await fetch(apiUrl(`/api/admin/orders/${selectedOrder.orderId}/status`), {
+                                  method: 'PATCH',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                  },
+                                  body: JSON.stringify({ 
+                                    porterStatus: newPorterStatus,
+                                    status: generalStatus 
+                                  })
+                                });
+                                if (response.ok) {
+                                  setSelectedOrder(prev => ({
+                                    ...prev,
+                                    status: generalStatus,
+                                    porterDeliveryDetails: {
+                                      ...prev.porterDeliveryDetails,
+                                      porterStatus: newPorterStatus
+                                    }
+                                  }));
+                                  fetchOrders();
+                                } else {
+                                  alert("Failed to update delivery status");
+                                }
+                              } catch (err) {
+                                alert("Error updating database");
+                              }
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              borderRadius: '8px',
+                              border: '1.5px solid #ea580c',
+                              background: '#ffffff',
+                              fontWeight: '700',
+                              color: '#ea580c',
+                              fontSize: '0.9rem'
+                            }}
+                          >
+                            <option value="Porter Booking Pending">Porter Booking Pending</option>
+                            <option value="Assigned">Assigned (Rider Found)</option>
+                            <option value="Picked Up">Picked Up</option>
+                            <option value="Out for Delivery">Out for Delivery</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                          </select>
+                        </div>
+
+                        <div style={{ background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '8px', padding: '10px', fontSize: '0.8rem', color: '#b45309', lineHeight: '1.4' }}>
+                          <strong>Flow logic:</strong> Changing the delivery status automatically updates the overall order stage (e.g. "Delivered" will complete the order).
+                        </div>
+
+                      </div>
+                    </div>
+
+                  </div>
                 </div>
               )}
             </div>
