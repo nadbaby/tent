@@ -615,6 +615,19 @@ const TodaysOrdersDashboard = () => {
                             </tr>
                           </tbody>
                         </table>
+                        <div className="porter-admin-payment-notice" style={{
+                          marginTop: '15px',
+                          padding: '12px',
+                          background: '#fff7ed',
+                          border: '1px solid #ffedd5',
+                          borderRadius: '8px',
+                          fontSize: '0.85rem',
+                          color: '#c2410c',
+                          fontWeight: '600',
+                          lineHeight: '1.4'
+                        }}>
+                          Customer has selected Porter Fast Delivery. Product payment is collected through website/order process. Porter delivery charges will be paid directly by the customer to Porter after receiving the order.
+                        </div>
                       </div>
 
                       {/* Product Weights & Sizes Card */}
