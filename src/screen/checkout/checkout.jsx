@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { clearCart } from '../../redux/cartSlice';
 import { resolveImageUrl } from '../../components/home/ProductCard';
-import { MapPin, ShoppingBag, CreditCard, CheckCircle, ChevronRight, User, Phone, Mail, Building, ArrowLeft, Search, Loader2, Info } from 'lucide-react';
+import { MapPin, ShoppingBag, CreditCard, CheckCircle, ChevronRight, User, Phone, Mail, Building, ArrowLeft, Search, Loader2, Info, Truck } from 'lucide-react';
 import { indiaData } from '../../utils/indiaData';
 import PaymentLoader from '../../components/common/PaymentLoader/PaymentLoader';
 import './checkout.css';
