@@ -420,7 +420,7 @@ const Orders = () => {
               </div>
 
               {/* Action Buttons */}
-              <div style={{ marginTop: 'auto', paddingTop: '40px', display: 'flex', gap: '16px' }}>
+              <div style={{ marginTop: '40px', display: 'flex', gap: '16px', paddingBottom: '20px' }}>
                 <button 
                   className="btn-premium" 
                   style={{ flex: 1, justifyContent: 'center' }}
