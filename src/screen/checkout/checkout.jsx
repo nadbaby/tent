@@ -154,6 +154,14 @@ const Checkout = () => {
     fetchCouriers();
   }, []);
 
+  const subtotal = items.reduce((sum, item) => sum + (item.totalPrice || (item.price * item.quantity) || 0), 0);
+  const discountAmount = (subtotal * specialDiscount) / 100;
+  const taxableAmount = subtotal - discountAmount;
+  const gstAmount = taxableAmount * 0.18;
+  const shippingCharge = shippingData.charge;
+  const couponDiscount = appliedCoupon ? appliedCoupon.discount : 0;
+  const totalPrice = Math.max(0, taxableAmount + gstAmount + shippingCharge - couponDiscount);
+
   // Fetch Shipping Charge dynamically based on address details, courier partner and prepaid/COD selection
   const fetchShippingCharge = async (zip, state, city, courierId = selectedCourierId, payMethod = paymentMethod) => {
     if (!city) return;
@@ -257,14 +265,6 @@ const Checkout = () => {
       fetchShippingCharge(addressData.zip, addressData.state, addressData.city, selectedCourierId, paymentMethod);
     }
   }, [addressData.zip, addressData.state, addressData.city, selectedCourierId, paymentMethod, deliveryMethod]);
-
-  const subtotal = items.reduce((sum, item) => sum + (item.totalPrice || (item.price * item.quantity) || 0), 0);
-  const discountAmount = (subtotal * specialDiscount) / 100;
-  const taxableAmount = subtotal - discountAmount;
-  const gstAmount = taxableAmount * 0.18;
-  const shippingCharge = shippingData.charge;
-  const couponDiscount = appliedCoupon ? appliedCoupon.discount : 0;
-  const totalPrice = Math.max(0, taxableAmount + gstAmount + shippingCharge - couponDiscount);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -870,14 +870,14 @@ const Checkout = () => {
                 {couponError && <div className="coupon-error">{couponError}</div>}
               </div>
 
-              {shippingData.weights && (
+              {shippingData.weights && shippingData.breakdown && (
                 <div className="shipping-breakdown-details">
                   <div className="breakdown-header">
                     <Info size={12} /> Shipping Breakdown
                   </div>
                   <div className="breakdown-body">
-                    <div className="b-row"><span>Actual Weight</span><span>{shippingData.weights.actual.toFixed(2)} kg</span></div>
-                    <div className="b-row"><span>Volumetric Weight</span><span>{shippingData.weights.volumetric.toFixed(2)} kg</span></div>
+                    <div className="b-row"><span>Actual Weight</span><span>{shippingData.weights.actual?.toFixed(2) || 0} kg</span></div>
+                    <div className="b-row"><span>Volumetric Weight</span><span>{shippingData.weights.volumetric?.toFixed(2) || 0} kg</span></div>
                     <div className="b-row highlighted"><span>Chargeable Weight</span><span>{shippingData.billableWeight} kg</span></div>
                     <div className="b-divider"></div>
                     <div className="b-row"><span>Base Freight</span><span>₹{shippingData.breakdown.baseFreight}</span></div>
