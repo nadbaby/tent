@@ -164,11 +164,7 @@ const Auth = () => {
       const data = await res.json();
       if (res.ok) {
         setIsOtpSent(true);
-        if (data.demoMode) {
-          setSuccessMsg(`[Demo Mode] OTP is: ${data.otp} (Enter this code below to proceed)`);
-        } else {
-          setSuccessMsg('OTP sent successfully!');
-        }
+        setSuccessMsg('OTP sent successfully!');
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
       }
@@ -237,11 +233,7 @@ const Auth = () => {
       const data = await res.json();
       if (res.ok) {
         setIsOtpSent(true);
-        if (data.demoMode) {
-          setSuccessMsg(`[Demo Mode] OTP is: ${data.otp} (Enter this code below to proceed)`);
-        } else {
-          setSuccessMsg('OTP sent successfully!');
-        }
+        setSuccessMsg('OTP sent successfully!');
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
       }
@@ -432,11 +424,7 @@ const Auth = () => {
       const data = await res.json();
       if (res.ok) {
         setIsEmailSignupOtpSent(true);
-        if (data.demoMode) {
-          setSuccessMsg(`[Demo Mode] OTP is: ${data.otp} (Enter this code below to proceed)`);
-        } else {
-          setSuccessMsg('OTP sent to your phone! Please verify to complete signup.');
-        }
+        setSuccessMsg('OTP sent to your phone! Please verify to complete signup.');
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
       }
