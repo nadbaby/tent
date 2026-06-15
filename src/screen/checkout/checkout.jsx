@@ -14,13 +14,10 @@ const Checkout = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { items, totalQuantity } = useSelector((state) => state.cart);
-  const dropdownRef = useRef(null);
-
   const userData = JSON.parse(localStorage.getItem('user')) || null;
   const specialDiscount = userData?.specialDiscount || 0;
 
   const [step, setStep] = useState(1);
-  const [addressSearch, setAddressSearch] = useState('');
 
   // Authentication Check
   useEffect(() => {
@@ -29,10 +26,7 @@ const Checkout = () => {
       navigate('/login?redirect=checkout');
     }
   }, [navigate]);
-  const [suggestions, setSuggestions] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
   const [error, setError] = useState('');
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [saveThisAddress, setSaveThisAddress] = useState(false);
@@ -76,128 +70,6 @@ const Checkout = () => {
       setDeliveryMethod('STANDARD');
     }
   }, [addressData.city]);
-
-  const GEOAPIFY_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY || '';
-
-  // Debounced Search Effect
-  useEffect(() => {
-    if (addressSearch.length < 3) {
-      setSuggestions([]);
-      setShowDropdown(false);
-      return;
-    }
-    const timer = setTimeout(() => fetchSuggestions(addressSearch), 400);
-    return () => clearTimeout(timer);
-  }, [addressSearch]);
-
-  // Click Outside logic
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setShowDropdown(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const fetchSuggestions = async (text) => {
-    if (!GEOAPIFY_KEY) {
-      console.warn("Geoapify API key is missing. Address autocomplete will not work.");
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(text)}&filter=countrycode:in&limit=5&apiKey=${GEOAPIFY_KEY}`
-      );
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      setSuggestions(data.features || []);
-      setShowDropdown(true);
-    } catch (error) {
-      console.error("Geoapify Autocomplete Error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const selectSuggestion = (feature) => {
-    const props = feature.properties;
-    const [lng, lat] = feature.geometry.coordinates;
-
-    setAddressData(prev => ({
-      ...prev,
-      street: props.formatted,
-      city: props.city || props.municipality || '',
-      state: props.state || '',
-      zip: props.postcode || '',
-      country: props.country || 'India',
-      lat: lat,
-      lng: lng
-    }));
-
-    setAddressSearch(props.formatted);
-    setShowDropdown(false);
-  };
-
-  const handleLocateMe = () => {
-    setError('');
-    if (!GEOAPIFY_KEY) {
-      setError("Location services are not configured. (Missing API Key)");
-      return;
-    }
-
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        try {
-          const res = await fetch(`https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&apiKey=${GEOAPIFY_KEY}`);
-          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-          const data = await res.json();
-          if (data.features?.length > 0) {
-            selectSuggestion(data.features[0]);
-          } else {
-            setError("Could not find address for your current location.");
-          }
-        } catch (err) {
-          console.error("Reverse geocode error", err);
-          setError("Failed to fetch address from coordinates.");
-        }
-      }, (err) => {
-        console.error("Geolocation error", err);
-        setError("Please enable location permissions in your browser.");
-      });
-    } else {
-      setError("Geolocation is not supported by your browser.");
-    }
-  };
-
-  // --- Auto-fetch Location via IP (Geoapify) ---
-  useEffect(() => {
-    const fetchLocationByIP = async () => {
-      if (!GEOAPIFY_KEY || addressData.city || addressData.state) return;
-
-      try {
-        const res = await fetch(`https://api.geoapify.com/v1/ipinfo?apiKey=${GEOAPIFY_KEY}`);
-        if (!res.ok) return;
-        
-        const data = await res.json();
-        if (data.city?.name || data.state?.name) {
-          setAddressData(prev => ({
-            ...prev,
-            city: data.city?.name || prev.city,
-            state: data.state?.name || prev.state,
-            country: data.country?.name || prev.country,
-            zip: data.postcode || prev.zip
-          }));
-          console.log("Auto-fetched location via IP:", data.city?.name, data.state?.name);
-        }
-      } catch (err) {
-        console.warn("IP Location fetch failed:", err);
-      }
-    };
-
-    fetchLocationByIP();
-  }, [GEOAPIFY_KEY]);
 
   // --- Fetch Saved Addresses ---
   useEffect(() => {
@@ -244,7 +116,6 @@ const Checkout = () => {
       deliveryInstructions: addr.deliveryInstructions || ''
     });
     setSelectedAddressId(addr.id);
-    setAddressSearch(addr.street || '');
   };
 
   const [shippingData, setShippingData] = useState({ 
@@ -576,9 +447,6 @@ const Checkout = () => {
                       <h3><MapPin size={20} /> Shipping Address</h3>
                       <p>Enter your details and address for fast delivery.</p>
                     </div>
-                    <button type="button" onClick={handleLocateMe} className="locate-btn">
-                      <MapPin size={14} /> Detect My Location
-                    </button>
                   </div>
                 </div>
                 
@@ -606,7 +474,6 @@ const Checkout = () => {
                         className={`saved-address-card new-address ${!selectedAddressId ? 'selected' : ''}`}
                         onClick={() => {
                           setSelectedAddressId(null);
-                          setAddressSearch('');
                           setAddressData(prev => ({ ...prev, street: '', city: '', state: '', zip: '', landmark: '', nearbyPlaces: '', deliveryInstructions: '' }));
                         }}
                       >
@@ -622,34 +489,6 @@ const Checkout = () => {
                   </div>
                 )}
 
-                <div className="map-search-container" ref={dropdownRef}>
-                  <div className="search-suggest-box">
-                    <Search size={18} />
-                    <input
-                      type="text"
-                      placeholder="Start typing your full address..."
-                      value={addressSearch}
-                      onChange={(e) => setAddressSearch(e.target.value)}
-                      onFocus={() => addressSearch.length >= 3 && setShowDropdown(true)}
-                    />
-                    {isLoading && <Loader2 className="search-loader animate-spin" size={18} />}
-                  </div>
-
-                  {showDropdown && (
-                    <div className="suggestions-list">
-                      {suggestions.length > 0 ? (
-                        suggestions.map((feature, index) => (
-                          <div key={index} className="suggestion-item" onClick={() => selectSuggestion(feature)}>
-                            <MapPin size={14} />
-                            <span>{feature.properties.formatted}</span>
-                          </div>
-                        ))
-                      ) : (
-                        !isLoading && <div className="no-results">No address found for "{addressSearch}"</div>
-                      )}
-                    </div>
-                  )}
-                </div>
 
                 <form className="address-form" onSubmit={handleNextStep}>
                   <div className="form-grid">
