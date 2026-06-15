@@ -1,10 +1,8 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Send } from 'lucide-react';
 import './InquirySection.css';
 
 const InquirySection = () => {
-  const navigate = useNavigate();
   return (
     <section className="inquiry-section">
       {/* Liquid Background Blobs */}
@@ -48,18 +46,7 @@ const InquirySection = () => {
               <textarea id="message" rows="4" placeholder="Describe the machinery, quantities, or custom specs you need..." required></textarea>
             </div>
             
-            <button 
-              type="button" 
-              className="btn btn-primary submit-btn"
-              onClick={() => {
-                const userStr = localStorage.getItem('user');
-                if (!userStr) {
-                  navigate('/login?redirect=/quote');
-                } else {
-                  navigate('/quote');
-                }
-              }}
-            >
+            <button type="button" className="btn btn-primary submit-btn">
               Submit Request <Send size={18} />
             </button>
           </form>

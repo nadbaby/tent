@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { apiUrl } from '../../utils/api';
-import { useNavigate } from 'react-router-dom';
 import {
   Phone,
   Mail,
@@ -44,7 +43,6 @@ const Linkedin = ({ size = 24, color = "currentColor" }) => (
 );
 
 const Contact = () => {
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -62,12 +60,6 @@ const Contact = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const userStr = localStorage.getItem('user');
-    if (!userStr) {
-      navigate('/login?redirect=/contact');
-      return;
-    }
-
     setLoading(true);
     try {
       const response = await fetch(apiUrl('/api/request-quote'), {

@@ -16,14 +16,7 @@ const QuoteFloat = () => {
   return (
     <button
       className="quote-float"
-      onClick={() => {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
-          navigate('/login?redirect=/quote');
-        } else {
-          navigate('/quote');
-        }
-      }}
+      onClick={() => navigate('/quote')}
       aria-label="Request a Quote"
     >
       <div className="quote-tooltip">Request Quote</div>

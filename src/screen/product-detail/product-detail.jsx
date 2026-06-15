@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { isAdmin } from '../../utils/auth';
-import { toggleWishlist } from '../../redux/wishlistSlice';
 import ProductCard, { resolveImageUrl } from '../../components/home/ProductCard';
 import { Skeleton } from '../../components/common/Skeleton/Skeleton';
 import './product-detail.css';
@@ -33,7 +32,6 @@ const ProductDetail = () => {
   const { showToast } = useToast();
   const cartItems = useSelector((state) => state.cart.items);
   const isAdminUser = isAdmin();
-  const isWishlisted = useSelector((state) => state.wishlist?.items?.some(item => String(item.id) === String(id)));
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -64,7 +62,7 @@ const ProductDetail = () => {
 
   const handleViewCatalogue = () => {
     if (!product || !product.catalogue) return;
-
+    
     if (product.catalogue.startsWith('data:application/pdf;base64,')) {
       try {
         const base64Data = product.catalogue.split(',')[1];
@@ -321,55 +319,13 @@ const ProductDetail = () => {
                 ₹{product.price?.toLocaleString()}
               </div>
 
-              {/* Porter Delivery Badge */}
-              <div className="porter-delivery-badge" style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '10px',
-                background: '#fff7ed',
-                border: '1px solid #ffedd5',
-                borderRadius: '8px',
-                padding: '12px',
-                marginBottom: '1.5rem',
-                color: '#c2410c'
-              }}>
-                <Truck size={20} style={{ color: '#ea580c', flexShrink: 0, marginTop: '2px' }} />
-                <div>
-                  <strong style={{ display: 'block', fontSize: '0.9rem', color: '#9a3412', fontWeight: '600' }}>
-                    Fast Local Delivery Available in Ludhiana
-                  </strong>
-                  <span style={{ display: 'block', fontSize: '0.8rem', color: '#c2410c', marginTop: '2px' }}>
-                    Urgent order? We can arrange local delivery through Porter.
-                  </span>
-                </div>
-              </div>
-
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '1.5rem' }}>
                 {!isAdminUser ? (
                   <>
                     <span style={{ fontWeight: '600' }}>Quantity:</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '5px' }}>
                       <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={{ padding: '5px 10px', background: 'none', border: 'none', cursor: 'pointer' }}>-</button>
-                      <input
-                        type="number"
-                        value={quantity}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value);
-                          if (!isNaN(val) && val >= 1) {
-                            setQuantity(val);
-                          }
-                        }}
-                        style={{
-                          width: '50px',
-                          textAlign: 'center',
-                          fontWeight: 'bold',
-                          border: 'none',
-                          outline: 'none',
-                          background: 'none',
-                          fontSize: '1rem',
-                          color: '#0f172a'
-                        }}
-                      />
+                      <span style={{ width: '30px', textAlign: 'center', fontWeight: 'bold' }}>{quantity}</span>
                       <button onClick={() => setQuantity(quantity + 1)} style={{ padding: '5px 10px', background: 'none', border: 'none', cursor: 'pointer' }}>+</button>
                     </div>
                   </>
@@ -408,40 +364,11 @@ const ProductDetail = () => {
               )}
 
               {!isAdminUser && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const user = localStorage.getItem('user');
-                      if (!user) { navigate('/login'); return; }
-                      dispatch(toggleWishlist(product));
-                      showToast(
-                        isWishlisted ? 'Removed from wishlist' : 'Added to wishlist',
-                        isWishlisted ? 'info' : 'success'
-                      );
-                    }}
-                    title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-                    style={{
-                      width: '56px',
-                      background: isWishlisted ? '#fef2f2' : '#f8fafc',
-                      color: isWishlisted ? '#ef4444' : '#64748b',
-                      border: isWishlisted ? '1px solid #fecaca' : '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      flexShrink: 0
-                    }}
-                  >
-                    <Heart size={22} fill={isWishlisted ? '#ef4444' : 'none'} />
-                  </button>
+                <div style={{ display: 'flex', gap: '12px' }}>
                   <button
                     onClick={handleAddToCart}
                     style={{
                       flex: 1,
-                      minWidth: '140px',
                       padding: '16px',
                       background: '#f1f5f9',
                       color: '#0f172a',
@@ -458,7 +385,6 @@ const ProductDetail = () => {
                     onClick={handleBuyNow}
                     style={{
                       flex: 1,
-                      minWidth: '140px',
                       padding: '16px',
                       background: '#EA580C',
                       color: 'white',
@@ -470,34 +396,6 @@ const ProductDetail = () => {
                     }}
                   >
                     Buy Now
-                  </button>
-                  <button
-                    onClick={() => {
-                      const userStr = localStorage.getItem('user');
-                      if (!userStr) {
-                        navigate(`/login?redirect=${encodeURIComponent('/quote?product=' + encodeURIComponent(product.name) + '&quantity=' + quantity)}`);
-                      } else {
-                        navigate('/quote', { state: { product: product.name, quantity: quantity } });
-                      }
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '16px',
-                      background: '#fff',
-                      color: '#ea580c',
-                      border: '1.5px solid #ea580c',
-                      borderRadius: '8px',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      fontSize: '1rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    <FileText size={18} /> Request Bulk Quote
                   </button>
                 </div>
               )}

@@ -9,7 +9,6 @@ import StatsSection from '../../components/home/StatsSection';
 import WhyChooseUsSection from '../../components/home/WhyChooseUsSection';
 import TestimonialsSection from '../../components/home/TestimonialsSection';
 import InquirySection from '../../components/home/InquirySection';
-import PorterDeliverySection from '../../components/home/PorterDeliverySection';
 import { SkeletonProductGrid, Skeleton } from '../../components/common/Skeleton/Skeleton';
 import './home.css';
 
@@ -99,7 +98,6 @@ const Home = () => {
         )
       )}
 
-      <PorterDeliverySection />
       <WhyChooseUsSection />
       <TestimonialsSection />
       <InquirySection />

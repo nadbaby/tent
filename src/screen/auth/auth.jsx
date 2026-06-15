@@ -78,7 +78,6 @@ const Auth = () => {
         localStorage.setItem('isAdminAuthenticated', role === 'admin' ? 'true' : 'false');
         return data.user;
       }
-      return { error: data.message || "Failed to sync profile with database." };
     } catch (err) {
       console.error("Sync error:", err);
       return { error: err.message };
@@ -98,8 +97,6 @@ const Auth = () => {
   const [otp, setOtp] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [loginMethod, setLoginMethod] = useState('email'); // 'email' | 'phone'
-  const [isEmailSignupOtpSent, setIsEmailSignupOtpSent] = useState(false);
-  const [emailSignupOtp, setEmailSignupOtp] = useState('');
 
   // UI State
   const [showPassword, setShowPassword] = useState(false);
@@ -133,8 +130,6 @@ const Auth = () => {
     setErrorMsg('');
     setSuccessMsg('');
     setIsOtpSent(false);
-    setIsEmailSignupOtpSent(false);
-    setEmailSignupOtp('');
   };
 
   // ─── Twilio: Phone OTP Login ─────────────────────────────────────
@@ -164,11 +159,7 @@ const Auth = () => {
       const data = await res.json();
       if (res.ok) {
         setIsOtpSent(true);
-        if (data.demoMode) {
-          setSuccessMsg(`[Demo Mode] OTP is: ${data.otp} (Enter this code below to proceed)`);
-        } else {
-          setSuccessMsg('OTP sent successfully!');
-        }
+        setSuccessMsg('OTP sent successfully!');
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
       }
@@ -237,11 +228,7 @@ const Auth = () => {
       const data = await res.json();
       if (res.ok) {
         setIsOtpSent(true);
-        if (data.demoMode) {
-          setSuccessMsg(`[Demo Mode] OTP is: ${data.otp} (Enter this code below to proceed)`);
-        } else {
-          setSuccessMsg('OTP sent successfully!');
-        }
+        setSuccessMsg('OTP sent successfully!');
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
       }
@@ -423,59 +410,12 @@ const Auth = () => {
 
     setIsLoading(true);
     try {
-      // Send OTP to phone number before creating account
-      const res = await fetch(apiUrl('/api/auth/send-otp'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setIsEmailSignupOtpSent(true);
-        if (data.demoMode) {
-          setSuccessMsg(`[Demo Mode] OTP is: ${data.otp} (Enter this code below to proceed)`);
-        } else {
-          setSuccessMsg('OTP sent to your phone! Please verify to complete signup.');
-        }
-      } else {
-        setErrorMsg(data.message || 'Failed to send OTP');
-      }
-    } catch (err) {
-      setErrorMsg('Server error. Please try again later.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyEmailSignupOtp = async (e) => {
-    e.preventDefault();
-    if (!emailSignupOtp) return setErrorMsg('Please enter the 6-digit OTP');
-
-    setIsLoading(true);
-    setErrorMsg('');
-    try {
-      // 1. Verify OTP first
-      const res = await fetch(apiUrl('/api/auth/verify-otp'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, otp: emailSignupOtp }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setErrorMsg(data.message || 'Invalid or expired OTP');
-        setIsLoading(false);
-        return;
-      }
-
-      // 2. OTP is valid! Create in Firebase
+      // 1. Create in Firebase
       const credential = await createUserWithEmailAndPassword(auth, email, password);
       const fbUser = credential.user;
       await updateProfile(fbUser, { displayName: name });
 
-      // 3. Send Verification Email (Dual-Mode Verification)
-      await sendEmailVerification(fbUser);
-
-      // 4. Sync with MongoDB
+      // 2. Sync with MongoDB
       const idToken = await fbUser.getIdToken();
       const syncedUser = await syncUserWithBackend(idToken, {
         name,
@@ -485,19 +425,25 @@ const Auth = () => {
         gstNumber: gstNumber || ''
       });
 
-      if (!syncedUser || syncedUser.error) {
-        setErrorMsg(syncedUser?.error || "Failed to sync profile with database.");
+      if (!syncedUser) {
+        setErrorMsg("Failed to sync profile with database. Account created in Firebase, but MongoDB record failed.");
         setIsLoading(false);
         return;
       }
 
-      // 5. Sign out Firebase session to prevent automatic login until email is verified
+      // 3. Send Verification Email (don't let it crash the whole process)
+      try {
+        await sendEmailVerification(fbUser);
+        setSuccessMsg('Account created! Verification link sent to your email.');
+      } catch (vErr) {
+        console.warn("Initial verification email failed:", vErr);
+        setSuccessMsg('Account created! (Verification email could not be sent)');
+      }
+
+      // 4. Log out so they can't access pages until they verify and log in properly
       await auth.signOut();
 
-      setSuccessMsg('Phone verified! A verification link has been sent to your email. Please click the link to activate your account and log in.');
-      setTimeout(() => {
-        handleModeChange('login');
-      }, 4000);
+      setTimeout(() => navigate('/verify-email'), 2000);
     } catch (err) {
       console.error("Signup failed:", err);
       setErrorMsg(friendlyError(err.code || err.message));
@@ -792,78 +738,47 @@ const Auth = () => {
                 <p>Join Fine Bearing & Oil Seal Store for exclusive benefits.</p>
               </div>
 
-              {!isEmailSignupOtpSent ? (
-                <form onSubmit={handleSignupSubmit}>
-                  <div className="form-group">
-                    <label className="form-label">Full Name</label>
-                    <input type="text" className="form-input" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} required />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Email</label>
-                    <input type="email" className="form-input" placeholder="john@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Phone Number</label>
-                    <input type="tel" className="form-input" placeholder="+91XXXXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} required />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Company Name (Optional)</label>
-                    <input type="text" className="form-input" placeholder="ACME Corp" value={company} onChange={(e) => setCompany(e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">GST No. (Optional)</label>
-                    <input type="text" className="form-input" placeholder="22AAAAA0000A1Z5" value={gstNumber} onChange={(e) => setGstNumber(e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Password</label>
-                    <div className="form-input-wrapper">
-                      <input type={showPassword ? 'text' : 'password'} className="form-input" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                      <div className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </div>
+              <form onSubmit={handleSignupSubmit}>
+                <div className="form-group">
+                  <label className="form-label">Full Name</label>
+                  <input type="text" className="form-input" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <input type="email" className="form-input" placeholder="john@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Phone Number</label>
+                  <input type="tel" className="form-input" placeholder="+91XXXXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Company Name (Optional)</label>
+                  <input type="text" className="form-input" placeholder="ACME Corp" value={company} onChange={(e) => setCompany(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">GST No. (Optional)</label>
+                  <input type="text" className="form-input" placeholder="22AAAAA0000A1Z5" value={gstNumber} onChange={(e) => setGstNumber(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Password</label>
+                  <div className="form-input-wrapper">
+                    <input type={showPassword ? 'text' : 'password'} className="form-input" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                    <div className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </div>
                   </div>
-                  <div className="terms-checkbox" style={{ marginBottom: '1.5rem' }}>
-                    <label className="checkbox-label" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} />
-                      <span style={{ fontSize: '0.8125rem' }}>I agree to the Terms of Service and Privacy Policy.</span>
-                    </label>
-                  </div>
-                  {renderSpamProtection()}
-                  <button type="submit" className="btn-submit" disabled={isLoading || !termsAccepted}>
-                    {isLoading ? 'Creating Account…' : <><span>Sign Up</span><ArrowRight size={18} className="btn-icon" /></>}
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleVerifyEmailSignupOtp}>
-                  <div className="form-group">
-                    <label className="form-label">Verify Phone Number</label>
-                    <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '15px' }}>
-                      We sent a 6-digit code to <strong>{phone}</strong>
-                    </p>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="123456"
-                      maxLength="6"
-                      value={emailSignupOtp}
-                      onChange={(e) => setEmailSignupOtp(e.target.value)}
-                      required
-                      autoFocus
-                    />
-                  </div>
-                  <button type="submit" className="btn-submit" disabled={isLoading}>
-                    {isLoading ? 'Verifying…' : <><span>Verify & Sign Up</span><ArrowRight size={18} className="btn-icon" /></>}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsEmailSignupOtpSent(false)}
-                    style={{ width: '100%', background: 'none', border: 'none', color: '#64748b', marginTop: '10px', cursor: 'pointer', fontSize: '13px' }}
-                  >
-                    Back to Sign Up Details
-                  </button>
-                </form>
-              )}
+                </div>
+                <div className="terms-checkbox" style={{ marginBottom: '1.5rem' }}>
+                  <label className="checkbox-label" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} />
+                    <span style={{ fontSize: '0.8125rem' }}>I agree to the Terms of Service and Privacy Policy.</span>
+                  </label>
+                </div>
+                {renderSpamProtection()}
+                <button type="submit" className="btn-submit" disabled={isLoading || !termsAccepted}>
+                  {isLoading ? 'Creating Account…' : <><span>Sign Up</span><ArrowRight size={18} className="btn-icon" /></>}
+                </button>
+              </form>
             </>
           )}
 

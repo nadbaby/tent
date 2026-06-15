@@ -2,37 +2,20 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { addItem } from '../../redux/cartSlice';
-import { ShoppingCart, Heart } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { apiUrl } from '../../utils/api';
-import { toggleWishlist } from '../../redux/wishlistSlice';
 import ProtectedImage from '../common/ProtectedImage';
 import './ProductCard.css';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || '';
-const FALLBACK_IMAGE = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%" style="background:%23f8fafc;"><circle cx="50" cy="50" r="30" fill="none" stroke="%23cbd5e1" stroke-width="4" stroke-dasharray="10 6"/><circle cx="50" cy="50" r="15" fill="none" stroke="%23cbd5e1" stroke-width="4"/><path d="M50 10 L50 25 M50 75 L50 90 M10 50 L25 50 M75 50 L90 50" stroke="%23cbd5e1" stroke-width="4" stroke-linecap="round"/></svg>`;
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=600';
 
 /**
  * Resolves a product image path to a full displayable URL.
  */
 const resolveImageUrl = (imagePath) => {
-  if (!imagePath) return FALLBACK_IMAGE;
-  if (Array.isArray(imagePath)) {
-    imagePath = imagePath[0];
-  }
-  if (typeof imagePath !== 'string' || imagePath.trim() === '') return FALLBACK_IMAGE;
-
-  // Convert Apple's HEIC format to standard JPG (Cloudinary converts this on-the-fly when changing file extension in URL)
-  if (imagePath.toLowerCase().includes('.heic')) {
-    imagePath = imagePath.replace(/\.heic/gi, '.jpg');
-  }
-
-  // Extract first http:// or https:// URL if present (e.g. handles prefixes like "main: " or comma lists)
-  const httpMatch = imagePath.match(/(https?:\/\/[^\s,]+)/);
-  if (httpMatch) {
-    return httpMatch[0];
-  }
-
+  if (!imagePath || imagePath.trim() === '') return FALLBACK_IMAGE;
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
   const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
   return apiUrl(cleanPath);
@@ -43,7 +26,7 @@ const highlightText = (text, highlight) => {
   const parts = String(text).split(new RegExp(`(${highlight})`, 'gi'));
   return (
     <>
-      {parts.map((part, i) =>
+      {parts.map((part, i) => 
         part.toLowerCase() === highlight.toLowerCase() ? (
           <mark key={i} style={{ backgroundColor: '#fde047', color: '#1e293b', padding: '0 2px', borderRadius: '2px' }}>{part}</mark>
         ) : (
@@ -60,7 +43,6 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
   const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
-  const isWishlisted = useSelector((state) => state.wishlist?.items?.some(item => item.id === product.id));
 
   const secureImageUrl = resolveImageUrl(product.image);
 
@@ -126,33 +108,10 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
           alt={product.name}
           className="product-image"
         />
-        <div className="product-badges desktop-only-badges">
+        <div className="product-badges">
           {product.isNew && <span className="badge badge-new">New</span>}
           {product.isFeatured && <span className="badge badge-featured">Featured</span>}
         </div>
-
-        {!isAdmin && (
-          <button
-            className={`wishlist-heart-btn ${isWishlisted ? 'active' : ''}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              const user = localStorage.getItem('user');
-              if (!user) {
-                navigate('/login');
-                return;
-              }
-              dispatch(toggleWishlist(product));
-              showToast(
-                isWishlisted ? `Removed from wishlist` : `Added to wishlist`,
-                isWishlisted ? 'info' : 'success'
-              );
-            }}
-            title={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-          >
-            <Heart size={18} fill={isWishlisted ? '#ef4444' : 'none'} color={isWishlisted ? '#ef4444' : '#64748b'} />
-          </button>
-        )}
 
         {isAdmin && (
           <div className="admin-quick-actions" onClick={(e) => e.stopPropagation()}>
@@ -167,16 +126,7 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
           <p className="product-category">{highlightText(product.category, searchTerm)}</p>
           {product.sku && <span className="product-sku">SKU: {highlightText(product.sku, searchTerm)}</span>}
         </div>
-
-        {/* Mobile Badges - Visible only on mobile inside info section, ensuring 0% image overlap */}
-        {(product.isNew || product.isFeatured) && (
-          <div className="product-badges mobile-only-badges">
-            {product.isNew && <span className="badge badge-new">New</span>}
-            {product.isFeatured && <span className="badge badge-featured">Featured</span>}
-          </div>
-        )}
-
-        <h3 className="product-name">{highlightText(product.subcategory || 'Sub Category', searchTerm)}</h3>
+        <h3 className="product-name" style={{ fontSize: '1.25rem', fontWeight: '800' }}>{highlightText(product.subcategory || 'Sub Category', searchTerm)}</h3>
         <p className="product-specs">{product.specs}</p>
 
         <div className="product-footer">
@@ -184,20 +134,7 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
             {product.price ? (
               <span className="product-price">₹{product.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             ) : (
-              <span
-                className="product-price quote"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const userStr = localStorage.getItem('user');
-                  if (!userStr) {
-                    navigate(`/login?redirect=${encodeURIComponent('/quote?product=' + encodeURIComponent(product.subcategory || product.name) + '&quantity=' + quantity)}`);
-                  } else {
-                    navigate('/quote', { state: { product: product.subcategory || product.name, quantity: quantity } });
-                  }
-                }}
-              >
-                Request Quote
-              </span>
+              <span className="product-price quote">Request Quote</span>
             )}
           </div>
 
@@ -206,28 +143,7 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
               <>
                 <div className="product-qty-control">
                   <button className="qty-btn-small" onClick={(e) => handleQtyChange(e, -1)}>-</button>
-                  <input
-                    type="number"
-                    className="qty-display-small"
-                    value={quantity}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value);
-                      if (!isNaN(val) && val >= 1) {
-                        setQuantity(val);
-                      }
-                    }}
-                    style={{
-                      width: '40px',
-                      border: 'none',
-                      outline: 'none',
-                      background: 'transparent',
-                      textAlign: 'center',
-                      fontWeight: '800',
-                      fontSize: '0.9rem',
-                      color: '#1e293b',
-                      padding: 0
-                    }}
-                  />
+                  <span className="qty-display-small">{quantity}</span>
                   <button className="qty-btn-small" onClick={(e) => handleQtyChange(e, 1)}>+</button>
                 </div>
                 <button
@@ -239,7 +155,7 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
                 </button>
               </>
             ) : (
-              <span className="admin-view-only">View Only</span>
+              <span className="admin-view-only" style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>View Only</span>
             )}
           </div>
         </div>
