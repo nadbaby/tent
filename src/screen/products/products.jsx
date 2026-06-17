@@ -291,7 +291,16 @@ const Products = () => {
       });
 
       if (!response.ok) {
-        throw new Error('AI Vision Scanner could not process this image. Please make sure the image is in JPG/PNG format.');
+        let errorMsg = 'AI Vision Scanner could not process this image. Please make sure the image is in JPG/PNG format.';
+        try {
+          const errData = await response.json();
+          if (errData.message || errData.error) {
+            errorMsg = errData.message + (errData.error ? ': ' + errData.error : '');
+          }
+        } catch (e) {
+          // ignore parsing error
+        }
+        throw new Error(errorMsg);
       }
 
       const data = await response.json();
