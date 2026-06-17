@@ -100,6 +100,24 @@ const Auth = () => {
   const [loginMethod, setLoginMethod] = useState('email'); // 'email' | 'phone'
   const [isEmailSignupOtpSent, setIsEmailSignupOtpSent] = useState(false);
   const [emailSignupOtp, setEmailSignupOtp] = useState('');
+  const [resendTimer, setResendTimer] = useState(0);
+
+  // Timer Effect
+  useEffect(() => {
+    let interval;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  const formatTimer = (seconds) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
 
   // UI State
   const [showPassword, setShowPassword] = useState(false);
@@ -164,11 +182,8 @@ const Auth = () => {
       const data = await res.json();
       if (res.ok) {
         setIsOtpSent(true);
-        if (data.demoMode) {
-          setSuccessMsg(`[Demo Mode] OTP is: ${data.otp} (Enter this code below to proceed)`);
-        } else {
-          setSuccessMsg('OTP sent successfully!');
-        }
+        setResendTimer(600); // 10 minutes
+        setSuccessMsg('OTP sent successfully!');
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
       }
@@ -235,13 +250,10 @@ const Auth = () => {
         body: JSON.stringify({ phone }),
       });
       const data = await res.json();
-      if (res.ok) {
-        setIsOtpSent(true);
-        if (data.demoMode) {
-          setSuccessMsg(`[Demo Mode] OTP is: ${data.otp} (Enter this code below to proceed)`);
-        } else {
+        if (res.ok) {
+          setIsOtpSent(true);
+          setResendTimer(600); // 10 minutes
           setSuccessMsg('OTP sent successfully!');
-        }
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
       }
@@ -432,11 +444,8 @@ const Auth = () => {
       const data = await res.json();
       if (res.ok) {
         setIsEmailSignupOtpSent(true);
-        if (data.demoMode) {
-          setSuccessMsg(`[Demo Mode] OTP is: ${data.otp} (Enter this code below to proceed)`);
-        } else {
-          setSuccessMsg('OTP sent to your phone! Please verify to complete signup.');
-        }
+        setResendTimer(600); // 10 minutes
+        setSuccessMsg('OTP sent to your phone! Please verify to complete signup.');
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
       }
@@ -757,9 +766,15 @@ const Auth = () => {
                         onChange={(e) => setOtp(e.target.value)}
                         required
                       />
-                      <p style={{ fontSize: '12px', color: '#64748b', marginTop: '8px', cursor: 'pointer' }} onClick={handleSendOtp}>
-                        Didn't receive code? Resend
-                      </p>
+                      {resendTimer > 0 ? (
+                        <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '8px' }}>
+                          Resend OTP in {formatTimer(resendTimer)}
+                        </p>
+                      ) : (
+                        <p style={{ fontSize: '12px', color: '#64748b', marginTop: '8px', cursor: 'pointer' }} onClick={handleSendOtp}>
+                          Didn't receive code? Resend
+                        </p>
+                      )}
                     </div>
                   )}
 

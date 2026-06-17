@@ -359,22 +359,24 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(12px);
-  z-index: 1000;
+  z-index: 10000;
   display: flex;
   justify-content: flex-end;
   animation: fadeIn 0.3s ease;
 }
 
 .detail-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
   max-width: 600px;
   background: #ffffff;
-  height: 100%;
+  z-index: 10001;
   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.1);
   padding: 40px;
   overflow-y: auto;
-  position: relative;
   display: flex;
   flex-direction: column;
 }
