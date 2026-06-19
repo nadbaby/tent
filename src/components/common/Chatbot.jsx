@@ -9,6 +9,13 @@ import './Chatbot.css';
 import ReactMarkdown from 'react-markdown';
 import aiAssistantLogo from '../../assets/ai-assistant-logo.png';
 
+const typingPhrases = [
+  "Fine AI is thinking...",
+  "Checking product details...",
+  "Finding matching bearings...",
+  "Checking stock availability..."
+];
+
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
@@ -16,11 +23,35 @@ const Chatbot = () => {
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [assistantStatus, setAssistantStatus] = useState('online'); // 'online', 'reading', 'searching', 'typing'
+  const [isExiting, setIsExiting] = useState(false);
+  const [typingText, setTypingText] = useState(typingPhrases[0]);
+  const [fadeText, setFadeText] = useState(true);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { showToast } = useToast();
+
+  useEffect(() => {
+    if (!isTyping) {
+      setTypingText(typingPhrases[0]);
+      setFadeText(true);
+      return;
+    }
+    
+    let index = 0;
+    const interval = setInterval(() => {
+      setFadeText(false);
+      setTimeout(() => {
+        index = (index + 1) % typingPhrases.length;
+        setTypingText(typingPhrases[index]);
+        setFadeText(true);
+      }, 250); // wait for fade out
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [isTyping]);
 
   const handleAddToCart = (product, sku) => {
     // Mandatory Login Check
@@ -84,8 +115,27 @@ const Chatbot = () => {
       setInput('');
     }
 
-    setMessages(prev => [...prev, { role: 'user', text: msgText }]);
+    // Append user message with 'sent' status
+    const newMsgIndex = messages.length;
+    setMessages(prev => [...prev, { role: 'user', text: msgText, status: 'sent' }]);
+    
+    // Set AI status to reading
+    setAssistantStatus('reading');
     setIsTyping(true);
+
+    // Wait 600ms to show the sent tick before AI reads it
+    await new Promise(resolve => setTimeout(resolve, 600));
+    setMessages(prev => prev.map((msg, idx) => idx === newMsgIndex ? { ...msg, status: 'read' } : msg));
+    
+    // Set AI status to searching
+    setAssistantStatus('searching');
+
+    // Wait another 800ms to simulate the database catalog lookup
+    await new Promise(resolve => setTimeout(resolve, 800));
+    setAssistantStatus('typing');
+
+    let responseData = null;
+    let fetchError = null;
 
     try {
       const response = await fetch(apiUrl('/api/chat'), {
@@ -93,7 +143,7 @@ const Chatbot = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: msgText,
-          history: messages.slice(1) // exclude initial greeting
+          history: messages.slice(1).map(m => ({ role: m.role, text: m.text }))
         })
       });
 
@@ -106,17 +156,28 @@ const Chatbot = () => {
         throw new Error(`HTTP ${response.status}: ${rawText.substring(0, 50)}...`);
       }
 
-      const data = await response.json();
-      setMessages(prev => [...prev, { role: 'model', text: data.reply, products: data.products || [] }]);
+      responseData = await response.json();
     } catch (error) {
       console.error("Frontend Chat Error:", error);
-      setMessages(prev => [...prev, { role: 'model', text: `Sorry, I encountered a connection issue. Please try again. (Error: ${error.message})` }]);
-    } finally {
-      setIsTyping(false);
-      // Re-focus the input field after sending
-      if (window.innerWidth > 768) {
-        inputRef.current?.focus();
-      }
+      fetchError = error;
+    }
+
+    // Smooth exit transition for typing indicator
+    setIsExiting(true);
+    await new Promise(resolve => setTimeout(resolve, 250));
+    setIsTyping(false);
+    setIsExiting(false);
+    setAssistantStatus('online');
+
+    if (responseData) {
+      setMessages(prev => [...prev, { role: 'model', text: responseData.reply, products: responseData.products || [] }]);
+    } else {
+      setMessages(prev => [...prev, { role: 'model', text: `Sorry, I encountered a connection issue. Please try again. (Error: ${fetchError?.message || 'Unknown error'})` }]);
+    }
+
+    // Re-focus the input field after sending
+    if (window.innerWidth > 768) {
+      inputRef.current?.focus();
     }
   };
 
@@ -135,13 +196,18 @@ const Chatbot = () => {
       <div className={`chatbot-window ${isOpen ? 'open' : ''}`}>
         <div className="chatbot-header">
           <div className="chatbot-header-info">
-            <div className="chatbot-header-avatar">
+            <div className={`chatbot-header-avatar ${assistantStatus !== 'online' ? 'active' : ''}`}>
               <img src={aiAssistantLogo} alt="Fine AI Assistant" className="chatbot-avatar-img" />
-              <span className="online-indicator"></span>
+              <span className={`online-indicator ${assistantStatus !== 'online' ? 'active' : ''}`}></span>
             </div>
             <div>
               <h3>Fine AI Assistant</h3>
-              <p>Industrial Catalog Expert</p>
+              <p className={`chatbot-status-text ${assistantStatus}`}>
+                {assistantStatus === 'online' && "Industrial Catalog Expert"}
+                {assistantStatus === 'reading' && "Reading your message..."}
+                {assistantStatus === 'searching' && "Searching catalog..."}
+                {assistantStatus === 'typing' && "Typing a response..."}
+              </p>
             </div>
           </div>
           <button className="chatbot-close-btn" onClick={() => setIsOpen(false)} title="Close Chat">
@@ -151,7 +217,7 @@ const Chatbot = () => {
 
         <div className="chatbot-messages">
           {messages.map((msg, index) => (
-            <div key={index} className={`chat-bubble-wrapper ${msg.role === 'user' ? 'user' : 'model'}`}>
+            <div key={index} className={`chat-bubble-wrapper ${msg.role === 'user' ? 'user' : 'model'} animate-in`}>
               {msg.role === 'model' && (
                 <div className="chat-avatar">
                   <img src={aiAssistantLogo} alt="AI" className="chat-avatar-img" />
@@ -184,20 +250,46 @@ const Chatbot = () => {
                     {msg.text}
                   </ReactMarkdown>
                 ) : (
-                  msg.text
+                  <div className="user-message-content">
+                    <span className="user-message-text">{msg.text}</span>
+                    <span className="message-status-ticks">
+                      {msg.status === 'read' ? (
+                        <svg className="tick-icon read animate-pop" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M2 12l5.25 5 2.625-3" />
+                          <path d="M8 12l5.25 5L22 7" />
+                        </svg>
+                      ) : (
+                        <svg className="tick-icon sent" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M20 6 9 17l-5-5" />
+                        </svg>
+                      )}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
           ))}
 
-          {/* Typing Indicator */}
+          {/* Snapchat-style Premium Typing Indicator */}
           {isTyping && (
-            <div className="chat-bubble-wrapper model">
-              <div className="chat-avatar">
-                <img src={aiAssistantLogo} alt="AI" className="chat-avatar-img" />
+            <div className={`compact-typing-indicator-container ${isExiting ? 'exit' : 'animate-in'}`}>
+              <div className="typing-logo-wrapper">
+                {/* Ripple background circles */}
+                <div className="ripple-circle ripple-1"></div>
+                <div className="ripple-circle ripple-2"></div>
+                
+                {/* Rotating glowing bearing ring */}
+                <div className="rotating-bearing-ring"></div>
+                
+                {/* Circular AI Logo */}
+                <img src={aiAssistantLogo} alt="Fine AI" className="typing-ai-logo" />
               </div>
-              <div className="chat-bubble model typing-indicator">
-                <div className="typing-indicator-dots">
+              
+              <div className="typing-indicator-content">
+                <span className={`typing-status-label ${fadeText ? 'fade-in' : ''}`}>
+                  {typingText}
+                </span>
+                <div className="typing-indicator-dots-orange">
                   <span></span>
                   <span></span>
                   <span></span>

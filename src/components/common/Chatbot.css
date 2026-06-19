@@ -268,7 +268,18 @@
 
 /* Bouncing Dots Typing Indicator */
 .typing-indicator {
-  padding: 14px 20px !important;
+  padding: 12px 18px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.typing-status-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  animation: pulse-opacity 1.5s infinite ease-in-out;
 }
 
 .typing-indicator-dots {
@@ -544,3 +555,309 @@
     min-width: 38px;
   }
 }
+
+/* ==========================================
+   Chatbot Status & Micro-Animations
+   ========================================== */
+
+/* Status Description text colors and styling */
+.chatbot-status-text {
+  transition: all 0.3s ease;
+}
+
+.chatbot-status-text.reading,
+.chatbot-status-text.searching,
+.chatbot-status-text.typing {
+  color: #38bdf8 !important; /* Premium light blue */
+  font-style: italic;
+  font-weight: 600;
+}
+
+/* Pulse animation for active header status text */
+@keyframes pulse-opacity {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* Avatar heartbeat scale animation */
+.chatbot-header-avatar.active {
+  animation: avatar-heartbeat 1.5s infinite ease-in-out;
+}
+
+@keyframes avatar-heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+/* Online indicator pulse animation for active search/type state */
+.online-indicator.active {
+  background-color: #38bdf8;
+  border-color: #0f172a; /* match header background */
+  box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7);
+  animation: indicator-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes indicator-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(56, 189, 248, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0);
+  }
+}
+
+/* Chat bubble entry animations (fade in + slide up) */
+.chat-bubble-wrapper.animate-in {
+  animation: fadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* User message content with ticks */
+.user-message-content {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.user-message-text {
+  word-break: break-word;
+  flex: 1;
+}
+
+.message-status-ticks {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-end;
+  margin-bottom: -2px;
+  margin-right: -4px;
+}
+
+.tick-icon {
+  color: rgba(255, 255, 255, 0.55);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.tick-icon.read {
+  color: #38bdf8; /* bright sky blue */
+}
+
+/* Ticks pop scale animation */
+.tick-icon.animate-pop {
+  animation: tick-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes tick-pop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Snapchat-style Premium Typing Indicator Container */
+.compact-typing-indicator-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(15, 27, 51, 0.08);
+  border-radius: 20px;
+  padding: 8px 14px;
+  margin: 4px 0 8px 4px;
+  max-width: 88%;
+  align-self: flex-start;
+  box-shadow: 0 8px 24px rgba(15, 27, 51, 0.06), 0 2px 6px rgba(15, 27, 51, 0.03);
+  transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out;
+}
+
+.compact-typing-indicator-container.exit {
+  opacity: 0 !important;
+  transform: translateY(-8px) scale(0.95) !important;
+}
+
+/* Animated Logo Wrapper */
+.typing-logo-wrapper {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.typing-ai-logo {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  z-index: 3;
+}
+
+/* Glowing Rotating Bearing Ring */
+.rotating-bearing-ring {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  right: 1px;
+  bottom: 1px;
+  border-radius: 50%;
+  border: 2.5px dotted #F45A00; /* Orange balls inside race */
+  z-index: 2;
+  filter: drop-shadow(0 0 3px rgba(244, 90, 0, 0.5));
+  animation: rotate-bearing 3.5s linear infinite;
+  box-sizing: border-box;
+}
+
+@keyframes rotate-bearing {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Live Assistant Pulsing Ripple background */
+.ripple-circle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: rgba(22, 197, 255, 0.12); /* light blue accent pulse */
+  z-index: 1;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.ripple-circle.ripple-1 {
+  animation: ripple-pulse 2.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+}
+
+.ripple-circle.ripple-2 {
+  animation: ripple-pulse 2.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  animation-delay: 1.1s;
+}
+
+@keyframes ripple-pulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* Content Area inside Typing Bubble */
+.typing-indicator-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Dynamic status message label */
+.typing-status-label {
+  font-size: 12.5px;
+  color: #0F1B33; /* dark navy */
+  font-weight: 600;
+  font-family: inherit;
+  transition: opacity 0.25s ease-in-out;
+  opacity: 0;
+}
+
+.typing-status-label.fade-in {
+  opacity: 1;
+}
+
+/* Animated Orange Dots */
+.typing-indicator-dots-orange {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  margin-top: 1px;
+}
+
+.typing-indicator-dots-orange span {
+  width: 5px;
+  height: 5px;
+  background-color: #F45A00; /* Brand Orange */
+  border-radius: 50%;
+  display: inline-block;
+  animation: orange-dot-bounce 1.2s infinite ease-in-out both;
+}
+
+.typing-indicator-dots-orange span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-indicator-dots-orange span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes orange-dot-bounce {
+  0%, 80%, 100% {
+    transform: scale(0.7);
+    opacity: 0.55;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Accessibility: Respect Reduced Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  .rotating-bearing-ring {
+    animation: none !important;
+    transform: rotate(45deg);
+  }
+  .ripple-circle {
+    animation: none !important;
+    opacity: 0.15 !important;
+    transform: scale(1) !important;
+  }
+  .compact-typing-indicator-container.animate-in {
+    animation: none !important;
+  }
+  .typing-indicator-dots-orange span {
+    animation: none !important;
+    transform: scale(1) !important;
+    opacity: 0.9 !important;
+  }
+  .chat-bubble-wrapper.animate-in {
+    animation: none !important;
+  }
+  .typing-status-label {
+    transition: none !important;
+  }
+}
+
+
