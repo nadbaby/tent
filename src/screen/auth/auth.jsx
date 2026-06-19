@@ -175,7 +175,7 @@ const Auth = () => {
       const data = await res.json();
       if (res.ok) {
         setIsOtpSent(true);
-        setResendTimer(600); // 10 minutes
+        setResendTimer(0); // 0 seconds
         setSuccessMsg('OTP sent successfully!');
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
@@ -255,7 +255,7 @@ const Auth = () => {
       const data = await res.json();
       if (res.ok) {
         setIsOtpSent(true);
-        setResendTimer(600); // 10 minutes
+        setResendTimer(0); // 0 seconds
         setSuccessMsg('OTP sent successfully!');
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
@@ -466,7 +466,7 @@ const Auth = () => {
       const data = await res.json();
       if (res.ok) {
         setIsEmailSignupOtpSent(true);
-        setResendTimer(600); // 10 minutes
+        setResendTimer(0); // 0 seconds
         setSuccessMsg('OTP sent to your phone! Please verify to complete signup.');
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
