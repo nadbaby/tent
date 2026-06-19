@@ -1,8 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Bot, HelpCircle } from 'lucide-react';
+import { MessageSquare, X, Send, Bot, HelpCircle, ShoppingCart } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { addItem } from '../../redux/cartSlice';
+import { useToast } from '../../context/ToastContext';
 import { apiUrl } from '../../utils/api';
 import './Chatbot.css';
 import ReactMarkdown from 'react-markdown';
+import aiAssistantLogo from '../../assets/ai-assistant-logo.png';
 
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,6 +18,38 @@ const Chatbot = () => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+
+  const handleAddToCart = (product, sku) => {
+    // Mandatory Login Check
+    const user = localStorage.getItem('user');
+    if (!user) {
+      if (showToast) showToast("Login required to add to cart", "error");
+      setIsOpen(false);
+      navigate('/login');
+      return;
+    }
+
+    if (!product) {
+      if (showToast) showToast(`Product SKU: ${sku} is being fetched...`, "error");
+      return;
+    }
+
+    dispatch(addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price || 0,
+      image: product.image,
+      quantity: 1,
+      replace: false
+    }));
+
+    if (showToast) {
+      showToast(`${product.name} added to cart successfully!`, "success");
+    }
+  };
 
   const suggestions = [
     { label: "🔍 Search bearings by size", query: "Can you help me search for a bearing if I give you the dimensions?" },
@@ -70,7 +107,7 @@ const Chatbot = () => {
       }
 
       const data = await response.json();
-      setMessages(prev => [...prev, { role: 'model', text: data.reply }]);
+      setMessages(prev => [...prev, { role: 'model', text: data.reply, products: data.products || [] }]);
     } catch (error) {
       console.error("Frontend Chat Error:", error);
       setMessages(prev => [...prev, { role: 'model', text: `Sorry, I encountered a connection issue. Please try again. (Error: ${error.message})` }]);
@@ -91,7 +128,7 @@ const Chatbot = () => {
         onClick={() => setIsOpen(true)}
         title="Chat with our AI Assistant"
       >
-        <MessageSquare size={24} />
+        <img src={aiAssistantLogo} alt="AI Assistant" className="chatbot-toggle-img" />
       </button>
 
       {/* Chat Window */}
@@ -99,7 +136,7 @@ const Chatbot = () => {
         <div className="chatbot-header">
           <div className="chatbot-header-info">
             <div className="chatbot-header-avatar">
-              <Bot size={22} color="var(--color-accent)" />
+              <img src={aiAssistantLogo} alt="Fine AI Assistant" className="chatbot-avatar-img" />
               <span className="online-indicator"></span>
             </div>
             <div>
@@ -117,12 +154,34 @@ const Chatbot = () => {
             <div key={index} className={`chat-bubble-wrapper ${msg.role === 'user' ? 'user' : 'model'}`}>
               {msg.role === 'model' && (
                 <div className="chat-avatar">
-                  <Bot size={14} color="white" />
+                  <img src={aiAssistantLogo} alt="AI" className="chat-avatar-img" />
                 </div>
               )}
               <div className={`chat-bubble ${msg.role === 'user' ? 'user' : 'model'}`}>
                 {msg.role === 'model' ? (
-                  <ReactMarkdown>{msg.text}</ReactMarkdown>
+                  <ReactMarkdown
+                    components={{
+                      a: ({ href, children, ...props }) => {
+                        if (href && href.startsWith('add-to-cart:')) {
+                          const sku = href.replace('add-to-cart:', '');
+                          const prod = msg.products?.find(p => String(p.sku).toLowerCase() === String(sku).toLowerCase());
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => handleAddToCart(prod, sku)}
+                              className="chatbot-add-to-cart-btn"
+                            >
+                              <ShoppingCart size={14} />
+                              <span>{children || 'Add to Cart'}</span>
+                            </button>
+                          );
+                        }
+                        return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+                      }
+                    }}
+                  >
+                    {msg.text}
+                  </ReactMarkdown>
                 ) : (
                   msg.text
                 )}
@@ -134,7 +193,7 @@ const Chatbot = () => {
           {isTyping && (
             <div className="chat-bubble-wrapper model">
               <div className="chat-avatar">
-                <Bot size={14} color="white" />
+                <img src={aiAssistantLogo} alt="AI" className="chat-avatar-img" />
               </div>
               <div className="chat-bubble model typing-indicator">
                 <div className="typing-indicator-dots">

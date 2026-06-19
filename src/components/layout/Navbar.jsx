@@ -219,16 +219,6 @@ const Navbar = () => {
                 <NavLink to="/orders" className={({ isActive }) => `nav-link${isActive ? ' nav-link-active' : ''}`}>My Orders</NavLink>
               </div>
             )}
-            {currentUser && !['employee', 'manager', 'staff', 'admin'].includes(currentUser.role?.toLowerCase()) && (
-              <div className="nav-item">
-                <NavLink to="/my-quotes" className={({ isActive }) => `nav-link${isActive ? ' nav-link-active' : ''}`}>My Quotes</NavLink>
-              </div>
-            )}
-            {currentUser && ['employee', 'manager', 'staff', 'admin'].includes(currentUser.role?.toLowerCase()) && (
-              <div className="nav-item">
-                <NavLink to="/admin/quotes" className={({ isActive }) => `nav-link${isActive ? ' nav-link-active' : ''}`}>Requested Quotes</NavLink>
-              </div>
-            )}
             {currentUser && (
               <div className="nav-item">
                 <NavLink to="/my-tickets" className={({ isActive }) => `nav-link${isActive ? ' nav-link-active' : ''}`}>Support</NavLink>
@@ -506,12 +496,6 @@ const Navbar = () => {
             )}
             {currentUser && currentUser.role?.toLowerCase() === 'user' && (
               <Link to="/orders" onClick={() => setMobileMenuOpen(false)}>My Orders</Link>
-            )}
-            {currentUser && !['employee', 'manager', 'staff', 'admin'].includes(currentUser.role?.toLowerCase()) && (
-              <Link to="/my-quotes" onClick={() => setMobileMenuOpen(false)}>My Quotes</Link>
-            )}
-            {currentUser && ['employee', 'manager', 'staff', 'admin'].includes(currentUser.role?.toLowerCase()) && (
-              <Link to="/admin/quotes" onClick={() => setMobileMenuOpen(false)}>Requested Quotes</Link>
             )}
             {currentUser && (
               <Link to="/my-tickets" onClick={() => setMobileMenuOpen(false)}>Support Tickets</Link>

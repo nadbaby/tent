@@ -205,10 +205,6 @@ const OrderOperationsDashboard = () => {
               <Package size={18} />
               <span>Past Orders</span>
             </NavLink>
-            <NavLink to="/admin/quotes" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-              <Package size={18} />
-              <span>B2B RFQs</span>
-            </NavLink>
             <NavLink to="/admin/users" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
               <Users size={18} />
               <span>Customer Discounts</span>

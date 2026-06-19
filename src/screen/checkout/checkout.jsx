@@ -7,6 +7,7 @@ import { clearCart } from '../../redux/cartSlice';
 import { resolveImageUrl } from '../../components/home/ProductCard';
 import { MapPin, ShoppingBag, CreditCard, CheckCircle, ChevronRight, User, Phone, Mail, Building, ArrowLeft, Search, Loader2, Info, Truck } from 'lucide-react';
 import { indiaData } from '../../utils/indiaData';
+import { getEligibleGstCoupon } from '../../utils/couponHelper';
 import PaymentLoader from '../../components/common/PaymentLoader/PaymentLoader';
 import './checkout.css';
 
@@ -199,8 +200,9 @@ const Checkout = () => {
     }
   };
   
-  const handleApplyCoupon = async () => {
-    if (!couponCode) return;
+  const handleApplyCoupon = async (autoApplyCode = null) => {
+    const codeToValidate = (typeof autoApplyCode === 'string' ? autoApplyCode : couponCode);
+    if (!codeToValidate) return;
     if (!addressData.gstNumber) {
       setCouponError('Please enter your GST number in the shipping form first.');
       return;
@@ -216,7 +218,7 @@ const Checkout = () => {
           ...(token && { 'Authorization': `Bearer ${token}` })
         },
         body: JSON.stringify({ 
-          code: couponCode, 
+          code: codeToValidate, 
           subtotal,
           gstNumber: addressData.gstNumber 
         })
@@ -225,10 +227,15 @@ const Checkout = () => {
       const data = await response.json();
       if (response.ok) {
         setAppliedCoupon(data);
+        if (typeof autoApplyCode === 'string') setCouponCode(autoApplyCode);
         setCouponError('');
       } else {
+        // If auto-applying fails (e.g. min cart value), clear the auto-applied code so they see why
         setCouponError(data.message || 'Invalid coupon');
-        setAppliedCoupon(null);
+        if (appliedCoupon && appliedCoupon.code === codeToValidate) {
+          setAppliedCoupon(null);
+        }
+        if (typeof autoApplyCode === 'string') setCouponCode('');
       }
     } catch (err) {
       setCouponError('Connection error');
@@ -236,6 +243,31 @@ const Checkout = () => {
       setIsValidatingCoupon(false);
     }
   };
+
+  useEffect(() => {
+    const checkEligibleCoupon = async () => {
+      const gst = addressData.gstNumber;
+      if (gst && gst.length >= 10) { // simple check before API call
+        const res = await getEligibleGstCoupon(gst);
+        if (res && res.eligible && res.code) {
+          if (!appliedCoupon || appliedCoupon.code !== res.code) {
+             handleApplyCoupon(res.code);
+          }
+        } else if (appliedCoupon && (appliedCoupon.code === 'MEFIRST' || appliedCoupon.code === 'MESECOND')) {
+           removeCoupon();
+        }
+      } else if (appliedCoupon && (appliedCoupon.code === 'MEFIRST' || appliedCoupon.code === 'MESECOND')) {
+         removeCoupon();
+      }
+    };
+    
+    // Add debounce to avoid calling on every keystroke
+    const timer = setTimeout(() => {
+      checkEligibleCoupon();
+    }, 800);
+    
+    return () => clearTimeout(timer);
+  }, [addressData.gstNumber, subtotal]); // Also re-run if subtotal changes so it reapplies if needed (e.g. min order changes)
 
   const removeCoupon = () => {
     setAppliedCoupon(null);
