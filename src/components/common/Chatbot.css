@@ -419,6 +419,36 @@
   cursor: not-allowed;
 }
 
+/* Add to Cart Button inside Chat Bubbles */
+.chatbot-add-to-cart-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, var(--color-accent) 0%, #ea580c 100%);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  margin-bottom: 4px;
+  box-shadow: 0 2px 6px rgba(234, 88, 12, 0.2);
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.chatbot-add-to-cart-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(234, 88, 12, 0.35);
+  filter: brightness(1.05);
+}
+
+.chatbot-add-to-cart-btn:active {
+  transform: translateY(0);
+}
+
 /* Custom Scrollbar */
 .chatbot-messages::-webkit-scrollbar {
   width: 5px;
