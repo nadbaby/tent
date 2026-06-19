@@ -3,6 +3,7 @@ import { MessageSquare, X, Send, Bot, HelpCircle } from 'lucide-react';
 import { apiUrl } from '../../utils/api';
 import './Chatbot.css';
 import ReactMarkdown from 'react-markdown';
+import aiAssistantLogo from '../../assets/ai-assistant-logo.png';
 
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -91,7 +92,7 @@ const Chatbot = () => {
         onClick={() => setIsOpen(true)}
         title="Chat with our AI Assistant"
       >
-        <MessageSquare size={24} />
+        <img src={aiAssistantLogo} alt="AI Assistant" className="chatbot-toggle-img" />
       </button>
 
       {/* Chat Window */}
@@ -99,7 +100,7 @@ const Chatbot = () => {
         <div className="chatbot-header">
           <div className="chatbot-header-info">
             <div className="chatbot-header-avatar">
-              <Bot size={22} color="var(--color-accent)" />
+              <img src={aiAssistantLogo} alt="Fine AI Assistant" className="chatbot-avatar-img" />
               <span className="online-indicator"></span>
             </div>
             <div>
@@ -117,7 +118,7 @@ const Chatbot = () => {
             <div key={index} className={`chat-bubble-wrapper ${msg.role === 'user' ? 'user' : 'model'}`}>
               {msg.role === 'model' && (
                 <div className="chat-avatar">
-                  <Bot size={14} color="white" />
+                  <img src={aiAssistantLogo} alt="AI" className="chat-avatar-img" />
                 </div>
               )}
               <div className={`chat-bubble ${msg.role === 'user' ? 'user' : 'model'}`}>
@@ -134,7 +135,7 @@ const Chatbot = () => {
           {isTyping && (
             <div className="chat-bubble-wrapper model">
               <div className="chat-avatar">
-                <Bot size={14} color="white" />
+                <img src={aiAssistantLogo} alt="AI" className="chat-avatar-img" />
               </div>
               <div className="chat-bubble model typing-indicator">
                 <div className="typing-indicator-dots">
