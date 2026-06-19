@@ -23,9 +23,60 @@ const Auth = () => {
   const queryParams = new URLSearchParams(window.location.search);
   const redirectPath = queryParams.get('redirect') || '/';
 
-  // Navigation State
+  // ─── State Hooks ─────────────────────────────────────────────────────────
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [company, setCompany] = useState('');
+  const [gstNumber, setGstNumber] = useState('');
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [loginMethod, setLoginMethod] = useState('email'); // 'email' | 'phone'
+  const [isEmailSignupOtpSent, setIsEmailSignupOtpSent] = useState(false);
+  const [emailSignupOtp, setEmailSignupOtp] = useState('');
+  const [resendTimer, setResendTimer] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [isEmailLinkSent, setIsEmailLinkSent] = useState(false);
+  const [isEmailVerificationRequired, setIsEmailVerificationRequired] = useState(false);
+  const [honeypot, setHoneypot] = useState('');
+  const [captchaQuestion, setCaptchaQuestion] = useState({ num1: 0, num2: 0 });
+  const [captchaAnswer, setCaptchaAnswer] = useState('');
+  const [captchaError, setCaptchaError] = useState(false);
 
+  // ─── Sync User with MongoDB ──────────────────────────────────────────────
+  async function syncUserWithBackend(idToken, extraData = {}) {
+    try {
+      const res = await fetch(apiUrl('/api/auth/sync'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify(extraData)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('token', idToken);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        const role = data.user.role?.toLowerCase() || 'user';
+        localStorage.setItem('role', role);
+        localStorage.setItem('isAdminAuthenticated', role === 'admin' ? 'true' : 'false');
+        return data.user;
+      }
+      return { error: data.message || "Failed to sync profile with database." };
+    } catch (err) {
+      console.error("Sync error:", err);
+      return { error: err.message };
+    }
+  }
+
+  // ─── Navigation/Auth Status Effect ──────────────────────────────────────
   useEffect(() => {
     const authStatus = localStorage.getItem('isAdminAuthenticated');
     if (authStatus === 'true') {
@@ -33,7 +84,7 @@ const Auth = () => {
     }
   }, [navigate]);
 
-  // Handle Firebase Email Link Callback
+  // ─── Firebase Email Link Callback Effect ──────────────────────────────────
   useEffect(() => {
     if (isSignInWithEmailLink(auth, window.location.href)) {
       let emailForLink = window.localStorage.getItem('emailForSignIn');
@@ -58,51 +109,7 @@ const Auth = () => {
     }
   }, [navigate, redirectPath]);
 
-  // Helper: Sync User with MongoDB
-  const syncUserWithBackend = async (idToken, extraData = {}) => {
-    try {
-      const res = await fetch(apiUrl('/api/auth/sync'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify(extraData)
-      });
-      const data = await res.json();
-      if (res.ok) {
-        localStorage.setItem('token', idToken);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        const role = data.user.role?.toLowerCase() || 'user';
-        localStorage.setItem('role', role);
-        localStorage.setItem('isAdminAuthenticated', role === 'admin' ? 'true' : 'false');
-        return data.user;
-      }
-      return { error: data.message || "Failed to sync profile with database." };
-    } catch (err) {
-      console.error("Sync error:", err);
-      return { error: err.message };
-    }
-    return null;
-  };
-
-
-
-  // Form State
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [company, setCompany] = useState('');
-  const [gstNumber, setGstNumber] = useState('');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [isOtpSent, setIsOtpSent] = useState(false);
-  const [loginMethod, setLoginMethod] = useState('email'); // 'email' | 'phone'
-  const [isEmailSignupOtpSent, setIsEmailSignupOtpSent] = useState(false);
-  const [emailSignupOtp, setEmailSignupOtp] = useState('');
-  const [resendTimer, setResendTimer] = useState(0);
-
-  // Timer Effect
+  // ─── Timer Effect ────────────────────────────────────────────────────────
   useEffect(() => {
     let interval;
     if (resendTimer > 0) {
@@ -118,21 +125,6 @@ const Auth = () => {
     const s = (seconds % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   };
-
-  // UI State
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
-  const [isEmailLinkSent, setIsEmailLinkSent] = useState(false);
-  const [isEmailVerificationRequired, setIsEmailVerificationRequired] = useState(false);
-
-  // Spam Protection State
-  const [honeypot, setHoneypot] = useState('');
-  const [captchaQuestion, setCaptchaQuestion] = useState({ num1: 0, num2: 0 });
-  const [captchaAnswer, setCaptchaAnswer] = useState('');
-  const [captchaError, setCaptchaError] = useState(false);
 
   const generateCaptcha = () => {
     const num1 = Math.floor(Math.random() * 10) + 1;

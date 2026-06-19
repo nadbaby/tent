@@ -28,11 +28,6 @@ const TodaysOrdersDashboard = () => {
   const token = localStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user'));
 
-  useEffect(() => {
-    fetchOrders();
-    fetchProducts();
-  }, []);
-
   const fetchProducts = async () => {
     try {
       const response = await fetch(apiUrl('/api/products'));
@@ -66,6 +61,13 @@ const TodaysOrdersDashboard = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      fetchOrders();
+      fetchProducts();
+    });
+  }, []);
 
   const handleUpdateStatus = async (orderId) => {
     try {

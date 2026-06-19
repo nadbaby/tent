@@ -4,6 +4,8 @@ import { Users, UserPlus, Trash2, Edit2, Mail, Shield, User, Phone, Package, Ref
 import { NavLink } from 'react-router-dom';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { db } from '../../firebase';
+import { deleteDoc, doc } from 'firebase/firestore';
 
 import { Skeleton, SkeletonStatsGrid } from '../../components/common/Skeleton/Skeleton';
 import './employee-management.css';
@@ -50,7 +52,7 @@ const StaffOperationsDashboard = () => {
     fetchEmployees();
   }, [isAdmin]);
 
-  const fetchEmployees = async () => {
+  async function fetchEmployees() {
     setLoading(true);
     setError(null);
     try {
@@ -70,7 +72,7 @@ const StaffOperationsDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
