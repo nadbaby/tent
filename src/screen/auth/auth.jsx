@@ -72,7 +72,7 @@ const Auth = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        localStorage.setItem('token', idToken);
+        localStorage.setItem('token', data.token || idToken);
         localStorage.setItem('user', JSON.stringify(data.user));
         const role = data.user.role?.toLowerCase() || 'user';
         localStorage.setItem('role', role);
@@ -213,7 +213,7 @@ const Auth = () => {
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('role', 'user');
         localStorage.setItem('isAdminAuthenticated', 'false');
-        
+
         let msg = 'Login successful! Redirecting...';
         if (data.user.gstNumber) {
           const couponRes = await getEligibleGstCoupon(data.user.gstNumber);
@@ -222,7 +222,7 @@ const Auth = () => {
             localStorage.setItem('pendingGstCoupon', couponRes.code);
           }
         }
-        
+
         setSuccessMsg(msg);
         setTimeout(() => window.location.href = redirectPath, 2000);
       } else {
@@ -261,10 +261,10 @@ const Auth = () => {
         body: JSON.stringify({ phone }),
       });
       const data = await res.json();
-        if (res.ok) {
-          setIsOtpSent(true);
-          setResendTimer(600); // 10 minutes
-          setSuccessMsg('OTP sent successfully!');
+      if (res.ok) {
+        setIsOtpSent(true);
+        setResendTimer(600); // 10 minutes
+        setSuccessMsg('OTP sent successfully!');
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
       }
