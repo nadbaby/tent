@@ -162,8 +162,9 @@ const Chatbot = () => {
                   <ReactMarkdown
                     components={{
                       a: ({ href, children, ...props }) => {
-                        if (href && href.startsWith('add-to-cart:')) {
-                          const sku = href.replace('add-to-cart:', '');
+                        const isAddToCart = href && (href.startsWith('add-to-cart:') || href.startsWith('https://add-to-cart/') || href.startsWith('http://add-to-cart/'));
+                        if (isAddToCart) {
+                          const sku = href.replace('https://add-to-cart/', '').replace('http://add-to-cart/', '').replace('add-to-cart:', '');
                           const prod = msg.products?.find(p => String(p.sku).toLowerCase() === String(sku).toLowerCase());
                           return (
                             <button
