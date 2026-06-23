@@ -318,7 +318,6 @@ const Navbar = () => {
                                 <span className="suggestion-name">{highlightMatch(product.name, searchQuery)}</span>
                                 <div className="suggestion-meta-row">
                                   <span className="suggestion-brand-tag">{product.brand}</span>
-                                  {product.sku && <span className="suggestion-sku-tag">{product.sku}</span>}
                                 </div>
                               </div>
                               <div className="suggestion-price-col">
@@ -458,7 +457,6 @@ const Navbar = () => {
                           <span className="ios-result-name">{highlightMatch(product.name, searchQuery)}</span>
                           <div className="ios-result-meta">
                             <span className="ios-brand-badge">{product.brand}</span>
-                            {product.sku && <span className="ios-sku-text">SKU: {product.sku}</span>}
                           </div>
                         </div>
                         <span className="ios-result-price">

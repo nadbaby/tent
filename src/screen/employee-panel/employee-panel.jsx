@@ -487,7 +487,6 @@ const OrderOperationsDashboard = () => {
                             <td>
                               <div className="item-cell">
                                 <strong>{item.name}</strong>
-                                <small>SKU: FB-{item.id || 'N/A'}</small>
                               </div>
                             </td>
                             <td>{item.quantity}</td>

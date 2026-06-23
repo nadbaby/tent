@@ -165,7 +165,6 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
       <div className="product-info">
         <div className="product-meta">
           <p className="product-category">{highlightText(product.category, searchTerm)}</p>
-          {product.sku && <span className="product-sku">SKU: {highlightText(product.sku, searchTerm)}</span>}
         </div>
 
         {/* Mobile Badges - Visible only on mobile inside info section, ensuring 0% image overlap */}
