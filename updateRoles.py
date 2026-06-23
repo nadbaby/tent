@@ -7,7 +7,7 @@ def update_file(filepath, replacements):
     with open(filepath, 'r', encoding='utf-8') as f:
         content = f.read()
     
-    content = content.replace('\r\n', '\n')
+    content = content.replace('\r\n', '\n') 
     
     for old, new in replacements:
         if old in content:
@@ -19,7 +19,7 @@ def update_file(filepath, replacements):
         f.write(content)
     print(f"Updated {filepath}")
 
-
+      
 tabs_old_employee = """        {user?.role?.toLowerCase() === 'admin' && (
           <div className="admin-tabs">
             <NavLink to="/admin/todays-orders" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
@@ -153,7 +153,7 @@ tabs_old_user = """        <div className="admin-tabs">
           <NavLink to="/admin/users" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
             <Users size={18} />
             <span>Customer Discounts</span>
-          </NavLink>
+          </NavLink>                   
           <NavLink to="/admin/employees" className="admin-tab">
             <Shield size={18} />
             <span>Team Management</span>

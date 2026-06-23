@@ -18,14 +18,6 @@ const CustomerOperationsDashboard = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const isManagerOrAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'manager';
 
-  useEffect(() => {
-    if (!isManagerOrAdmin) {
-      window.location.href = '/login';
-      return;
-    }
-    fetchUsers();
-  }, [isManagerOrAdmin]);
-
   const fetchUsers = async () => {
     setLoading(true);
     setError(null);
@@ -47,6 +39,16 @@ const CustomerOperationsDashboard = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!isManagerOrAdmin) {
+      window.location.href = '/login';
+      return;
+    }
+    Promise.resolve().then(() => {
+      fetchUsers();
+    });
+  }, [isManagerOrAdmin]);
 
   const handleUpdateDiscount = async (userId, discount) => {
     setUpdatingId(userId);
@@ -174,10 +176,6 @@ const CustomerOperationsDashboard = () => {
             <NavLink to="/employee-panel" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
               <Package size={18} />
               <span>Past Orders</span>
-            </NavLink>
-            <NavLink to="/admin/quotes" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-              <Package size={18} />
-              <span>B2B RFQs</span>
             </NavLink>
             <NavLink to="/admin/users" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
               <Users size={18} />

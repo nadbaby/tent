@@ -28,11 +28,6 @@ const TodaysOrdersDashboard = () => {
   const token = localStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user'));
 
-  useEffect(() => {
-    fetchOrders();
-    fetchProducts();
-  }, []);
-
   const fetchProducts = async () => {
     try {
       const response = await fetch(apiUrl('/api/products'));
@@ -66,6 +61,13 @@ const TodaysOrdersDashboard = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      fetchOrders();
+      fetchProducts();
+    });
+  }, []);
 
   const handleUpdateStatus = async (orderId) => {
     try {
@@ -230,10 +232,6 @@ const TodaysOrdersDashboard = () => {
             <NavLink to="/employee-panel" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
               <Package size={18} />
               <span>Past Orders</span>
-            </NavLink>
-            <NavLink to="/admin/quotes" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-              <Package size={18} />
-              <span>B2B RFQs</span>
             </NavLink>
             <NavLink to="/admin/users" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
               <Users size={18} />

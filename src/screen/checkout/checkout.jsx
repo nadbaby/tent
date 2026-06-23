@@ -66,11 +66,29 @@ const Checkout = () => {
     urgency: 'Normal'
   });
 
-  useEffect(() => {
-    if (addressData.city?.trim().toLowerCase() !== 'ludhiana') {
+  const handleSelectSavedAddress = (addr) => {
+    setAddressData({
+      fullName: addr.fullName || userData?.name || '',
+      phone: addr.phone || userData?.phone || '',
+      email: addr.email || userData?.email || '',
+      company: addr.company || '',
+      street: addr.street || '',
+      city: addr.city || '',
+      state: addr.state || '',
+      zip: addr.zip || '',
+      country: addr.country || 'India',
+      lat: addr.lat || '',
+      lng: addr.lng || '',
+      landmark: addr.landmark || '',
+      nearbyPlaces: addr.nearbyPlaces || '',
+      gstNumber: addr.gstNumber || userData?.gstNumber || '',
+      deliveryInstructions: addr.deliveryInstructions || ''
+    });
+    setSelectedAddressId(addr.id);
+    if (addr.city?.trim().toLowerCase() !== 'ludhiana') {
       setDeliveryMethod('STANDARD');
     }
-  }, [addressData.city]);
+  };
 
   // --- Fetch Saved Addresses ---
   useEffect(() => {
@@ -97,27 +115,6 @@ const Checkout = () => {
     };
     fetchSavedAddresses();
   }, []);
-
-  const handleSelectSavedAddress = (addr) => {
-    setAddressData({
-      fullName: addr.fullName || userData?.name || '',
-      phone: addr.phone || userData?.phone || '',
-      email: addr.email || userData?.email || '',
-      company: addr.company || '',
-      street: addr.street || '',
-      city: addr.city || '',
-      state: addr.state || '',
-      zip: addr.zip || '',
-      country: addr.country || 'India',
-      lat: addr.lat || '',
-      lng: addr.lng || '',
-      landmark: addr.landmark || '',
-      nearbyPlaces: addr.nearbyPlaces || '',
-      gstNumber: addr.gstNumber || userData?.gstNumber || '',
-      deliveryInstructions: addr.deliveryInstructions || ''
-    });
-    setSelectedAddressId(addr.id);
-  };
 
   const [shippingData, setShippingData] = useState({ 
     charge: 0, 
@@ -278,22 +275,7 @@ const Checkout = () => {
   };
 
   useEffect(() => {
-    if (deliveryMethod === 'PORTER') {
-      setShippingData(prev => ({
-        ...prev,
-        charge: 0,
-        days: 'Porter Delivery',
-        zone: 'Ludhiana Local',
-        billableWeight: 0,
-        weights: null,
-        breakdown: null,
-        isFreeShippingApplied: false,
-        apiIntegration: null,
-        loading: false
-      }));
-      return;
-    }
-    if (addressData.city) {
+    if (deliveryMethod !== 'PORTER' && addressData.city) {
       fetchShippingCharge(addressData.zip, addressData.state, addressData.city, selectedCourierId, paymentMethod);
     }
   }, [addressData.zip, addressData.state, addressData.city, selectedCourierId, paymentMethod, deliveryMethod]);
@@ -304,6 +286,9 @@ const Checkout = () => {
       setAddressData(prev => ({ ...prev, state: value, city: '' }));
     } else {
       setAddressData(prev => ({ ...prev, [name]: value }));
+      if (name === 'city' && value?.trim().toLowerCase() !== 'ludhiana') {
+        setDeliveryMethod('STANDARD');
+      }
     }
   };
 
@@ -581,6 +566,18 @@ const Checkout = () => {
                             className={`courier-option-card ${deliveryMethod === 'PORTER' ? 'selected' : ''}`}
                             onClick={() => {
                               setDeliveryMethod('PORTER');
+                              setShippingData({
+                                charge: 0,
+                                days: 'Porter Delivery',
+                                zone: 'Ludhiana Local',
+                                billableWeight: 0,
+                                weights: null,
+                                breakdown: null,
+                                isFreeShippingApplied: false,
+                                freeShippingReason: '',
+                                apiIntegration: null,
+                                loading: false
+                              });
                               setPorterDetails(prev => ({
                                 ...prev,
                                 contactName: prev.contactName || addressData.fullName,

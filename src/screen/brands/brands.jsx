@@ -109,7 +109,6 @@ const Brands = () => {
                   />
                 </div>
               </div>
-
               <div className="sidebar-group">
                 <h3 className="sidebar-title">Brand Type</h3>
                 <div className="brand-type-filters">

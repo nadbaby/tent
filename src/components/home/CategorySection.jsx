@@ -18,6 +18,9 @@ const CategorySection = () => {
     <section className="category-section">
       <div className="container">
         <div className="section-header">
+
+
+
           <div>
             <h2 className="section-title">Shop by Category</h2>
             <p className="section-subtitle">Find exactly what you need quickly and efficiently.</p>
@@ -39,9 +42,11 @@ const CategorySection = () => {
             </Link>
           ))}
         </div>
-      </div>
+      </div>a
     </section>
   );
 };
+
+
 
 export default CategorySection;

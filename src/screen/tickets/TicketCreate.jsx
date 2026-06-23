@@ -21,6 +21,31 @@ const TicketCreate = () => {
   });
   const [file, setFile] = useState(null);
 
+  React.useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    let user = {};
+    if (userStr) {
+      try {
+        user = JSON.parse(userStr);
+      } catch (e) {
+        console.error("Failed to parse user storage:", e);
+      }
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const urlOrderId = params.get('orderId') || '';
+    const urlProductSku = params.get('productSku') || '';
+
+    setFormData(prev => ({
+      ...prev,
+      fullName: user.name || user.displayName || user.username || '',
+      email: user.email || '',
+      mobile: user.phone || '',
+      orderId: urlOrderId,
+      productSku: urlProductSku
+    }));
+  }, []);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };

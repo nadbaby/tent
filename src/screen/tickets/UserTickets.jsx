@@ -12,10 +12,6 @@ const UserTickets = () => {
   const { showToast } = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchTickets();
-  }, []);
-
   const fetchTickets = async () => {
     const userStr = localStorage.getItem('user');
     if (!userStr) {
@@ -44,6 +40,12 @@ const UserTickets = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      fetchTickets();
+    });
+  }, []);
 
   const getStatusBadgeClass = (status) => {
     switch (status) {

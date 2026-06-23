@@ -12,13 +12,11 @@ import OrderFailurePage from './screen/order-failure/order-failure';
 import OrdersPage from './screen/orders/orders';
 import ContactPage from './screen/contact/contact';
 import OrderOperationsDashboard from './screen/employee-panel/employee-panel';
-import QuoteOperationsDashboard from './screen/employee-quotes/employee-quotes';
 import StaffOperationsDashboard from './screen/employee-management/employee-management';
 import CustomerOperationsDashboard from './screen/user-management/user-management';
 import TodaysOrdersDashboard from './screen/todays-orders/todays-orders';
 import AboutPage from './screen/about/about';
 import RequestQuotePage from './screen/request-quote/request-quote';
-import MyQuotes from './screen/my-quotes/my-quotes';
 import LegalPage from './screen/legal/legal';
 import ProductDetailPage from './screen/product-detail/product-detail';
 import WhatsAppFloat from './components/common/WhatsAppFloat';
@@ -127,12 +125,10 @@ const AppLayout = () => {
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/admin/todays-orders" element={<TodaysOrdersDashboard />} />
           <Route path="/employee-panel" element={<OrderOperationsDashboard />} />
-          <Route path="/admin/quotes" element={<QuoteOperationsDashboard />} />
           <Route path="/admin/employees" element={<StaffOperationsDashboard />} />
           <Route path="/admin/users" element={<CustomerOperationsDashboard />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/quote" element={<RequestQuotePage />} />
-          <Route path="/my-quotes" element={<MyQuotes />} />
           <Route path="/privacy" element={<LegalPage />} />
           <Route path="/terms" element={<LegalPage />} />
           <Route path="/product/:id" element={<ProductDetailPage />} />
@@ -168,3 +164,4 @@ function App() {
 }
 
 export default App;
+

@@ -123,8 +123,8 @@ const RequestQuote = () => {
             <h1>Quote Request Received!</h1>
             <p>Our sales team will review your B2B requirements and get back to you within 24 hours.</p>
             <div className="success-actions">
-              <button onClick={() => navigate('/my-quotes')} className="btn btn-primary">
-                View My Quotes Dashboard
+              <button onClick={() => navigate('/')} className="btn btn-primary">
+                Back to Home
               </button>
               <button onClick={() => setSubmitted(false)} className="btn btn-secondary" style={{ marginLeft: '12px' }}>
                 Request Another Quote
