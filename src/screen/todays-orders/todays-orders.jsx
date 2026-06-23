@@ -12,7 +12,7 @@ const TodaysOrdersDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Sorting states
   const [sortBy, setSortBy] = useState('time'); // 'time', 'total', 'status'
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
@@ -77,7 +77,7 @@ const TodaysOrdersDashboard = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status: newStatus,
           trackingId: newTrackingId,
           trackingLink: newTrackingLink
@@ -110,7 +110,7 @@ const TodaysOrdersDashboard = () => {
   };
 
   const filteredOrders = orders.filter(o => {
-    const matchesSearch = 
+    const matchesSearch =
       (o.orderId || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (o.shippingAddress?.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (o.shippingAddress?.fullName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -141,9 +141,9 @@ const TodaysOrdersDashboard = () => {
       return;
     }
     showToast("Exporting today's orders...", "success");
-    
+
     const headers = ["Order ID", "Time", "Customer", "Email", "Phone", "GST", "City", "Total", "Payment Status", "Order Status"];
-    
+
     // Helper to escape quotes in strings and wrap in double quotes
     const escapeCsv = (val) => {
       if (val === null || val === undefined) return '""';
@@ -276,12 +276,12 @@ const TodaysOrdersDashboard = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            
+
             <div className="action-buttons">
               <div className="sort-controls-premium">
                 <span style={{ fontSize: '14px', color: '#64748b', fontWeight: '600' }}>Sort By:</span>
-                <select 
-                  value={sortBy} 
+                <select
+                  value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   className="sort-select-premium"
                 >
@@ -289,9 +289,9 @@ const TodaysOrdersDashboard = () => {
                   <option value="total">Order Total</option>
                   <option value="status">Status</option>
                 </select>
-                <button 
-                  onClick={toggleSortOrder} 
-                  className="btn-icon" 
+                <button
+                  onClick={toggleSortOrder}
+                  className="btn-icon"
                   style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', color: '#3b82f6', transition: 'transform 0.2s' }}
                   title={sortOrder === 'asc' ? "Ascending" : "Descending"}
                 >
@@ -552,7 +552,7 @@ const TodaysOrdersDashboard = () => {
               {activeModalTab === 'porter' && (
                 <div className="tab-pane animate-in">
                   <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px' }} className="porter-admin-grid">
-                    
+
                     {/* Left Column: Details & Products */}
                     <div>
                       <div className="porter-admin-details-card" style={{
@@ -682,12 +682,12 @@ const TodaysOrdersDashboard = () => {
                         padding: '20px'
                       }}>
                         <h3 style={{ color: '#c2410c', fontSize: '1.2rem', marginBottom: '15px', fontWeight: '800' }}>Porter Booking Controls</h3>
-                        
+
                         {/* Checkbox: Manual Booking */}
                         <div style={{ marginBottom: '20px' }}>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: '600', color: '#9a3412', fontSize: '0.95rem' }}>
-                            <input 
-                              type="checkbox" 
+                            <input
+                              type="checkbox"
                               checked={selectedOrder.porterDeliveryDetails?.bookManually || false}
                               onChange={async (e) => {
                                 const checked = e.target.checked;
@@ -734,7 +734,7 @@ const TodaysOrdersDashboard = () => {
                             value={selectedOrder.porterDeliveryDetails?.porterStatus || 'Porter Booking Pending'}
                             onChange={async (e) => {
                               const newPorterStatus = e.target.value;
-                              
+
                               let generalStatus = selectedOrder.status;
                               if (newPorterStatus === 'Delivered') {
                                 generalStatus = 'Delivered';
@@ -753,9 +753,9 @@ const TodaysOrdersDashboard = () => {
                                     'Content-Type': 'application/json',
                                     'Authorization': `Bearer ${token}`
                                   },
-                                  body: JSON.stringify({ 
+                                  body: JSON.stringify({
                                     porterStatus: newPorterStatus,
-                                    status: generalStatus 
+                                    status: generalStatus
                                   })
                                 });
                                 if (response.ok) {

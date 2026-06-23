@@ -276,26 +276,26 @@ const StaffOperationsDashboard = () => {
           </div>
         </div>
 
-          <div className="admin-tabs">
-            <NavLink to="/admin/todays-orders" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-              <Calendar size={18} />
-              <span>Today's Orders</span>
+        <div className="admin-tabs">
+          <NavLink to="/admin/todays-orders" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+            <Calendar size={18} />
+            <span>Today's Orders</span>
+          </NavLink>
+          <NavLink to="/employee-panel" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+            <Package size={18} />
+            <span>Past Orders</span>
+          </NavLink>
+          <NavLink to="/admin/users" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+            <Users size={18} />
+            <span>Customer Discounts</span>
+          </NavLink>
+          {currentUser?.role?.toLowerCase() === 'admin' && (
+            <NavLink to="/admin/employees" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+              <Shield size={18} />
+              <span>Team Management</span>
             </NavLink>
-            <NavLink to="/employee-panel" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-              <Package size={18} />
-              <span>Past Orders</span>
-            </NavLink>
-            <NavLink to="/admin/users" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-              <Users size={18} />
-              <span>Customer Discounts</span>
-            </NavLink>
-            {currentUser?.role?.toLowerCase() === 'admin' && (
-              <NavLink to="/admin/employees" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-                <Shield size={18} />
-                <span>Team Management</span>
-              </NavLink>
-            )}
-          </div>
+          )}
+        </div>
 
         {isSuperAdmin && showAddForm && (
           <div className="mgmt-form-card animate-in">
