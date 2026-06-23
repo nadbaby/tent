@@ -565,11 +565,11 @@ const Products = () => {
     .filter(p => {
       const selectedLower = selectedCategory.toLowerCase().trim();
       const pCatLower = (p.category || '').toLowerCase().trim();
-      
-      const matchesCategory = selectedCategory === 'All' || 
-                              pCatLower === selectedLower || 
-                              (pCatLower && selectedLower.includes(pCatLower)) || 
-                              (pCatLower && pCatLower.includes(selectedLower.replace(/s$/, '')));
+
+      const matchesCategory = selectedCategory === 'All' ||
+        pCatLower === selectedLower ||
+        (pCatLower && selectedLower.includes(pCatLower)) ||
+        (pCatLower && pCatLower.includes(selectedLower.replace(/s$/, '')));
       const matchesSubcategory = selectedSubcategory === 'All' || p.subcategory === selectedSubcategory;
       const matchesBrand = selectedBrand === 'All' || p.brand === selectedBrand;
       return p.searchScore > 0 && matchesCategory && matchesSubcategory && matchesBrand;
