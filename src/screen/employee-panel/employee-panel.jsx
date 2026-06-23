@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
-import { Search, Edit2, Save, X, CreditCard, Users, Shield, Package, RefreshCw, Filter, Download, Calendar, MapPin, Eye, FileText, ChevronRight, AlertCircle, Clock, Truck, CheckCircle, Info } from 'lucide-react';
+import { Search, Edit2, Save, X, CreditCard, Users, Shield, Package, RefreshCw, Filter, Download, Calendar, MapPin, Eye, FileText, ChevronRight, AlertCircle, Clock, Truck, CheckCircle, Info, Megaphone, DollarSign } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Skeleton, SkeletonTable, SkeletonStatsGrid } from '../../components/common/Skeleton/Skeleton';
 import './employee-panel.css';
@@ -170,9 +170,11 @@ const OrderOperationsDashboard = () => {
             <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
             <div className="admin-tab active"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
             <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
+            <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
             {user?.role?.toLowerCase() === 'admin' && (
               <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
             )}
+            <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
           </div>
         )}
         <div className="orders-dashboard-table" style={{ border: 'none' }}>
@@ -205,6 +207,10 @@ const OrderOperationsDashboard = () => {
               <Package size={18} />
               <span>Past Orders</span>
             </NavLink>
+            <NavLink to="/admin/quotes" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+              <DollarSign size={18} />
+              <span>B2B RFQs</span>
+            </NavLink>
             <NavLink to="/admin/users" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
               <Users size={18} />
               <span>Customer Discounts</span>
@@ -215,6 +221,10 @@ const OrderOperationsDashboard = () => {
                 <span>Team Management</span>
               </NavLink>
             )}
+            <NavLink to="/admin/promotions" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+              <Megaphone size={18} />
+              <span>Promotions</span>
+            </NavLink>
           </div>
         )}
 

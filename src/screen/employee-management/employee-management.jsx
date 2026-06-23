@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
-import { Users, UserPlus, Trash2, Edit2, Mail, Shield, User, Phone, Package, RefreshCw, Filter, CheckCircle, Calendar } from 'lucide-react';
+import { Users, UserPlus, Trash2, Edit2, Mail, Shield, User, Phone, Package, RefreshCw, Filter, CheckCircle, Calendar, Megaphone, DollarSign } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
@@ -210,9 +210,11 @@ const StaffOperationsDashboard = () => {
           <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
           <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
           <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
+          <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
           {currentUser?.role?.toLowerCase() === 'admin' && (
             <div className="admin-tab active"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
           )}
+          <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
         </div>
         <div className="team-grid">
           {Array(6).fill(0).map((_, i) => (
@@ -285,6 +287,10 @@ const StaffOperationsDashboard = () => {
             <Package size={18} />
             <span>Past Orders</span>
           </NavLink>
+          <NavLink to="/admin/quotes" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+            <DollarSign size={18} />
+            <span>B2B RFQs</span>
+          </NavLink>
           <NavLink to="/admin/users" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
             <Users size={18} />
             <span>Customer Discounts</span>
@@ -295,6 +301,10 @@ const StaffOperationsDashboard = () => {
               <span>Team Management</span>
             </NavLink>
           )}
+          <NavLink to="/admin/promotions" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+            <Megaphone size={18} />
+            <span>Promotions</span>
+          </NavLink>
         </div>
 
         {isSuperAdmin && showAddForm && (

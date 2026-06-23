@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   Users, Search, CheckCircle2, Calendar, Send, Megaphone,
   MessageSquare, Phone, AlertCircle, Package, Shield,
-  RefreshCw, CheckSquare, Square, BarChart2, Truck
+  RefreshCw, CheckSquare, Square, DollarSign
 } from 'lucide-react';
 import { apiUrl } from '../../utils/api';
 import { getAuthToken } from '../../utils/auth';
@@ -151,6 +151,9 @@ export default function PromotionsDashboard() {
         <NavLink to="/employee-panel" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
           <Package size={18} /><span>Past Orders</span>
         </NavLink>
+        <NavLink to="/admin/quotes" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+          <DollarSign size={18} /><span>B2B RFQs</span>
+        </NavLink>
         <NavLink to="/admin/users" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
           <Users size={18} /><span>Customer Discounts</span>
         </NavLink>
@@ -159,12 +162,6 @@ export default function PromotionsDashboard() {
             <Shield size={18} /><span>Team Management</span>
           </NavLink>
         )}
-        <NavLink to="/admin/analytics" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-          <BarChart2 size={18} /><span>Analytics</span>
-        </NavLink>
-        <NavLink to="/admin/shipping" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-          <Truck size={18} /><span>Shipping</span>
-        </NavLink>
         <NavLink to="/admin/promotions" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
           <Megaphone size={18} /><span>Promotions</span>
         </NavLink>
