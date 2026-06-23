@@ -2,21 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   Users, Search, CheckCircle2, Calendar, Send, Megaphone,
-  MessageSquare, Phone, AlertCircle, ChevronDown, X, CheckSquare, Square
+  MessageSquare, Phone, AlertCircle, CheckSquare, Square
 } from 'lucide-react';
+import { apiUrl } from '../../utils/api';
 import './PromotionsDashboard.css';
-
-const API_BASE = 'http://localhost:5000';
-
-const getToken = () => {
-  try {
-    const admin = JSON.parse(localStorage.getItem('adminAuth') || '{}');
-    if (admin?.token) return admin.token;
-    const emp = JSON.parse(localStorage.getItem('employeeAuth') || '{}');
-    if (emp?.token) return emp.token;
-  } catch { }
-  return localStorage.getItem('token') || '';
-};
 
 export default function PromotionsDashboard() {
   const [customers, setCustomers] = useState([]);
@@ -29,8 +18,10 @@ export default function PromotionsDashboard() {
   const [toast, setToast] = useState(null);
   const [previewTab, setPreviewTab] = useState('sms');
 
-  const token = getToken();
-  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  const getHeaders = () => ({
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${localStorage.getItem('token') || ''}`
+  });
 
   useEffect(() => {
     fetchCustomers();
@@ -39,7 +30,7 @@ export default function PromotionsDashboard() {
 
   const fetchCustomers = async () => {
     try {
-      const r = await fetch(`${API_BASE}/api/admin/users`, { headers });
+      const r = await fetch(apiUrl('/api/admin/users'), { headers: getHeaders() });
       const data = await r.json();
       const withPhone = (Array.isArray(data) ? data : []).filter(u => u.phone);
       setCustomers(withPhone);
@@ -48,7 +39,7 @@ export default function PromotionsDashboard() {
 
   const fetchCampaigns = async () => {
     try {
-      const r = await fetch(`${API_BASE}/api/admin/promotions`, { headers });
+      const r = await fetch(apiUrl('/api/admin/promotions'), { headers: getHeaders() });
       const data = await r.json();
       setCampaigns(Array.isArray(data) ? data : []);
     } catch { }
@@ -87,9 +78,9 @@ export default function PromotionsDashboard() {
     setSending(true);
     try {
       const activeChannels = Object.entries(channels).filter(([, v]) => v).map(([k]) => k);
-      const r = await fetch(`${API_BASE}/api/admin/promotions`, {
+      const r = await fetch(apiUrl('/api/admin/promotions'), {
         method: 'POST',
-        headers,
+        headers: getHeaders(),
         body: JSON.stringify({ message, channels: activeChannels, userIds: selectedIds })
       });
       const data = await r.json();
