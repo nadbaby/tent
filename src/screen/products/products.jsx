@@ -46,6 +46,10 @@ const Products = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importing, setImporting] = useState(false);
 
+  // Export States
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportCategories, setExportCategories] = useState([]);
+
   // AI Visual Scanner States
   const [isScanning, setIsScanning] = useState(false);
   const [scanImage, setScanImage] = useState(null);
@@ -91,6 +95,44 @@ const Products = () => {
     XLSX.utils.book_append_sheet(wb, ws, "Products Template");
     XLSX.writeFile(wb, "Product_Bulk_Import_Template.xlsx");
   };
+
+  const handleExportProducts = () => {
+    let productsToExport = products;
+    if (exportCategories.length > 0 && !exportCategories.includes('All')) {
+      productsToExport = products.filter(p => exportCategories.includes(p.category));
+    }
+
+    const dataToExport = productsToExport.map(p => ({
+      "Product ID": p.id || "",
+      "Product Name": p.name || "",
+      "SKU": p.sku || "",
+      "Slug": p.slug || "",
+      "Brand": p.brand || "",
+      "Category": p.category || "",
+      "Subcategory": p.subcategory || "",
+      "Price": p.price || "",
+      "Stock": p.stock || "",
+      "Weight (Kg)": p.weightKg || "",
+      "Length (cm)": p.dimensions?.length || "",
+      "Width (cm)": p.dimensions?.width || "",
+      "Height (cm)": p.dimensions?.height || "",
+      "Technical PDF Catalogue": p.catalogue || "",
+      "Main Image URL": p.image || "",
+      "Additional Images": Array.isArray(p.images) ? p.images.join(", ") : "",
+      "Keywords (comma separated)": p.keywords || "",
+      "HSN Code": p.hsnCode || "",
+      "Description": p.description || "",
+      "Features (One per line)": Array.isArray(p.features) ? p.features.join("\n") : (p.features || ""),
+      "Specifications (Key: Value per line)": p.specifications && Object.keys(p.specifications).length > 0 ? Object.entries(p.specifications).map(([k, v]) => `${k}: ${v}`).join('\n') : ""
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Products Export");
+    XLSX.writeFile(wb, "Products_Export.xlsx");
+    setShowExportModal(false);
+  };
+
   const initialFormData = {
     id: "",
     sku: "",
@@ -784,6 +826,10 @@ const Products = () => {
                     <Save size={18} />
                     Bulk Import
                   </button>
+                  <button className="btn btn-secondary export-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#f1f5f9', color: '#0f172a', padding: '0.6rem 1.25rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontWeight: '600' }} onClick={() => { setExportCategories([]); setShowExportModal(true); }}>
+                    <Download size={18} />
+                    Export
+                  </button>
                 </div>
 
                 {/* Bulk Import Modal */}
@@ -815,6 +861,62 @@ const Products = () => {
                             <input type="file" accept=".xlsx, .xls" style={{ display: 'none' }} onChange={(e) => { handleBulkImport(e); setShowImportModal(false); }} disabled={importing} />
                           </label>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Export Modal */}
+                {showExportModal && (
+                  <div className="import-modal-overlay" onClick={() => setShowExportModal(false)}>
+                    <div className="import-modal-content" onClick={e => e.stopPropagation()}>
+                      <div className="modal-header">
+                        <h3>Export Products to Excel</h3>
+                        <button className="close-modal" onClick={() => setShowExportModal(false)}><X size={20} /></button>
+                      </div>
+                      <div className="modal-body">
+                        <p style={{ marginBottom: '1.25rem', color: '#64748b', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                          Select the categories you want to export. Leave empty or select "All" to export everything.
+                        </p>
+                        
+                        <div className="category-selection" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '10px', maxHeight: '300px', overflowY: 'auto', marginBottom: '20px' }}>
+                          <label className="category-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                            <input 
+                              type="checkbox" 
+                              checked={exportCategories.includes('All')}
+                              onChange={(e) => {
+                                if (e.target.checked) setExportCategories(['All']);
+                                else setExportCategories([]);
+                              }} 
+                            />
+                            <span>All Categories</span>
+                          </label>
+                          {categories.filter(c => c !== 'All').map(cat => (
+                            <label key={cat} className="category-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={exportCategories.includes(cat)} 
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setExportCategories(prev => prev.filter(c => c !== 'All').concat(cat));
+                                  } else {
+                                    setExportCategories(prev => prev.filter(c => c !== cat));
+                                  }
+                                }} 
+                              />
+                              <span>{cat}</span>
+                            </label>
+                          ))}
+                        </div>
+
+                        <button 
+                          className="btn btn-primary" 
+                          style={{ width: '100%', padding: '12px', fontSize: '1rem', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+                          onClick={handleExportProducts}
+                        >
+                          <Download size={20} />
+                          Export to Excel
+                        </button>
                       </div>
                     </div>
                   </div>
