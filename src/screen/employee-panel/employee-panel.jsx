@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
-import { Search, Edit2, Save, X, CreditCard, Users, Shield, Package, RefreshCw, Filter, Download, Calendar, MapPin, Eye, FileText, ChevronRight, AlertCircle, Clock, Truck, CheckCircle, Info } from 'lucide-react';
+import { Search, Edit2, Save, X, CreditCard, Users, Shield, Package, RefreshCw, Filter, Download, Calendar, MapPin, Eye, FileText, ChevronRight, AlertCircle, Clock, Truck, CheckCircle, Info, Megaphone, DollarSign } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Skeleton, SkeletonTable, SkeletonStatsGrid } from '../../components/common/Skeleton/Skeleton';
 import './employee-panel.css';
@@ -79,7 +79,7 @@ const OrderOperationsDashboard = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status: newStatus,
           trackingId: newTrackingId,
           trackingLink: newTrackingLink
@@ -127,7 +127,7 @@ const OrderOperationsDashboard = () => {
       o.status
     ]);
 
-    let csvContent = "data:text/csv;charset=utf-8," 
+    let csvContent = "data:text/csv;charset=utf-8,"
       + headers.join(",") + "\n"
       + rows.map(e => e.join(",")).join("\n");
 
@@ -140,13 +140,13 @@ const OrderOperationsDashboard = () => {
   };
 
   const filteredOrders = orders.filter(o => {
-    const matchesSearch = 
+    const matchesSearch =
       (o.orderId || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (o.shippingAddress?.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (o.shippingAddress?.fullName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (o.shippingAddress?.phone || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (o.shippingAddress?.gstNumber || "").toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesPayment = filters.paymentStatus === 'All' || o.paymentDetails?.status === filters.paymentStatus;
     const matchesStatus = filters.orderStatus === 'All' || o.status === filters.orderStatus;
     const matchesGST = !filters.hasGST || !!o.shippingAddress?.gstNumber;
@@ -170,9 +170,11 @@ const OrderOperationsDashboard = () => {
             <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
             <div className="admin-tab active"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
             <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
+            <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
             {user?.role?.toLowerCase() === 'admin' && (
               <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
             )}
+            <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
           </div>
         )}
         <div className="orders-dashboard-table" style={{ border: 'none' }}>
@@ -205,6 +207,10 @@ const OrderOperationsDashboard = () => {
               <Package size={18} />
               <span>Past Orders</span>
             </NavLink>
+            <NavLink to="/admin/quotes" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+              <DollarSign size={18} />
+              <span>B2B RFQs</span>
+            </NavLink>
             <NavLink to="/admin/users" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
               <Users size={18} />
               <span>Customer Discounts</span>
@@ -215,6 +221,10 @@ const OrderOperationsDashboard = () => {
                 <span>Team Management</span>
               </NavLink>
             )}
+            <NavLink to="/admin/promotions" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+              <Megaphone size={18} />
+              <span>Promotions</span>
+            </NavLink>
           </div>
         )}
 
@@ -265,7 +275,7 @@ const OrderOperationsDashboard = () => {
             <div className="filters-expansion animate-in">
               <div className="filter-group">
                 <label>Payment Status</label>
-                <select value={filters.paymentStatus} onChange={(e) => setFilters({...filters, paymentStatus: e.target.value})}>
+                <select value={filters.paymentStatus} onChange={(e) => setFilters({ ...filters, paymentStatus: e.target.value })}>
                   <option value="All">All Payments</option>
                   <option value="SUCCESS">Success</option>
                   <option value="PENDING">Pending</option>
@@ -274,7 +284,7 @@ const OrderOperationsDashboard = () => {
               </div>
               <div className="filter-group">
                 <label>Order Status</label>
-                <select value={filters.orderStatus} onChange={(e) => setFilters({...filters, orderStatus: e.target.value})}>
+                <select value={filters.orderStatus} onChange={(e) => setFilters({ ...filters, orderStatus: e.target.value })}>
                   <option value="All">All Statuses</option>
                   <option value="PENDING">Pending</option>
                   <option value="Processing">Processing</option>
@@ -286,11 +296,11 @@ const OrderOperationsDashboard = () => {
               </div>
               <div className="filter-group">
                 <label>City</label>
-                <input type="text" placeholder="Filter by city..." value={filters.city} onChange={(e) => setFilters({...filters, city: e.target.value})} />
+                <input type="text" placeholder="Filter by city..." value={filters.city} onChange={(e) => setFilters({ ...filters, city: e.target.value })} />
               </div>
               <div className="filter-group check-group">
                 <label className="checkbox-label">
-                  <input type="checkbox" checked={filters.hasGST} onChange={(e) => setFilters({...filters, hasGST: e.target.checked})} />
+                  <input type="checkbox" checked={filters.hasGST} onChange={(e) => setFilters({ ...filters, hasGST: e.target.checked })} />
                   GST Orders Only
                 </label>
               </div>
@@ -487,7 +497,6 @@ const OrderOperationsDashboard = () => {
                             <td>
                               <div className="item-cell">
                                 <strong>{item.name}</strong>
-                                <small>SKU: FB-{item.id || 'N/A'}</small>
                               </div>
                             </td>
                             <td>{item.quantity}</td>
@@ -542,7 +551,7 @@ const OrderOperationsDashboard = () => {
               {activeModalTab === 'porter' && (
                 <div className="tab-pane animate-in">
                   <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px' }} className="porter-admin-grid">
-                    
+
                     {/* Left Column: Details & Products */}
                     <div>
                       <div className="porter-admin-details-card" style={{
@@ -659,12 +668,12 @@ const OrderOperationsDashboard = () => {
                         padding: '20px'
                       }}>
                         <h3 style={{ color: '#c2410c', fontSize: '1.2rem', marginBottom: '15px', fontWeight: '800' }}>Porter Booking Controls</h3>
-                        
+
                         {/* Checkbox: Manual Booking */}
                         <div style={{ marginBottom: '20px' }}>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: '600', color: '#9a3412', fontSize: '0.95rem' }}>
-                            <input 
-                              type="checkbox" 
+                            <input
+                              type="checkbox"
                               checked={selectedOrder.porterDeliveryDetails?.bookManually || false}
                               onChange={async (e) => {
                                 const checked = e.target.checked;
@@ -711,7 +720,7 @@ const OrderOperationsDashboard = () => {
                             value={selectedOrder.porterDeliveryDetails?.porterStatus || 'Porter Booking Pending'}
                             onChange={async (e) => {
                               const newPorterStatus = e.target.value;
-                              
+
                               let generalStatus = selectedOrder.status;
                               if (newPorterStatus === 'Delivered') {
                                 generalStatus = 'Delivered';
@@ -730,9 +739,9 @@ const OrderOperationsDashboard = () => {
                                     'Content-Type': 'application/json',
                                     'Authorization': `Bearer ${token}`
                                   },
-                                  body: JSON.stringify({ 
+                                  body: JSON.stringify({
                                     porterStatus: newPorterStatus,
-                                    status: generalStatus 
+                                    status: generalStatus
                                   })
                                 });
                                 if (response.ok) {

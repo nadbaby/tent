@@ -95,7 +95,6 @@ const Wishlist = () => {
               <div className="wishlist-card-info">
                 <div className="wishlist-card-meta">
                   <span className="wishlist-category">{item.category}</span>
-                  <span className="wishlist-sku">SKU: {item.sku}</span>
                 </div>
 
                 <h3

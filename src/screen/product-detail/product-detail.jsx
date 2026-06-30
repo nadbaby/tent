@@ -294,7 +294,6 @@ const ProductDetail = () => {
               <span className="rating-summary">
                 <Star size={16} fill="currentColor" /> {product.rating} ({product.reviewsCount} Reviews)
               </span>
-              <span className="sku-badge">SKU: {product.sku}</span>
             </div>
 
             <div className="key-features" style={{ marginBottom: '1.5rem' }}>
