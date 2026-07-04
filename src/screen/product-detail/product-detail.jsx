@@ -46,6 +46,16 @@ const ProductDetail = () => {
   const getVariantSizeLabel = (variantName, baseProduct) => {
     if (!baseProduct) return variantName;
     
+    if (baseProduct.subcategory && baseProduct.subcategory.toLowerCase().trim() !== 'all') {
+      const sub = baseProduct.subcategory.trim();
+      const regex = new RegExp(`^${sub}\\s*[-_\\s]*`, 'i');
+      const label = variantName.replace(regex, '').trim();
+      if (label && label !== variantName) {
+        const cleanLabel = label.replace(/^(ball bearing|bearing)\s*[-_\\s]*/i, '').trim();
+        return cleanLabel || label;
+      }
+    }
+
     const getPrefix = (name) => {
       if (!name) return "";
       const match = name.match(/^([a-zA-Z\s]+)/);
@@ -159,20 +169,27 @@ const ProductDetail = () => {
           const allData = await allRes.json();
           const filtered = allData.filter(p => String(p.id) !== String(data.id) && String(p.slug) !== String(data.slug));
 
-          // Fetch variants for sizes selector
-          const getPrefix = (name) => {
-            if (!name) return "";
-            const match = name.match(/^([a-zA-Z\s]+)/);
-            if (match) return match[1].trim().toLowerCase();
-            return name.split(/[\s\-0-9]/)[0].toLowerCase();
-          };
+          // Fetch variants: group by subcategory if present, else fallback to prefix match
+          let matches = [];
+          if (data.subcategory && data.subcategory.toLowerCase().trim() !== 'all') {
+            matches = allData.filter(p => p.subcategory && p.subcategory.toLowerCase().trim() === data.subcategory.toLowerCase().trim());
+          } else {
+            const getPrefix = (name) => {
+              if (!name) return "";
+              const match = name.match(/^([a-zA-Z\s]+)/);
+              if (match) return match[1].trim().toLowerCase();
+              return name.split(/[\s\-0-9]/)[0].toLowerCase();
+            };
+            const currentPrefix = getPrefix(data.name);
+            if (currentPrefix) {
+              matches = allData.filter(p => {
+                const pPrefix = getPrefix(p.name);
+                return pPrefix === currentPrefix && p.category === data.category;
+              });
+            }
+          }
 
-          const currentPrefix = getPrefix(data.name);
-          if (currentPrefix) {
-            const matches = allData.filter(p => {
-              const pPrefix = getPrefix(p.name);
-              return pPrefix === currentPrefix && p.category === data.category;
-            });
+          if (matches.length > 0) {
             setVariants(matches);
           } else {
             setVariants([enrichedProduct]);

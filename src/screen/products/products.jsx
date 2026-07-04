@@ -79,11 +79,15 @@ const Products = () => {
     return label || variantName;
   };
 
-  const getProductBaseName = (name) => {
-    if (!name) return "";
-    const match = name.match(/^([a-zA-Z\s]+)/);
+  const getProductDisplayName = (p) => {
+    if (!p) return "";
+    if (p.subcategory && p.subcategory.toLowerCase().trim() !== 'all') {
+      return p.subcategory.trim();
+    }
+    if (!p.name) return "";
+    const match = p.name.match(/^([a-zA-Z\s]+)/);
     if (match) return match[1].trim();
-    return name.split(/[\s\-0-9]/)[0];
+    return p.name.split(/[\s\-0-9]/)[0];
   };
 
   // Pagination / Infinite Scroll
@@ -779,19 +783,23 @@ const Products = () => {
   const displayProducts = (() => {
     const collapsed = [];
     const seen = new Set();
-    const getPrefix = (name) => {
-      if (!name) return "";
-      const match = name.match(/^([a-zA-Z\s]+)/);
-      if (match) return match[1].trim().toLowerCase();
-      return name.split(/[\s\-0-9]/)[0].toLowerCase();
+    
+    const getFamilyKey = (p) => {
+      if (p.subcategory && p.subcategory.toLowerCase().trim() !== 'all') {
+        return `sub_${p.subcategory.toLowerCase().trim()}`;
+      }
+      const getPrefix = (name) => {
+        if (!name) return "";
+        const match = name.match(/^([a-zA-Z\s]+)/);
+        if (match) return match[1].trim().toLowerCase();
+        return name.split(/[\s\-0-9]/)[0].toLowerCase();
+      };
+      return `prefix_${getPrefix(p.name)}_${p.category || ''}`;
     };
 
     filteredProducts.forEach(p => {
-      const prefix = getPrefix(p.name);
-      const familyKey = `${prefix}_${p.category || ''}`;
-      if (!prefix) {
-        collapsed.push(p);
-      } else if (!seen.has(familyKey)) {
+      const familyKey = getFamilyKey(p);
+      if (!seen.has(familyKey)) {
         seen.add(familyKey);
         collapsed.push(p);
       }
@@ -1210,7 +1218,7 @@ const Products = () => {
                 <ProductCard 
                   key={product.id} 
                   product={product} 
-                  displayName={getProductBaseName(product.name)}
+                  displayName={getProductDisplayName(product)}
                   isAdmin={admin} 
                   onEdit={handleEditClick} 
                   onDelete={handleDeleteProduct} 
