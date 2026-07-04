@@ -17,7 +17,9 @@ import {
   Truck,
   ShieldCheck,
   RotateCcw,
-  FileText
+  FileText,
+  Search,
+  X
 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { isAdmin } from '../../utils/auth';
@@ -38,6 +40,8 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [variants, setVariants] = useState([]);
+  const [isSizeSidebarOpen, setIsSizeSidebarOpen] = useState(false);
+  const [sizeSearchQuery, setSizeSearchQuery] = useState('');
 
   const getVariantSizeLabel = (variantName, baseProduct) => {
     if (!baseProduct) return variantName;
@@ -357,42 +361,30 @@ const ProductDetail = () => {
                 ₹{product.price?.toLocaleString()}
               </div>
 
-              {/* Sizes / Variants Selector */}
+              {/* Sizes / Variants Selector Trigger */}
               {variants.length > 1 && (
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <h4 style={{ fontSize: '0.9rem', fontWeight: '700', color: '#0f172a', marginBottom: '10px' }}>
-                    Available Sizes / Models:
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: '8px' }}>
-                    {variants.map(variant => (
-                      <button
-                        key={variant.id}
-                        onClick={() => {
-                          const hasValidSlug = variant.slug && 
-                                               variant.slug.toLowerCase() !== 'sku' && 
-                                               variant.slug.toLowerCase() !== 'default';
-                          navigate(`/product/${hasValidSlug ? variant.slug : variant.id}`);
-                        }}
-                        style={{
-                          padding: '10px 8px',
-                          border: String(variant.id) === String(product.id) ? '2px solid #ea580c' : '1px solid #cbd5e1',
-                          background: String(variant.id) === String(product.id) ? '#fff7ed' : '#fff',
-                          borderRadius: '8px',
-                          fontSize: '0.85rem',
-                          fontWeight: '700',
-                          color: String(variant.id) === String(product.id) ? '#ea580c' : '#334155',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          textAlign: 'center',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis'
-                        }}
-                        title={variant.name}
-                      >
-                        {getVariantSizeLabel(variant.name, product)}
-                      </button>
-                    ))}
+                <div className="size-selector-trigger-wrapper">
+                  <div className="size-selector-trigger-header">
+                    <span className="size-selector-trigger-label">Size / Model</span>
+                    <button 
+                      className="size-selector-trigger-btn"
+                      onClick={() => {
+                        setIsSizeSidebarOpen(true);
+                        setSizeSearchQuery('');
+                      }}
+                    >
+                      Change
+                    </button>
+                  </div>
+                  <div 
+                    className="size-selector-trigger-value"
+                    onClick={() => {
+                      setIsSizeSidebarOpen(true);
+                      setSizeSearchQuery('');
+                    }}
+                  >
+                    <span>{getVariantSizeLabel(product.name, product)}</span>
+                    <ChevronRight size={18} color="#f97316" />
                   </div>
                 </div>
               )}
@@ -620,6 +612,85 @@ const ProductDetail = () => {
           </section>
         )}
       </div>
+
+      {/* Size Selector Sidebar/Drawer */}
+      {isSizeSidebarOpen && (
+        <div 
+          className="size-sidebar-backdrop" 
+          onClick={() => setIsSizeSidebarOpen(false)}
+        >
+          <div 
+            className="size-sidebar-content" 
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="size-sidebar-header">
+              <h3>Select Size / Model</h3>
+              <button 
+                className="size-sidebar-close-btn"
+                onClick={() => setIsSizeSidebarOpen(false)}
+                title="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="size-sidebar-search-wrapper">
+              <Search className="size-sidebar-search-icon" size={18} />
+              <input 
+                type="text" 
+                placeholder="Search sizes or models..."
+                value={sizeSearchQuery}
+                onChange={e => setSizeSearchQuery(e.target.value)}
+                autoFocus
+              />
+            </div>
+            
+            <div className="size-sidebar-list-container">
+              {(() => {
+                const filteredVariants = variants.filter(v => {
+                  const label = getVariantSizeLabel(v.name, product).toLowerCase();
+                  const nameLower = v.name.toLowerCase();
+                  const query = sizeSearchQuery.toLowerCase();
+                  return label.includes(query) || nameLower.includes(query);
+                });
+
+                if (filteredVariants.length === 0) {
+                  return (
+                    <div className="size-sidebar-no-results">
+                      No sizes found matching "{sizeSearchQuery}"
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="size-sidebar-grid">
+                    {filteredVariants.map(variant => (
+                      <button
+                        key={variant.id}
+                        className={`size-sidebar-item-btn ${String(variant.id) === String(product.id) ? 'active' : ''}`}
+                        onClick={() => {
+                          const hasValidSlug = variant.slug && 
+                                               variant.slug.toLowerCase() !== 'sku' && 
+                                               variant.slug.toLowerCase() !== 'default';
+                          navigate(`/product/${hasValidSlug ? variant.slug : variant.id}`);
+                          setIsSizeSidebarOpen(false);
+                        }}
+                      >
+                        <span>{getVariantSizeLabel(variant.name, product)}</span>
+                        {variant.price && (
+                          <span className="size-sidebar-item-price">
+                            ₹{Number(variant.price).toLocaleString()}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
