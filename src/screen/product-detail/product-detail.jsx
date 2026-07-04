@@ -37,6 +37,24 @@ const ProductDetail = () => {
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [variants, setVariants] = useState([]);
+
+  const getVariantSizeLabel = (variantName, baseProduct) => {
+    if (!baseProduct) return variantName;
+    
+    const getPrefix = (name) => {
+      if (!name) return "";
+      const match = name.match(/^([a-zA-Z\s]+)/);
+      return match ? match[1].trim() : name.split(/[\s\-0-9]/)[0];
+    };
+
+    const prefix = getPrefix(baseProduct.name);
+    if (!prefix) return variantName;
+
+    const regex = new RegExp(`^${prefix}\\s*[-_\\s]*`, 'i');
+    const label = variantName.replace(regex, '').trim();
+    return label || variantName;
+  };
   const [error, setError] = useState(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -136,6 +154,25 @@ const ProductDetail = () => {
         if (allRes.ok) {
           const allData = await allRes.json();
           const filtered = allData.filter(p => String(p.id) !== String(data.id) && String(p.slug) !== String(data.slug));
+
+          // Fetch variants for sizes selector
+          const getPrefix = (name) => {
+            if (!name) return "";
+            const match = name.match(/^([a-zA-Z\s]+)/);
+            if (match) return match[1].trim().toLowerCase();
+            return name.split(/[\s\-0-9]/)[0].toLowerCase();
+          };
+
+          const currentPrefix = getPrefix(data.name);
+          if (currentPrefix) {
+            const matches = allData.filter(p => {
+              const pPrefix = getPrefix(p.name);
+              return pPrefix === currentPrefix && p.category === data.category;
+            });
+            setVariants(matches);
+          } else {
+            setVariants([enrichedProduct]);
+          }
 
           let related = [];
 
@@ -319,6 +356,46 @@ const ProductDetail = () => {
               <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#0f172a', marginBottom: '1rem' }}>
                 ₹{product.price?.toLocaleString()}
               </div>
+
+              {/* Sizes / Variants Selector */}
+              {variants.length > 1 && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <h4 style={{ fontSize: '0.9rem', fontWeight: '700', color: '#0f172a', marginBottom: '10px' }}>
+                    Available Sizes / Models:
+                  </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: '8px' }}>
+                    {variants.map(variant => (
+                      <button
+                        key={variant.id}
+                        onClick={() => {
+                          const hasValidSlug = variant.slug && 
+                                               variant.slug.toLowerCase() !== 'sku' && 
+                                               variant.slug.toLowerCase() !== 'default';
+                          navigate(`/product/${hasValidSlug ? variant.slug : variant.id}`);
+                        }}
+                        style={{
+                          padding: '10px 8px',
+                          border: String(variant.id) === String(product.id) ? '2px solid #ea580c' : '1px solid #cbd5e1',
+                          background: String(variant.id) === String(product.id) ? '#fff7ed' : '#fff',
+                          borderRadius: '8px',
+                          fontSize: '0.85rem',
+                          fontWeight: '700',
+                          color: String(variant.id) === String(product.id) ? '#ea580c' : '#334155',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          textAlign: 'center',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}
+                        title={variant.name}
+                      >
+                        {getVariantSizeLabel(variant.name, product)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Porter Delivery Badge */}
               <div className="porter-delivery-badge" style={{

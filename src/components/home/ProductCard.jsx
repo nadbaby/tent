@@ -54,7 +54,7 @@ const highlightText = (text, highlight) => {
   );
 };
 
-const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
+const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm, onCardClick, displayName }) => {
   const dispatch = useDispatch();
   const cartItems = useSelector((state) => state.cart.items);
   const navigate = useNavigate();
@@ -114,13 +114,20 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
   };
 
   const handleCardClick = () => {
-    navigate(`/product/${product.slug || product.id}`);
+    if (onCardClick) {
+      onCardClick(product);
+    } else {
+      const hasValidSlug = product.slug && 
+                           product.slug.toLowerCase() !== 'sku' && 
+                           product.slug.toLowerCase() !== 'default';
+      navigate(`/product/${hasValidSlug ? product.slug : product.id}`);
+    }
   };
 
   return (
     <div className={`product-card ${isShaking ? 'shake-animation' : ''}`} onClick={handleCardClick}>
       <div className="product-image-container">
-        <div className="product-name-overlay">{highlightText(product.name, searchTerm)}</div>
+        <div className="product-name-overlay">{highlightText(displayName || product.name, searchTerm)}</div>
         <ProtectedImage
           src={secureImageUrl}
           alt={product.name}

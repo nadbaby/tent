@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiUrl } from '../../utils/api';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import ProductCard, { resolveImageUrl } from '../../components/home/ProductCard';
 import { Filter, ChevronDown, Search, Grid, List, SlidersHorizontal, Plus, X, Save, Download, Upload, Camera, Loader2 } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { addItem } from '../../redux/cartSlice';
+import { useToast } from '../../context/ToastContext';
 import { isAdmin, getAuthToken } from '../../utils/auth';
 import * as XLSX from 'xlsx';
 import { storage } from '../../firebase';
@@ -26,6 +29,62 @@ const Products = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState(subcategoryParam || 'All');
   const [selectedBrand, setSelectedBrand] = useState(brandParam || 'All');
   const [sortBy, setSortBy] = useState('default');
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const cartItems = useSelector((state) => state.cart.items);
+
+  // Drawer States
+  const [selectedDrawerProduct, setSelectedDrawerProduct] = useState(null);
+  const [drawerQuantity, setDrawerQuantity] = useState(1);
+
+  // Get all variants of the product (same name prefix/base, category)
+  const getProductVariants = (currentProduct) => {
+    if (!currentProduct) return [];
+    
+    // Helper to get alphabetic prefix, e.g. "UCP" from "UCP 217 L3" or "OMS" from "OMS 80"
+    const getPrefix = (name) => {
+      if (!name) return "";
+      const match = name.match(/^([a-zA-Z\s]+)/);
+      if (match) return match[1].trim().toLowerCase();
+      return name.split(/[\s\-0-9]/)[0].toLowerCase();
+    };
+
+    const currentPrefix = getPrefix(currentProduct.name);
+    if (!currentPrefix) return [currentProduct];
+
+    // Find all products in the database that share the same prefix and category
+    return products.filter(p => {
+      const pPrefix = getPrefix(p.name);
+      return pPrefix === currentPrefix && p.category === currentProduct.category;
+    });
+  };
+
+  const getVariantSizeLabel = (variantName, baseProduct) => {
+    if (!baseProduct) return variantName;
+    
+    const getPrefix = (name) => {
+      if (!name) return "";
+      const match = name.match(/^([a-zA-Z\s]+)/);
+      return match ? match[1].trim() : name.split(/[\s\-0-9]/)[0];
+    };
+
+    const prefix = getPrefix(baseProduct.name);
+    if (!prefix) return variantName;
+
+    // Remove the prefix from the name (case-insensitive)
+    const regex = new RegExp(`^${prefix}\\s*[-_\\s]*`, 'i');
+    const label = variantName.replace(regex, '').trim();
+    return label || variantName;
+  };
+
+  const getProductBaseName = (name) => {
+    if (!name) return "";
+    const match = name.match(/^([a-zA-Z\s]+)/);
+    if (match) return match[1].trim();
+    return name.split(/[\s\-0-9]/)[0];
+  };
 
   // Pagination / Infinite Scroll
   const [visibleCount, setVisibleCount] = useState(12);
@@ -717,6 +776,29 @@ const Products = () => {
       }
     });
 
+  const displayProducts = (() => {
+    const collapsed = [];
+    const seen = new Set();
+    const getPrefix = (name) => {
+      if (!name) return "";
+      const match = name.match(/^([a-zA-Z\s]+)/);
+      if (match) return match[1].trim().toLowerCase();
+      return name.split(/[\s\-0-9]/)[0].toLowerCase();
+    };
+
+    filteredProducts.forEach(p => {
+      const prefix = getPrefix(p.name);
+      const familyKey = `${prefix}_${p.category || ''}`;
+      if (!prefix) {
+        collapsed.push(p);
+      } else if (!seen.has(familyKey)) {
+        seen.add(familyKey);
+        collapsed.push(p);
+      }
+    });
+    return collapsed;
+  })();
+
   const [didYouMean, setDidYouMean] = useState('');
   useEffect(() => {
     if (debouncedSearch && filteredProducts.length === 0) {
@@ -758,7 +840,7 @@ const Products = () => {
         observer.unobserve(target);
       }
     };
-  }, [products, filteredProducts, visibleCount]);
+  }, [products, displayProducts, visibleCount]);
 
 
   if (loading) {
@@ -1124,16 +1206,24 @@ const Products = () => {
             )}
 
             <div className="products-grid-page">
-              {filteredProducts.slice(0, visibleCount).map(product => (
-                <ProductCard key={product.id} product={product} isAdmin={admin} onEdit={handleEditClick} onDelete={handleDeleteProduct} searchTerm={debouncedSearch} />
+              {displayProducts.slice(0, visibleCount).map(product => (
+                <ProductCard 
+                  key={product.id} 
+                  product={product} 
+                  displayName={getProductBaseName(product.name)}
+                  isAdmin={admin} 
+                  onEdit={handleEditClick} 
+                  onDelete={handleDeleteProduct} 
+                  searchTerm={debouncedSearch} 
+                />
               ))}
 
               {/* Observer Target for Infinite Scroll */}
-              {filteredProducts.length > visibleCount && (
+              {displayProducts.length > visibleCount && (
                 <div ref={observerTarget} className="scroll-sentinel" style={{ height: '20px', gridColumn: '1 / -1' }}></div>
               )}
 
-              {filteredProducts.length === 0 && (
+              {displayProducts.length === 0 && (
                 <div className="no-results-container" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
                   <Search size={48} color="#cbd5e1" style={{ marginBottom: '20px' }} />
                   <h3 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '10px' }}>No exact matches found</h3>
@@ -1253,6 +1343,186 @@ const Products = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Product Drawer Overlay */}
+      {selectedDrawerProduct && (
+        <div className="product-drawer-overlay" onClick={() => setSelectedDrawerProduct(null)}>
+          <div className="product-drawer-content" onClick={e => e.stopPropagation()}>
+            <div className="drawer-header">
+              <h3>Product Quick View</h3>
+              <button className="close-modal" onClick={() => setSelectedDrawerProduct(null)}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="drawer-body">
+              <div className="drawer-image-section">
+                <img 
+                  src={resolveImageUrl(selectedDrawerProduct.image)} 
+                  alt={selectedDrawerProduct.name} 
+                  className="drawer-image" 
+                />
+              </div>
+
+              <div className="drawer-details">
+                {selectedDrawerProduct.brand && (
+                  <span className="drawer-brand">{selectedDrawerProduct.brand}</span>
+                )}
+                <h2 className="drawer-title">{selectedDrawerProduct.name}</h2>
+                <span className="drawer-category">
+                  {selectedDrawerProduct.category} {selectedDrawerProduct.subcategory ? `> ${selectedDrawerProduct.subcategory}` : ''}
+                </span>
+                
+                {selectedDrawerProduct.price ? (
+                  <div className="drawer-price">
+                    ₹{selectedDrawerProduct.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </div>
+                ) : (
+                  <div className="drawer-price" style={{ fontSize: '1.2rem', color: '#ea580c' }}>
+                    Price on Request
+                  </div>
+                )}
+              </div>
+
+              {/* Sizes / Variants Selector */}
+              {getProductVariants(selectedDrawerProduct).length > 1 && (
+                <div className="drawer-sizes-section">
+                  <h4 className="drawer-section-title">Available Sizes / Models</h4>
+                  <div className="drawer-sizes-grid">
+                    {getProductVariants(selectedDrawerProduct).map(variant => (
+                      <button
+                        key={variant.id}
+                        className={`drawer-size-btn ${variant.id === selectedDrawerProduct.id ? 'active' : ''}`}
+                        onClick={() => {
+                          setSelectedDrawerProduct(variant);
+                          const existingCartItem = cartItems.find(item => String(item.id) === String(variant.id));
+                          setDrawerQuantity(existingCartItem ? existingCartItem.quantity : 1);
+                        }}
+                        title={variant.name}
+                      >
+                        {getVariantSizeLabel(variant.name, selectedDrawerProduct)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Description / Features */}
+              {selectedDrawerProduct.description && (
+                <div className="drawer-desc-section">
+                  <h4 className="drawer-section-title">Description</h4>
+                  <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: '1.5', margin: 0 }}>
+                    {selectedDrawerProduct.description}
+                  </p>
+                </div>
+              )}
+
+              {selectedDrawerProduct.features && selectedDrawerProduct.features.length > 0 && (
+                <div className="drawer-features-section">
+                  <h4 className="drawer-section-title">Key Features</h4>
+                  <ul className="drawer-features">
+                    {selectedDrawerProduct.features.slice(0, 3).map((feat, idx) => (
+                      <li key={idx}>{feat}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Drawer Actions */}
+              <div className="drawer-actions-container" style={{ marginTop: 'auto', borderTop: '1px solid #f1f5f9', paddingTop: '20px' }}>
+                {!admin ? (
+                  <div className="drawer-actions">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
+                      <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>Quantity:</span>
+                      <div className="drawer-qty-selector">
+                        <div className="drawer-qty-control">
+                          <button 
+                            className="drawer-qty-btn" 
+                            onClick={() => setDrawerQuantity(Math.max(1, drawerQuantity - 1))}
+                          >
+                            -
+                          </button>
+                          <span className="drawer-qty-val">{drawerQuantity}</span>
+                          <button 
+                            className="drawer-qty-btn" 
+                            onClick={() => setDrawerQuantity(drawerQuantity + 1)}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button 
+                        className="drawer-cart-btn" 
+                        style={{ flex: 1 }}
+                        onClick={() => {
+                          const user = localStorage.getItem('user');
+                          if (!user) {
+                            showToast("Login required to add to cart", "error");
+                            navigate('/login');
+                            return;
+                          }
+                          dispatch(addItem({
+                            id: selectedDrawerProduct.id,
+                            name: selectedDrawerProduct.name,
+                            price: selectedDrawerProduct.price || 0,
+                            image: selectedDrawerProduct.image,
+                            quantity: drawerQuantity,
+                            replace: true
+                          }));
+                          showToast("Added to cart", "success");
+                        }}
+                      >
+                        Add to Cart
+                      </button>
+                      
+                      {selectedDrawerProduct.price && (
+                        <button 
+                          className="drawer-checkout-btn" 
+                          style={{ flex: 1 }}
+                          onClick={() => {
+                            const user = localStorage.getItem('user');
+                            if (!user) {
+                              navigate('/login');
+                              return;
+                            }
+                            dispatch(addItem({
+                              id: selectedDrawerProduct.id,
+                              name: selectedDrawerProduct.name,
+                              price: selectedDrawerProduct.price || 0,
+                              image: selectedDrawerProduct.image,
+                              quantity: drawerQuantity,
+                              replace: true
+                            }));
+                            navigate('/checkout');
+                          }}
+                        >
+                          Buy Now
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', color: '#94a3b8', fontStyle: 'italic', fontSize: '0.9rem' }}>
+                    Admin View - Purchasing Disabled
+                  </div>
+                )}
+                
+                <Link 
+                  to={`/product/${selectedDrawerProduct.slug || selectedDrawerProduct.id}`} 
+                  className="drawer-view-specs"
+                  onClick={() => setSelectedDrawerProduct(null)}
+                >
+                  View Full Specifications & Downloads →
+                </Link>
+              </div>
+
             </div>
           </div>
         </div>
