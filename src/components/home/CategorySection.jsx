@@ -42,7 +42,7 @@ const CategorySection = () => {
             </Link>
           ))}
         </div>
-      </div>a
+      </div>
     </section>
   );
 };
