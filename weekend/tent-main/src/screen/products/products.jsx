@@ -563,7 +563,13 @@ const Products = () => {
       searchScore: getProductScore(p, debouncedSearch)
     }))
     .filter(p => {
-      const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+      const selectedLower = selectedCategory.toLowerCase().trim();
+      const pCatLower = (p.category || '').toLowerCase().trim();
+      
+      const matchesCategory = selectedCategory === 'All' || 
+                              pCatLower === selectedLower || 
+                              (pCatLower && selectedLower.includes(pCatLower)) || 
+                              (pCatLower && pCatLower.includes(selectedLower.replace(/s$/, '')));
       const matchesSubcategory = selectedSubcategory === 'All' || p.subcategory === selectedSubcategory;
       const matchesBrand = selectedBrand === 'All' || p.brand === selectedBrand;
       return p.searchScore > 0 && matchesCategory && matchesSubcategory && matchesBrand;
@@ -692,10 +698,10 @@ const Products = () => {
               <div className="search-wrapper">
                 <Search size={18} />
                 <input type="text" placeholder="SKU or Product Name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                <button 
-                  type="button" 
-                  className="scanner-btn" 
-                  title="Scan bearing image with AI" 
+                <button
+                  type="button"
+                  className="scanner-btn"
+                  title="Scan bearing image with AI"
                   onClick={() => setIsScanning(true)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 5px', color: '#64748b', display: 'flex', alignItems: 'center' }}
                 >
@@ -966,12 +972,12 @@ const Products = () => {
                   <p className="scanner-prompt">Upload or snap a photo of the bearing or oil seal to identify it instantly.</p>
                   <label className="btn btn-primary scanner-select-btn">
                     Take Photo / Upload Image
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      capture="environment" 
-                      style={{ display: 'none' }} 
-                      onChange={handleImageScanChange} 
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      style={{ display: 'none' }}
+                      onChange={handleImageScanChange}
                     />
                   </label>
                 </div>
@@ -981,7 +987,7 @@ const Products = () => {
                     <img src={scanImage} alt="Bearing preview" className="bearing-scan-preview" />
                     {scanningInProgress && <div className="scanning-laser-line"></div>}
                   </div>
-                  
+
                   {scanningInProgress && (
                     <div className="scanning-status">
                       <Loader2 className="animate-spin" size={24} style={{ marginRight: '10px', color: 'var(--color-accent)' }} />
@@ -1002,7 +1008,7 @@ const Products = () => {
                         <h4>Detected: <span className="highlight-text">{detectedBearingType}</span></h4>
                       </div>
                       <p className="scan-reasoning">{scanReasoning}</p>
-                      
+
                       <h5 className="matches-title">Top Database Matches:</h5>
                       <div className="scan-matches-list">
                         {scanMatches.map((match, idx) => (

@@ -3,6 +3,31 @@ const dns = require("dns");
 // Fix for MongoDB Atlas DNS resolution issues
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 require('dotenv').config();
+
+// Global Exception and Rejection Handlers
+process.on("uncaughtException", (error) => {
+  console.error("❌ CRITICAL: Uncaught Exception detected:", error);
+  setTimeout(() => process.exit(1), 1000);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("❌ CRITICAL: Unhandled Rejection at:", promise, "reason:", reason);
+});
+
+// Strict JWT Secret Configuration Check
+if (!process.env.JWT_SECRET) {
+  console.error("❌ CRITICAL CONFIGURATION ERROR: JWT_SECRET environment variable is missing!");
+  process.exit(1);
+}
+if (process.env.JWT_SECRET === "fallback_secret" || process.env.JWT_SECRET === "your_jwt_secret_here") {
+  console.error("❌ CRITICAL CONFIGURATION ERROR: JWT_SECRET is set to a default placeholder value! Change it to a secure, random secret.");
+  process.exit(1);
+}
+if (process.env.JWT_SECRET.length < 32) {
+  console.error("❌ CRITICAL CONFIGURATION ERROR: JWT_SECRET is too weak! It must be at least 32 characters long to be secure.");
+  process.exit(1);
+}
+
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const express = require("express");
 const cors = require("cors");
@@ -15,6 +40,8 @@ const axios = require("axios");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const useragent = require("express-useragent");
+const mongoSanitize = require("express-mongo-sanitize");
+const hpp = require("hpp");
 const Product = require("./models/Product");
 const User = require("./models/User");
 const Employee = require("./models/Employee");
@@ -169,6 +196,7 @@ app.use((req, res, next) => {
 
 app.use(cors(corsOptions));
 app.use(express.json({
+  limit: '1mb', // Restrict payload size for standard API routes to prevent memory exhaustion
   // Capture raw body for webhook verification
   verify: (req, res, buf) => {
     if (req.originalUrl.startsWith('/api/payment/webhook')) {
@@ -177,26 +205,39 @@ app.use(express.json({
   }
 }));
 
+// --- Data Sanitization ---
+// Data sanitization against NoSQL query injection
+app.use(mongoSanitize());
+
+// Data sanitization against HTTP Parameter Pollution (HPP)
+app.use(hpp());
+
 // --- Rate Limiting ---
+const isProduction = process.env.NODE_ENV === "production";
+
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100000, // Increased to 100,000 to prevent developer lockout during rapid reloads/testing
+  max: isProduction ? 500 : 100000, // 500 in production, 100,000 in development/testing
   message: "Too many requests from this IP, please try again after 15 minutes"
 });
 
 const authLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10000, // Increased to 10,000 for development testing
+  max: isProduction ? 20 : 10000, // 20 in production, 10,000 in development/testing
   message: "Too many login attempts, please try again after an hour"
 });
 
 app.use("/api/", globalLimiter);
 app.use("/api/auth/login", authLimiter);
+app.use("/api/auth/send-otp", authLimiter);
+app.use("/api/auth/verify-otp", authLimiter);
+app.use("/api/auth/register-otp", authLimiter);
+app.use("/api/auth/signup", authLimiter);
 
 // Specialized limiter for payment creation (High Risk)
 const paymentLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 5000, // Increased to 5000 for development testing
+  max: isProduction ? 30 : 5000, // 30 in production, 5000 in development/testing
   message: "Order frequency limit reached. Please wait a few minutes."
 });
 app.use("/api/payment/create-order", paymentLimiter);
@@ -217,9 +258,42 @@ const authorize = (roles = []) => {
 };
 
 // --- Audit Logger Helper ---
+const redactSensitiveFields = (obj) => {
+  if (!obj || typeof obj !== "object") return obj;
+  
+  const redacted = Array.isArray(obj) ? [] : {};
+  const sensitiveKeys = ["password", "token", "apiKey", "apiSecret", "jwt", "secret", "cvv", "card", "gatewayResponse", "iv", "ciphertext", "authTag", "email", "phone", "street", "addresses", "shippingAddress"];
+  
+  for (const key in obj) {
+    if (sensitiveKeys.includes(key)) {
+      redacted[key] = "[REDACTED]";
+    } else if (typeof obj[key] === "object" && obj[key] !== null) {
+      redacted[key] = redactSensitiveFields(obj[key]);
+    } else {
+      redacted[key] = obj[key];
+    }
+  }
+  return redacted;
+};
+
 const logAudit = async (action, userId, details) => {
-  console.log(`[AUDIT LOG] ${new Date().toISOString()} | User: ${userId} | Action: ${action} | Details: ${JSON.stringify(details)}`);
+  const cleanDetails = redactSensitiveFields(details);
+  console.log(`[AUDIT LOG] ${new Date().toISOString()} | User: ${userId} | Action: ${action} | Details: ${JSON.stringify(cleanDetails)}`);
   // Optionally save to a MongoDB AuditLog collection here
+};
+
+// --- Environment-Aware Error Response Helper ---
+const sendErrorResponse = (res, error, defaultMessage = "An internal server error occurred") => {
+  // Log the real error securely on the server console/logs
+  console.error("Database/Server Error:", error);
+
+  const isProd = process.env.NODE_ENV === "production";
+
+  res.status(500).json({
+    success: false,
+    message: isProd ? defaultMessage : (error.message || defaultMessage),
+    ...(isProd ? {} : { stack: error.stack, details: error })
+  });
 };
 
 // --- Middleware ---
@@ -278,6 +352,33 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// --- NoSQL Injection Prevention Middleware ---
+const sanitizeNoSql = (obj) => {
+  if (obj && typeof obj === 'object') {
+    for (const key in obj) {
+      if (typeof obj[key] === 'object' && obj[key] !== null) {
+        // If nested object contains a key starting with $, delete the entire key
+        const hasMongoOperator = Object.keys(obj[key]).some(k => k.startsWith('$'));
+        if (hasMongoOperator) {
+          delete obj[key];
+        } else {
+          sanitizeNoSql(obj[key]);
+        }
+      } else if (key.startsWith('$')) {
+        delete obj[key];
+      }
+    }
+  }
+};
+
+app.use((req, res, next) => {
+  if (req.body) sanitizeNoSql(req.body);
+  if (req.query) sanitizeNoSql(req.query);
+  if (req.params) sanitizeNoSql(req.params);
+  next();
+});
+
 app.use("/api/shipping", shippingRoutes);
 app.use("/api/user", auth, userRoutes);
 const multer = require("multer");
@@ -332,7 +433,7 @@ app.post("/api/upload", auth, upload.single("image"), async (req, res) => {
     res.json({ filePath: result.secure_url, publicId: result.public_id });
   } catch (error) {
     console.error("❌ Cloudinary Image Upload Error:", error);
-    res.status(500).json({ message: "Image upload failed", error: error.message });
+    sendErrorResponse(res, error, "Image upload failed");
   }
 });
 
@@ -347,12 +448,12 @@ app.post("/api/upload-catalogue", auth, async (req, res) => {
     // handle the Base64 string since it's now part of the Product schema.
     res.json({ filePath: catalogueData, message: "PDF processed successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to process PDF", error: error.message });
+    sendErrorResponse(res, error, "Failed to process PDF");
   }
 });
 
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
+const JWT_SECRET = process.env.JWT_SECRET;
 const ADMIN_USERNAME = (process.env.ADMIN_USERNAME || "").trim();
 const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || "").trim();
 
@@ -471,53 +572,82 @@ const calculateOrderTotal = async (cartItems, userId, reqBodyAddress = null, cou
 // login route for everyone
 app.post("/api/auth/login", async (req, res) => {
   const { username, password } = req.body;
-  const trimmedUsername = username ? username.trim() : "";
+
+  if (!username || typeof username !== "string" || !username.trim()) {
+    return res.status(400).json({ message: "Username and password are required" });
+  }
+  if (!password || typeof password !== "string" || !password.trim()) {
+    return res.status(400).json({ message: "Username and password are required" });
+  }
+
+  const trimmedUsername = username.trim();
+  const { verifyPassword, hashPassword } = require("./services/encryptionService");
 
   // 1. Check for Admin or Employee in MongoDB
-  // We use a direct search which is much faster than RegExp
-  const employee = await Employee.findOne({
+  // We fetch without collation/lean first because collation/lean skips getters/setters if we are not careful,
+  // and we want to read the decrypted password/email.
+  const employeeDoc = await Employee.findOne({
     $or: [
       { username: trimmedUsername },
       { email: trimmedUsername }
-    ],
-    password: password
-  }).collation({ locale: 'en', strength: 2 }).lean(); // strength 2 = case-insensitive
+    ]
+  }).collation({ locale: 'en', strength: 2 });
 
-  if (employee) {
-    const userRole = employee.role?.toLowerCase() || "employee";
-    const token = jwt.sign({
-      username: employee.username,
-      role: userRole,
-      permissions: employee.permissions
-    }, JWT_SECRET, { expiresIn: "7d" });
+  if (employeeDoc) {
+    const isMatch = await verifyPassword(employeeDoc.password, password);
+    if (isMatch) {
+      // Migrate password on-the-fly if plaintext
+      if (!employeeDoc.password.startsWith("$argon2")) {
+        employeeDoc.password = await hashPassword(password);
+        await employeeDoc.save();
+      }
 
-    return res.json({
-      token,
-      user: { ...employee, role: userRole },
-    });
+      const employee = employeeDoc.toObject();
+      const userRole = employee.role?.toLowerCase() || "employee";
+      const token = jwt.sign({
+        uid: employee.firebaseUid || employee.id || employee._id,
+        username: employee.username,
+        role: userRole,
+        permissions: employee.permissions
+      }, JWT_SECRET, { expiresIn: "3650d" });
+
+      return res.json({
+        token,
+        user: { ...employee, role: userRole },
+      });
+    }
   }
 
   // 2. Check for Normal User in MongoDB
-  const user = await User.findOne({
+  const userDoc = await User.findOne({
     $or: [
       { phone: trimmedUsername },
       { username: trimmedUsername },
       { email: trimmedUsername }
     ]
-  }).collation({ locale: 'en', strength: 2 }).lean();
+  }).collation({ locale: 'en', strength: 2 });
 
-  // If user exists, we check their password (if they have one)
-  // Note: If your system uses OTP only for users, you should handle that separately
-  if (user && user.password === password) {
-    const token = jwt.sign({
-      username: user.username || user.phone,
-      role: "user"
-    }, JWT_SECRET, { expiresIn: "7d" });
+  if (userDoc) {
+    const isMatch = await verifyPassword(userDoc.password, password);
+    if (isMatch) {
+      // Migrate password on-the-fly if plaintext
+      if (userDoc.password && !userDoc.password.startsWith("$argon2")) {
+        userDoc.password = await hashPassword(password);
+        await userDoc.save();
+      }
 
-    return res.json({
-      token,
-      user: { ...user, role: "user" },
-    });
+      const user = userDoc.toObject();
+      const token = jwt.sign({
+        uid: user.firebaseUid || user.id || user._id,
+        username: user.username || user.phone,
+        role: "user"
+      }, JWT_SECRET, { expiresIn: "3650d" });
+
+      return res.json({
+        token,
+        user: { ...user, role: "user" },
+      });
+    }
   }
 
   // 3. Reject if no match found
@@ -557,7 +687,7 @@ app.get("/api/auth/profile", auth, async (req, res) => {
 
     res.json({ ...profile, type });
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch profile", error: error.message });
+    sendErrorResponse(res, error, "Failed to fetch profile");
   }
 });
 
@@ -621,14 +751,22 @@ app.post("/api/auth/sync", auth, async (req, res) => {
       await user.save();
     }
 
+    const token = jwt.sign({
+      uid: user.firebaseUid || user.id || user._id,
+      username: user.username || user.phone || user.email,
+      email: user.email,
+      role: user.role || "user"
+    }, JWT_SECRET, { expiresIn: "3650d" });
+
     res.json({
       success: true,
       message: "User synced successfully",
-      user: user
+      user: user,
+      token: token
     });
   } catch (err) {
     console.error("Sync Error:", err);
-    res.status(500).json({ message: "Failed to sync user", error: err.message });
+    sendErrorResponse(res, err, "Failed to sync user");
   }
 });
 
@@ -646,7 +784,7 @@ const adminOnly = async (req, res, next) => {
     try {
       const query = { $or: [{ firebaseUid: req.user.uid }] };
       if (req.user.email) query.$or.push({ email: req.user.email });
-      
+
       const employee = await Employee.findOne(query);
       if (employee && employee.role?.toLowerCase() === "admin") {
         if (!employee.firebaseUid) {
@@ -739,20 +877,34 @@ app.post("/api/auth/send-otp", async (req, res) => {
 // Verify OTP & Login
 app.post("/api/auth/verify-otp", async (req, res) => {
   const { phone, otp } = req.body;
-  if (!phone || !otp) return res.status(400).json({ message: "Phone and OTP are required" });
+  if (!phone || typeof phone !== "string" || !otp || typeof otp !== "string") {
+    return res.status(400).json({ message: "Phone and OTP are required and must be strings" });
+  }
 
-  const isValid = verifyOtp(phone, otp);
+  const cleanPhone = phone.trim();
+  if (!/^\+?[0-9]{10,15}$/.test(cleanPhone.replace(/[\s\-()]/g, ""))) {
+    return res.status(400).json({ message: "Invalid phone format" });
+  }
+
+  const isValid = verifyOtp(cleanPhone, otp);
   if (!isValid) return res.status(401).json({ message: "Invalid or expired OTP" });
 
   // Generate token for the user
-  const existingUser = await User.findOne({ phone }).lean();
+  const existingUser = await User.findOne({ phone: cleanPhone });
+  if (!existingUser) {
+    return res.status(404).json({ message: "No account found with this phone number. Please sign up first." });
+  }
 
-  const token = jwt.sign({ username: phone, role: "user" }, JWT_SECRET, { expiresIn: "7d" });
+  const token = jwt.sign({
+    uid: existingUser.firebaseUid || existingUser.id || existingUser._id,
+    username: cleanPhone,
+    role: "user"
+  }, JWT_SECRET, { expiresIn: "3650d" });
 
   res.json({
     success: true,
     token,
-    user: existingUser || { username: phone, role: "user", phone: phone }
+    user: existingUser
   });
 });
 
@@ -761,8 +913,20 @@ app.post("/api/auth/signup", async (req, res) => {
   try {
     const { username, password, email, phone, name, company } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({ message: "Username and password are required" });
+    if (!username || typeof username !== "string" || !username.trim()) {
+      return res.status(400).json({ message: "Username is required and must be a string" });
+    }
+    if (!password || typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({ message: "Password is required and must be at least 8 characters long" });
+    }
+    if (email && (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+    if (phone && (typeof phone !== "string" || !/^\+?[0-9]{10,15}$/.test(phone.replace(/[\s\-()]/g, "")))) {
+      return res.status(400).json({ message: "Invalid phone format" });
+    }
+    if (name && typeof name !== "string") {
+      return res.status(400).json({ message: "Name must be a string" });
     }
 
     const existingUser = await User.findOne({ $or: [{ username }, { email }, { phone: phone || "" }] });
@@ -772,18 +936,22 @@ app.post("/api/auth/signup", async (req, res) => {
 
     const newUser = new User({
       id: "u_" + Date.now(),
-      username,
-      password, // In production, you should hash this!
-      email,
-      phone,
-      name,
-      company: company || "",
+      username: username.trim(),
+      password, // Pre-save hook hashes this automatically
+      email: email ? email.trim() : undefined,
+      phone: phone ? phone.trim() : undefined,
+      name: name ? name.trim() : undefined,
+      company: company ? String(company).trim() : "",
       role: "user"
     });
 
     await newUser.save();
 
-    const token = jwt.sign({ username, role: "user" }, JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign({
+      uid: newUser.firebaseUid || newUser.id || newUser._id,
+      username: username.trim(),
+      role: "user"
+    }, JWT_SECRET, { expiresIn: "3650d" });
 
     res.status(201).json({
       success: true,
@@ -792,38 +960,51 @@ app.post("/api/auth/signup", async (req, res) => {
     });
   } catch (error) {
     console.error("Signup error:", error);
-    res.status(500).json({ message: "Failed to create user", error: error.message });
+    sendErrorResponse(res, error, "Failed to create user");
   }
 });
 
 // Verify OTP & Register (Updated with password support)
 app.post("/api/auth/register-otp", async (req, res) => {
   const { phone, otp, name, company, password } = req.body;
-  if (!phone || !otp || !name) {
-    return res.status(400).json({ message: "Phone, OTP, and Name are required" });
+  if (!phone || typeof phone !== "string" || !otp || typeof otp !== "string" || !name || typeof name !== "string") {
+    return res.status(400).json({ message: "Phone, OTP, and Name are required and must be strings" });
   }
 
-  const isValid = verifyOtp(phone, otp);
+  const cleanPhone = phone.trim();
+  if (!/^\+?[0-9]{10,15}$/.test(cleanPhone.replace(/[\s\-()]/g, ""))) {
+    return res.status(400).json({ message: "Invalid phone format" });
+  }
+
+  if (password && (typeof password !== "string" || password.length < 8)) {
+    return res.status(400).json({ message: "Password must be at least 8 characters long" });
+  }
+
+  const isValid = verifyOtp(cleanPhone, otp);
   if (!isValid) return res.status(401).json({ message: "Invalid or expired OTP" });
 
-  const userExists = await User.findOne({ phone });
+  const userExists = await User.findOne({ phone: cleanPhone });
   if (userExists) {
     return res.status(400).json({ message: "This phone number already exists." });
   }
 
   const newUser = new User({
     id: "u_" + Date.now(),
-    phone,
-    name,
-    password: password || "123456", // default password if not provided during OTP
-    company: company || "",
-    gstNumber: req.body.gstNumber || "",
+    phone: cleanPhone,
+    name: name.trim(),
+    password: password || "123456", // Pre-save hook hashes this automatically
+    company: company ? String(company).trim() : "",
+    gstNumber: req.body.gstNumber ? String(req.body.gstNumber).trim() : "",
     role: "user"
   });
 
   await newUser.save();
 
-  const token = jwt.sign({ username: phone, role: "user" }, JWT_SECRET, { expiresIn: "7d" });
+  const token = jwt.sign({
+    uid: newUser.firebaseUid || newUser.id || newUser._id,
+    username: phone,
+    role: "user"
+  }, JWT_SECRET, { expiresIn: "3650d" });
 
   res.json({ success: true, token, user: newUser });
 });
@@ -871,7 +1052,7 @@ app.post("/api/sms/order-alert", auth, employeeOrAdmin, async (req, res) => {
     const result = await sendSMSOrderAlert(phone, orderId, status);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ message: "Failed to send SMS alert", error: error.message });
+    sendErrorResponse(res, error, "Failed to send SMS alert");
   }
 });
 
@@ -888,10 +1069,11 @@ app.post("/api/products/search-image", upload.single("image"), async (req, res) 
     }
 
     // 1. Convert file buffer to Gemini Part format
+    const mimeType = req.file.mimetype === 'image/jpg' ? 'image/jpeg' : req.file.mimetype;
     const imagePart = {
       inlineData: {
         data: req.file.buffer.toString("base64"),
-        mimeType: req.file.mimetype
+        mimeType: mimeType
       }
     };
 
@@ -902,17 +1084,28 @@ app.post("/api/products/search-image", upload.single("image"), async (req, res) 
 
     // Limit catalog context to keep token count reasonable
     const productContext = products.map(p =>
-      `- SKU: ${p.sku} | Name: ${p.name} | Category: ${p.category} | Brand: ${p.brand}`
+      `- SKU: ${p.sku} | Name: ${p.name} | Category: ${p.category} | Brand: ${p.brand} | Keywords: ${p.keywords || ''}`
     ).join('\n');
 
     // 3. Initialize Gemini
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    // Use gemini-2.5-flash which is perfect for multimodal/vision tasks
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: "application/json"
+      }
+    });
 
-    const prompt = `You are an industrial engineering assistant specialized in bearings and oil seals.
-Analyze the provided image of a bearing or oil seal, and identify its type, approximate dimensions, and features.
-Then, compare it to our available catalog below and find the top 3 best matching products.
+    const prompt = `You are an expert industrial engineering AI specialized in bearings and oil seals.
+Your task is to identify the bearing or seal in the provided image and find the best matches from our catalog.
+
+STEPS:
+1. EXAMINE THE IMAGE closely. Look for and read any engraved or printed text, numbers, or codes (e.g., "6204", "ZZ", "2RS"). This text is the strongest indicator of the exact part!
+2. Analyze the visual features: Is it a ball bearing, roller bearing, taper, or oil seal? Does it have rubber seals or metal shields?
+3. Compare your findings against the AVAILABLE CATALOG below.
+4. CRITICAL: If you read a specific part number in the image, you MUST prioritize matching catalog items that contain that number in their Name, SKU, or Keywords.
+5. If no exact match is found, select the closest alternative based on visual type.
 
 AVAILABLE CATALOG:
 ${productContext}
@@ -920,23 +1113,41 @@ ${productContext}
 Respond strictly in valid JSON format. Do not write markdown blocks or any conversational text around the JSON.
 Format the response exactly as follows:
 {
-  "detectedType": "Deep Groove Ball Bearing",
-  "reasoning": "The image shows a ball bearing with single-row deep groove design.",
+  "detectedType": "Detailed name of detected part (e.g., Deep Groove Ball Bearing)",
+  "reasoning": "Explain what text or visual features you observed in the image.",
   "matches": [
     {
       "sku": "SKU_OF_MATCH_1",
       "confidence": 95,
-      "reason": "Visual attributes match this SKU exactly."
+      "reason": "Explain exactly why this catalog item matches what you saw in the image."
     },
     {
       "sku": "SKU_OF_MATCH_2",
       "confidence": 75,
-      "reason": "Similar shape, but size might differ."
+      "reason": "Another possible match."
     }
   ]
 }`;
 
-    const result = await model.generateContent([prompt, imagePart]);
+    let result;
+    try {
+      result = await model.generateContent([prompt, imagePart]);
+    } catch (apiErr) {
+      // Fallback to gemini-2.0-flash if the primary model is overloaded (503 Service Unavailable)
+      if (apiErr.message && apiErr.message.includes("503")) {
+        console.warn("Gemini 2.5 Flash is experiencing high demand. Falling back to Gemini 2.0 Flash...");
+        const fallbackModel = genAI.getGenerativeModel({
+          model: "gemini-2.0-flash",
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: "application/json"
+          }
+        });
+        result = await fallbackModel.generateContent([prompt, imagePart]);
+      } else {
+        throw apiErr;
+      }
+    }
     const response = await result.response;
     const text = response.text();
 
@@ -950,29 +1161,28 @@ Format the response exactly as follows:
         cleanedText = match[1].trim();
       }
     }
-    
+
     try {
       const jsonResponse = JSON.parse(cleanedText);
       res.json(jsonResponse);
     } catch (parseErr) {
       console.error("Failed to parse Gemini response as JSON:", text);
-      res.status(500).json({ 
-        message: "Failed to parse AI response as JSON", 
+      res.status(500).json({
+        message: "Failed to parse AI response as JSON",
         rawText: text,
-        error: parseErr.message 
+        error: parseErr.message
       });
     }
   } catch (error) {
     console.error("AI vision search failed:", error);
-    res.status(500).json({ message: "AI vision search failed", error: error.message });
+    sendErrorResponse(res, error, "AI vision search failed");
   }
 });
 
 
-// GET product autocomplete search suggestions
 app.get("/api/products/autocomplete", async (req, res) => {
   try {
-    const query = req.query.q ? req.query.q.trim() : "";
+    const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
     if (!query) {
       return res.json({ suggestions: [], products: [] });
     }
@@ -993,21 +1203,21 @@ app.get("/api/products/autocomplete", async (req, res) => {
       isActive: { $ne: false },
       $and: searchConditions
     })
-    .select("id name sku brand category subcategory keywords image price")
-    .limit(150)
-    .lean();
+      .select("id name sku brand category subcategory keywords image price")
+      .limit(150)
+      .lean();
 
     // Sort by relevance score
     const getRelevanceScore = (p, q) => {
       const qLower = q.toLowerCase();
       let score = 0;
-      
+
       const name = (p.name || "").toLowerCase();
       const category = (p.category || "").toLowerCase();
       const subcategory = (p.subcategory || "").toLowerCase();
       const sku = (p.sku || "").toLowerCase();
       const brand = (p.brand || "").toLowerCase();
-      
+
       // Name matches (highest priority)
       if (name === qLower) {
         score += 1000;
@@ -1016,21 +1226,21 @@ app.get("/api/products/autocomplete", async (req, res) => {
       } else if (name.includes(qLower)) {
         score += 200;
       }
-      
+
       // Category & Subcategory matches
       if (category === qLower || subcategory === qLower) {
         score += 300;
       } else if (category.includes(qLower) || subcategory.includes(qLower)) {
         score += 150;
       }
-      
+
       // SKU matches
       if (sku === qLower) {
         score += 100;
       } else if (sku.includes(qLower)) {
         score += 50;
       }
-      
+
       // Brand matches
       if (brand === qLower) {
         score += 80;
@@ -1089,7 +1299,7 @@ app.get("/api/products/autocomplete", async (req, res) => {
     res.json({ suggestions, products });
   } catch (error) {
     console.error("Autocomplete failed:", error);
-    res.status(500).json({ message: "Search suggestions failed" });
+    sendErrorResponse(res, error, "Search suggestions failed");
   }
 });
 
@@ -1100,11 +1310,7 @@ app.get("/api/products", async (req, res) => {
     res.json(products);
   } catch (error) {
     console.error("Failed to read products:", error);
-    res.status(500).json({
-      message: "Failed to read products",
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    sendErrorResponse(res, error, "Failed to read products");
   }
 });
 
@@ -1130,7 +1336,7 @@ app.get("/api/products/:id", async (req, res) => {
     res.json(product);
   } catch (error) {
     console.error("Failed to read product:", error);
-    res.status(500).json({ message: "Failed to read product" });
+    sendErrorResponse(res, error, "Failed to read product");
   }
 });
 
@@ -1157,7 +1363,7 @@ app.post("/api/products", auth, adminOnly, async (req, res) => {
     res.status(201).json(product);
   } catch (error) {
     console.error("Failed to create product:", error);
-    res.status(500).json({ message: "Failed to create product", error: error.message });
+    sendErrorResponse(res, error, "Failed to create product");
   }
 });
 
@@ -1186,7 +1392,7 @@ app.put("/api/products/:id", auth, adminOnly, async (req, res) => {
     res.json(product);
   } catch (error) {
     console.error("Failed to update product:", error);
-    res.status(500).json({ message: "Failed to update product", error: error.message });
+    sendErrorResponse(res, error, "Failed to update product");
   }
 });
 
@@ -1222,11 +1428,19 @@ app.post("/api/coupons/validate-gst", auth, async (req, res) => {
       status: { $nin: ["CANCELLED", "PENDING"] }
     });
 
-    if (gstUsageCount + 1 !== rule.milestone) {
-      if (gstUsageCount + 1 < rule.milestone) {
-        return res.status(400).json({ message: `This is for GST purchase #${rule.milestone}. This GST has ${gstUsageCount} past purchases.` });
-      } else {
-        return res.status(400).json({ message: "This GST has already used or passed this milestone coupon." });
+    if (rule.milestone === 1 && gstUsageCount > 0) {
+      return res.status(400).json({ message: "This GST has already used the first purchase coupon." });
+    }
+    if (rule.milestone === 2 && gstUsageCount === 0) {
+      return res.status(400).json({ message: "This coupon is only valid for your second or later purchase." });
+    }
+    if (rule.milestone > 2) {
+      if (gstUsageCount + 1 !== rule.milestone) {
+        if (gstUsageCount + 1 < rule.milestone) {
+          return res.status(400).json({ message: `This is for GST purchase #${rule.milestone}. This GST has ${gstUsageCount} past purchases.` });
+        } else {
+          return res.status(400).json({ message: "This GST has already used or passed this milestone coupon." });
+        }
       }
     }
 
@@ -1243,7 +1457,31 @@ app.post("/api/coupons/validate-gst", auth, async (req, res) => {
     });
   } catch (error) {
     console.error("GST Coupon Error:", error);
-    res.status(500).json({ message: "Coupon validation failed" });
+    sendErrorResponse(res, error, "Coupon validation failed");
+  }
+});
+
+// GET eligible GST coupon
+app.get("/api/coupons/eligible-gst", async (req, res) => {
+  try {
+    const { gstNumber } = req.query;
+    if (!gstNumber || !validateGSTFormat(gstNumber.toUpperCase())) {
+      return res.json({ eligible: false, code: null });
+    }
+
+    const gstUsageCount = await Order.countDocuments({
+      "shippingAddress.gstNumber": gstNumber.toUpperCase(),
+      status: { $nin: ["CANCELLED", "PENDING"] }
+    });
+
+    if (gstUsageCount === 0) {
+      return res.json({ eligible: true, code: "MEFIRST" });
+    } else {
+      return res.json({ eligible: true, code: "MESECOND" });
+    }
+  } catch (error) {
+    console.error("GST Eligibility Error:", error);
+    sendErrorResponse(res, error, "Failed to check GST eligibility");
   }
 });
 
@@ -1323,6 +1561,7 @@ app.post("/api/payment/create-order", auth, async (req, res) => {
 
     await newOrder.save();
 
+
     // --- Persistence: Save Address to User Profile ---
     try {
       const user = await User.findOne({
@@ -1388,8 +1627,8 @@ app.post("/api/payment/verify", auth, async (req, res) => {
       .digest("hex");
 
     if (expectedSignature === razorpay_signature) {
-      const order = await Order.findOneAndUpdate(
-        { razorpayOrderId: razorpay_order_id },
+      let order = await Order.findOneAndUpdate(
+        { razorpayOrderId: razorpay_order_id, status: { $ne: "PAID" } },
         {
           status: "PAID",
           razorpayPaymentId: razorpay_payment_id,
@@ -1401,14 +1640,34 @@ app.post("/api/payment/verify", auth, async (req, res) => {
         { new: true }
       );
 
-      logAudit("PAYMENT_VERIFIED_CLIENT", req.user.uid || req.user.username, { orderId: order?.orderId });
+      let isNewPaid = !!order;
+      if (!order) {
+        // Already marked as PAID by webhook
+        order = await Order.findOne({ razorpayOrderId: razorpay_order_id });
+      }
+
+      if (order) {
+        logAudit("PAYMENT_VERIFIED_CLIENT", req.user.uid || req.user.username, { orderId: order.orderId });
+
+        if (isNewPaid) {
+          const customerPhone = order.shippingAddress?.phone || order.userId;
+          if (customerPhone) {
+            console.log(`Triggering payment success SMS alert for order ${order.orderId} to ${customerPhone}`);
+            sendSMSOrderAlert(customerPhone, order.orderId, "confirmed")
+              .catch(err => console.error("Auto SMS Alert Error:", err));
+          }
+          sendAdminNewOrderAlert(order)
+            .catch(err => console.error("Admin SMS Alert Error:", err));
+        }
+      }
+
       res.json({ success: true, message: "Payment verified successfully", order });
     } else {
       logAudit("PAYMENT_VERIFICATION_FAILED", req.user.uid || req.user.username, { razorpayOrderId: razorpay_order_id });
       res.status(400).json({ success: false, message: "Invalid signature" });
     }
   } catch (error) {
-    res.status(500).json({ message: "Verification failed", error: error.message });
+    sendErrorResponse(res, error, "Verification failed");
   }
 });
 
@@ -1428,7 +1687,7 @@ app.post("/api/payment/record-failure", auth, async (req, res) => {
     }
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    sendErrorResponse(res, error, "An internal server error occurred");
   }
 });
 
@@ -1461,7 +1720,7 @@ app.post("/api/payment/webhook", async (req, res) => {
 
     try {
       const order = await Order.findOneAndUpdate(
-        { razorpayOrderId: orderId },
+        { razorpayOrderId: orderId, status: { $ne: "PAID" } },
         {
           status: "PAID",
           razorpayPaymentId: paymentId,
@@ -1476,6 +1735,15 @@ app.post("/api/payment/webhook", async (req, res) => {
       if (order) {
         logAudit("PAYMENT_CAPTURED_WEBHOOK", "RAZORPAY", { orderId: order.orderId, paymentId });
         console.log(`✅ Webhook: Order ${order.orderId} marked as PAID`);
+
+        const customerPhone = order.shippingAddress?.phone || order.userId;
+        if (customerPhone) {
+          console.log(`Triggering payment success SMS alert (webhook) for order ${order.orderId} to ${customerPhone}`);
+          sendSMSOrderAlert(customerPhone, order.orderId, "confirmed")
+            .catch(err => console.error("Auto SMS Alert Error:", err));
+        }
+        sendAdminNewOrderAlert(order)
+          .catch(err => console.error("Admin SMS Alert Error:", err));
       }
     } catch (err) {
       console.error("Webhook Order Update Error:", err);
@@ -1490,26 +1758,73 @@ app.get("/api/orders/:username", auth, async (req, res) => {
   const { username } = req.params;
   const requesterId = req.user.uid || req.user.username;
 
-  // SECURITY: Only allow users to fetch their own orders, or Admins/Employees
-  if (requesterId !== username && req.user.role !== 'admin' && req.user.role !== 'employee') {
-    logAudit("UNAUTHORIZED_ORDER_FETCH_ATTEMPT", requesterId, { targetUser: username });
-    return res.status(403).json({ message: "Forbidden: You can only view your own orders" });
-  }
-
   try {
-    const username = req.params.username;
+    // Find requester's user doc to get all their valid identifiers
+    const requesterDoc = await User.findOne({
+      $or: [
+        { id: requesterId },
+        { username: requesterId },
+        { email: req.user.email || requesterId },
+        { phone: requesterId },
+        { firebaseUid: req.user.uid || requesterId }
+      ]
+    }).lean();
+
+    const requesterIdentifiers = new Set();
+    if (requesterId) requesterIdentifiers.add(requesterId);
+    if (req.user.email) requesterIdentifiers.add(req.user.email.toLowerCase());
+    if (req.user.uid) requesterIdentifiers.add(req.user.uid);
+    if (requesterDoc) {
+      if (requesterDoc.id) requesterIdentifiers.add(requesterDoc.id);
+      if (requesterDoc.username) requesterIdentifiers.add(requesterDoc.username.toLowerCase());
+      if (requesterDoc.email) requesterIdentifiers.add(requesterDoc.email.toLowerCase());
+      if (requesterDoc.phone) {
+        requesterIdentifiers.add(requesterDoc.phone);
+        requesterIdentifiers.add(requesterDoc.phone.replace("+91", "").trim());
+      }
+      if (requesterDoc.firebaseUid) requesterIdentifiers.add(requesterDoc.firebaseUid);
+    }
+
+    // Check if target username matches any of the requester's identifiers or they are admin/employee
+    const cleanUsername = username ? username.toLowerCase() : "";
+
+    const isAuthorized = requesterIdentifiers.has(cleanUsername) ||
+      (username && requesterIdentifiers.has(username)) ||
+      req.user.role === 'admin' ||
+      req.user.role === 'employee';
+
+    if (!isAuthorized) {
+      logAudit("UNAUTHORIZED_ORDER_FETCH_ATTEMPT", requesterId, { targetUser: username });
+      return res.status(403).json({ message: "Forbidden: You can only view your own orders" });
+    }
+
+    // Build query IDs (strictly filter out undefined, null, empty string)
+    const rawQueryIds = Array.from(requesterIdentifiers);
+    if (username) {
+      rawQueryIds.push(username);
+      if (username.startsWith("+91")) {
+        rawQueryIds.push(username.replace("+91", ""));
+      } else if (/^\d{10}$/.test(username)) {
+        rawQueryIds.push("+91" + username);
+      }
+    }
+    const queryIds = rawQueryIds.filter(id => id !== undefined && id !== null && id !== "");
+
+    // Perform a case-insensitive search for email addresses if needed, but matching in queryIds works
     const orders = await Order.find({
       $or: [
-        { userId: username },
-        { "shippingAddress.phone": username },
-        { "shippingAddress.email": username }
+        { userId: { $in: queryIds } },
+        { "shippingAddress.phone": { $in: queryIds } },
+        { "shippingAddress.email": { $in: queryIds.map(id => new RegExp(`^${id.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}$`, 'i')) } }
       ],
-      status: { $ne: "PENDING" }, // Don't show failed/pending orders in history
+      status: { $nin: ["PENDING", "CANCELLED", "Cancelled", "FAILED", "failed", "pending", "cancelled"] }, // Only show successful payment products
       hiddenFromUser: { $ne: true } // Don't show hidden orders
     }).sort({ createdAt: -1 });
+
     res.json(orders);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch orders" });
+    console.error("Failed to fetch orders:", error);
+    sendErrorResponse(res, error, "Failed to fetch orders");
   }
 });
 
@@ -1522,10 +1837,44 @@ app.patch("/api/orders/:orderId/hide", auth, async (req, res) => {
     const order = await Order.findOne({ orderId });
     if (!order) return res.status(404).json({ message: "Order not found" });
 
+    // Find requester's user doc to get all their valid identifiers
+    const requesterDoc = await User.findOne({
+      $or: [
+        { id: userId },
+        { username: userId },
+        { email: req.user.email || userId },
+        { phone: userId },
+        { firebaseUid: req.user.uid || userId }
+      ]
+    }).lean();
+
+    const requesterIdentifiers = new Set();
+    if (userId) requesterIdentifiers.add(userId);
+    if (req.user.email) requesterIdentifiers.add(req.user.email.toLowerCase());
+    if (req.user.uid) requesterIdentifiers.add(req.user.uid);
+    if (requesterDoc) {
+      if (requesterDoc.id) requesterIdentifiers.add(requesterDoc.id);
+      if (requesterDoc.username) requesterIdentifiers.add(requesterDoc.username.toLowerCase());
+      if (requesterDoc.email) requesterIdentifiers.add(requesterDoc.email.toLowerCase());
+      if (requesterDoc.phone) {
+        requesterIdentifiers.add(requesterDoc.phone);
+        requesterIdentifiers.add(requesterDoc.phone.replace("+91", "").trim());
+      }
+      if (requesterDoc.firebaseUid) requesterIdentifiers.add(requesterDoc.firebaseUid);
+    }
+
+    const orderUserIds = [
+      order.userId,
+      order.shippingAddress?.email ? order.shippingAddress.email.toLowerCase() : null,
+      order.shippingAddress?.phone,
+      order.shippingAddress?.phone ? order.shippingAddress.phone.replace("+91", "").trim() : null
+    ].filter(Boolean);
+
     // SECURITY: Ensure only the owner (by UID, username, or shipping contact) or Admin can hide it
-    const isOwner = order.userId === userId ||
-      order.shippingAddress?.email === userId ||
-      order.shippingAddress?.phone === userId;
+    const isOwner = orderUserIds.some(id => requesterIdentifiers.has(id)) ||
+      (order.userId && requesterIdentifiers.has(order.userId)) ||
+      (order.shippingAddress?.email && requesterIdentifiers.has(order.shippingAddress.email.toLowerCase())) ||
+      (order.shippingAddress?.phone && requesterIdentifiers.has(order.shippingAddress.phone));
 
     if (!isOwner && req.user.role !== 'admin' && req.user.role !== 'employee') {
       logAudit("UNAUTHORIZED_ORDER_HIDE_ATTEMPT", userId, { orderId });
@@ -1538,7 +1887,7 @@ app.patch("/api/orders/:orderId/hide", auth, async (req, res) => {
     logAudit("ORDER_HIDDEN", userId, { orderId });
     res.json({ success: true, message: "Order removed from history" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to hide order" });
+    sendErrorResponse(res, error, "Failed to hide order");
   }
 });
 
@@ -1548,7 +1897,7 @@ app.get("/api/admin/orders", auth, employeeOrAdmin, async (req, res) => {
     const orders = await Order.find({}).sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch all orders", error: error.message });
+    sendErrorResponse(res, error, "Failed to fetch all orders");
   }
 });
 
@@ -1585,7 +1934,7 @@ app.patch("/api/admin/orders/:orderId/status", auth, employeeOrAdmin, async (req
 
     res.json({ success: true, message: "Status updated", order });
   } catch (error) {
-    res.status(500).json({ message: "Failed to update order status" });
+    sendErrorResponse(res, error, "Failed to update order status");
   }
 });
 
@@ -1595,7 +1944,7 @@ app.get("/api/admin/employees", auth, adminOnly, async (req, res) => {
     const employees = await Employee.find({});
     res.json(employees);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch employees" });
+    sendErrorResponse(res, error, "Failed to fetch employees");
   }
 });
 
@@ -1619,7 +1968,7 @@ app.post("/api/admin/employees", auth, adminOnly, async (req, res) => {
     await newEmployee.save();
     res.json(newEmployee);
   } catch (error) {
-    res.status(500).json({ message: "Failed to create employee" });
+    sendErrorResponse(res, error, "Failed to create employee");
   }
 });
 
@@ -1643,7 +1992,7 @@ app.put("/api/admin/employees/:id", auth, adminOnly, async (req, res) => {
     if (!employee) return res.status(404).json({ message: "Employee not found" });
     res.json(employee);
   } catch (error) {
-    res.status(500).json({ message: "Failed to update employee" });
+    sendErrorResponse(res, error, "Failed to update employee");
   }
 });
 
@@ -1662,7 +2011,7 @@ app.delete("/api/admin/employees/:id", auth, adminOnly, async (req, res) => {
     await Employee.deleteOne({ id: req.params.id });
     res.json({ message: "Employee deleted" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete employee" });
+    sendErrorResponse(res, error, "Failed to delete employee");
   }
 });
 
@@ -1672,7 +2021,7 @@ app.get("/api/admin/users", auth, adminOrManager, async (req, res) => {
     const users = await User.find({});
     res.json(users);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch users", error: error.message });
+    sendErrorResponse(res, error, "Failed to fetch users");
   }
 });
 
@@ -1691,7 +2040,7 @@ app.patch("/api/admin/users/:id/discount", auth, adminOrManager, async (req, res
 
     res.json(user);
   } catch (error) {
-    res.status(500).json({ message: "Failed to update user discount" });
+    sendErrorResponse(res, error, "Failed to update user discount");
   }
 });
 
@@ -1710,7 +2059,7 @@ app.patch("/api/admin/users/:id/gst", auth, adminOrManager, async (req, res) => 
 
     res.json(user);
   } catch (error) {
-    res.status(500).json({ message: "Failed to update user GST" });
+    sendErrorResponse(res, error, "Failed to update user GST");
   }
 });
 
@@ -1742,7 +2091,7 @@ app.delete("/api/products/:id", auth, adminOnly, async (req, res) => {
     res.json({ message: "Product deleted successfully" });
   } catch (error) {
     console.error("Failed to delete product:", error);
-    res.status(500).json({ message: "Failed to delete product" });
+    sendErrorResponse(res, error, "Failed to delete product");
   }
 });
 
@@ -1776,7 +2125,7 @@ app.post("/api/user/update-profile", auth, async (req, res) => {
     });
   } catch (error) {
     console.error("Profile Update Error:", error);
-    res.status(500).json({ message: "Failed to update profile" });
+    sendErrorResponse(res, error, "Failed to update profile");
   }
 });
 
@@ -1836,24 +2185,22 @@ app.post("/api/request-quote", auth, async (req, res) => {
 
     // Forward to Google Sheets if configured
     const googleSheetUrl = process.env.GOOGLE_SHEET_WEBHOOK_URL;
-    if (googleSheetUrl) {
+    if (googleSheetUrl && googleSheetUrl !== "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec") {
       try {
-        const https = require("https");
         const dataString = JSON.stringify(quoteData);
-
-        const options = {
+        fetch(googleSheetUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Content-Length': dataString.length,
           },
-          timeout: 5000,
-        };
-
-        const reqGS = https.request(googleSheetUrl, options);
-        reqGS.on('error', (e) => console.error("Google Sheet Forwarding Error:", e));
-        reqGS.write(dataString);
-        reqGS.end();
+          body: dataString
+        })
+        .then(async (response) => {
+          if (!response.ok) {
+            console.error(`Google Sheet Webhook Error: Status ${response.status}`);
+          }
+        })
+        .catch((e) => console.error("Google Sheet Forwarding Error:", e));
       } catch (gsError) {
         console.error("Failed to forward to Google Sheets:", gsError);
       }
@@ -1862,7 +2209,7 @@ app.post("/api/request-quote", auth, async (req, res) => {
     res.status(201).json({ success: true, message: "Quote request received", quoteId });
   } catch (error) {
     console.error("Quote Request Error:", error);
-    res.status(500).json({ message: "Failed to process quote request" });
+    sendErrorResponse(res, error, "Failed to process quote request");
   }
 });
 
@@ -1873,7 +2220,7 @@ app.get("/api/quotes/my-quotes", auth, async (req, res) => {
     const quotes = await Quote.find({ userId: username }).sort({ createdAt: -1 });
     res.json(quotes);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch quotes" });
+    sendErrorResponse(res, error, "Failed to fetch quotes");
   }
 });
 
@@ -1885,7 +2232,7 @@ app.get("/api/quotes/:id", auth, async (req, res) => {
 
     // Security check: Only the owner or employee/admin can view
     const isOwner = quote.userId === (req.user.uid || req.user.username);
-    
+
     let userRole = req.user.role;
     if (req.user.firebase) {
       try {
@@ -1898,7 +2245,7 @@ app.get("/api/quotes/:id", auth, async (req, res) => {
             await Employee.updateOne({ id: employee.id }, { firebaseUid: req.user.uid });
           }
         }
-      } catch (err) {}
+      } catch (err) { }
     }
     const isStaff = ["admin", "employee", "staff", "manager"].includes(userRole?.toLowerCase());
 
@@ -1908,7 +2255,7 @@ app.get("/api/quotes/:id", auth, async (req, res) => {
 
     res.json(quote);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch quote details" });
+    sendErrorResponse(res, error, "Failed to fetch quote details");
   }
 });
 
@@ -1942,7 +2289,7 @@ app.post("/api/quotes/:id/negotiate", auth, async (req, res) => {
       });
     } else if (action === "counter") {
       quote.status = "Counter Offered";
-      
+
       // Update item counter prices
       if (items && Array.isArray(items)) {
         let totalCounterAmount = 0;
@@ -1972,7 +2319,7 @@ app.post("/api/quotes/:id/negotiate", auth, async (req, res) => {
     res.json({ success: true, message: `Quote status updated to ${quote.status}`, quote });
   } catch (error) {
     console.error("Negotiation Error:", error);
-    res.status(500).json({ message: "Failed to process negotiation response" });
+    sendErrorResponse(res, error, "Failed to process negotiation response");
   }
 });
 
@@ -2028,7 +2375,7 @@ app.post("/api/quotes/:id/convert-to-order", auth, async (req, res) => {
       },
       status: "PENDING",
       subtotal: itemsPriceTotal,
-      shippingCharge: 0, 
+      shippingCharge: 0,
       total: itemsPriceTotal,
       createdAt: new Date().toISOString()
     });
@@ -2043,7 +2390,7 @@ app.post("/api/quotes/:id/convert-to-order", auth, async (req, res) => {
     res.json({ success: true, message: "Quote successfully converted to order", orderId });
   } catch (error) {
     console.error("Convert Order Error:", error);
-    res.status(500).json({ message: "Failed to convert quote to order" });
+    sendErrorResponse(res, error, "Failed to convert quote to order");
   }
 });
 
@@ -2101,7 +2448,7 @@ app.post("/api/quotes/:id/pay", auth, async (req, res) => {
     });
   } catch (error) {
     console.error("B2B Payment Init Error:", error);
-    res.status(500).json({ message: "Failed to initialize payment" });
+    sendErrorResponse(res, error, "Failed to initialize payment");
   }
 });
 
@@ -2111,7 +2458,7 @@ app.get("/api/admin/quotes", auth, employeeOrAdmin, async (req, res) => {
     const quotes = await Quote.find({}).sort({ updatedAt: -1 });
     res.json(quotes);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch quotes" });
+    sendErrorResponse(res, error, "Failed to fetch quotes");
   }
 });
 
@@ -2148,7 +2495,7 @@ app.post("/api/admin/quotes/:id/offer", auth, employeeOrAdmin, async (req, res) 
     res.json({ success: true, message: "Price offer submitted successfully", quote });
   } catch (error) {
     console.error("Admin Offer Error:", error);
-    res.status(500).json({ message: "Failed to submit pricing offer" });
+    sendErrorResponse(res, error, "Failed to submit pricing offer");
   }
 });
 
@@ -2173,7 +2520,7 @@ app.get("/api/admin/shipping-config", auth, authorize(['admin']), async (req, re
     const config = await initializeDefaultConfig();
     res.json(config);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch shipping config" });
+    sendErrorResponse(res, error, "Failed to fetch shipping config");
   }
 });
 
@@ -2183,7 +2530,7 @@ app.put("/api/admin/shipping-config", auth, authorize(['admin']), async (req, re
     logAudit("SHIPPING_CONFIG_UPDATED", req.user.username, { config: req.body });
     res.json(config);
   } catch (error) {
-    res.status(500).json({ message: "Failed to update shipping config" });
+    sendErrorResponse(res, error, "Failed to update shipping config");
   }
 });
 
@@ -2199,14 +2546,14 @@ app.get("/api/shipping/couriers", async (req, res) => {
     }));
     res.json(activeCouriers);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendErrorResponse(res, error, "Failed to fetch active couriers");
   }
 });
 
 app.post("/api/calculate-shipping", async (req, res) => {
   try {
     const { items, city, state, method, invoiceValue, courierId, paymentMethod } = req.body;
-    
+
     // Populate actual DB weights, dimensions and category
     const products = await Product.find({ id: { $in: items.map(i => i.id) } }).lean();
     const itemsForShipping = items.map(item => {
@@ -2223,7 +2570,7 @@ app.post("/api/calculate-shipping", async (req, res) => {
     const result = await calculateCharges(itemsForShipping, zoneKey, method || "PER_KG", invoiceValue || 0, courierId, paymentMethod);
     res.json(result);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    sendErrorResponse(res, error, "Failed to calculate shipping charges");
   }
 });
 
@@ -2232,7 +2579,7 @@ app.get("/", (req, res) => {
 });
 
 // System Health Check (for debugging)
-app.get("/api/admin/health-check", async (req, res) => {
+app.get("/api/admin/health-check", auth, authorize(['admin']), async (req, res) => {
   const health = {
     database: mongoose.connection.readyState === 1 ? "Connected" : "Disconnected",
     razorpay: !!razorpay,
@@ -2270,7 +2617,7 @@ app.post("/api/tickets/create", auth, async (req, res) => {
     res.status(201).json({ success: true, ticket: ticketData });
   } catch (error) {
     console.error("Ticket Create Error:", error);
-    res.status(500).json({ message: "Failed to create ticket", error: error.message });
+    sendErrorResponse(res, error, "Failed to create ticket");
   }
 });
 
@@ -2284,7 +2631,7 @@ app.get("/api/tickets/my-tickets/:identifier", auth, async (req, res) => {
     const tickets = await Ticket.find({ userIdentifier: req.params.identifier });
     res.json(tickets);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch tickets" });
+    sendErrorResponse(res, error, "Failed to fetch tickets");
   }
 });
 
@@ -2295,7 +2642,7 @@ app.get("/api/tickets/:id", auth, async (req, res) => {
     if (!ticket) return res.status(404).json({ message: "Ticket not found" });
     res.json(ticket);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch ticket" });
+    sendErrorResponse(res, error, "Failed to fetch ticket");
   }
 });
 
@@ -2320,7 +2667,7 @@ app.post("/api/tickets/:id/reply", auth, async (req, res) => {
 
     res.json({ success: true, ticket });
   } catch (error) {
-    res.status(500).json({ message: "Failed to add reply" });
+    sendErrorResponse(res, error, "Failed to add reply");
   }
 });
 
@@ -2335,7 +2682,7 @@ app.put("/api/tickets/:id/status", auth, adminOnly, async (req, res) => {
     );
     res.json({ success: true, ticket });
   } catch (error) {
-    res.status(500).json({ message: "Failed to update ticket" });
+    sendErrorResponse(res, error, "Failed to update ticket");
   }
 });
 
@@ -2349,7 +2696,7 @@ app.put("/api/admin/tickets/:id/assign", auth, async (req, res) => {
     );
     res.json({ success: true, ticket });
   } catch (error) {
-    res.status(500).json({ message: "Failed to assign ticket" });
+    sendErrorResponse(res, error, "Failed to assign ticket");
   }
 });
 
@@ -2414,7 +2761,7 @@ app.post("/api/admin/products/bulk-import", auth, adminOnly, upload.single("file
           if (hasVal(["SKU", "sku"])) {
             existingProduct.sku = String(rowSku).trim();
           }
-          
+
           let slugVal = getVal(row, ["Slug", "slug"]);
           if (slugVal !== undefined) {
             existingProduct.slug = String(slugVal).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -2592,7 +2939,7 @@ app.post("/api/admin/products/bulk-import", auth, adminOnly, upload.single("file
     });
   } catch (error) {
     console.error("Bulk Import Error:", error);
-    res.status(500).json({ message: "Failed to process Excel file", error: error.message });
+    sendErrorResponse(res, error, "Failed to process Excel file");
   }
 });
 
@@ -2605,10 +2952,9 @@ app.post("/api/chat", async (req, res) => {
     const hasKey = !!process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_actual_gemini_api_key_here';
     console.log(`[Chat] Request received. Live AI Mode: ${hasKey}`);
 
-    // Fetch active products for context
+    // Fetch active products for context with full catalog details
     const products = await Product.find({ isActive: true })
-      .select('name category price features sku brand keywords')
-      .limit(50)
+      .select('name category subcategory price features sku brand keywords weightKg dimensions specifications description')
       .lean();
 
     // 1. Demo Mode Fallback
@@ -2637,21 +2983,36 @@ app.post("/api/chat", async (req, res) => {
     // 2. Live AI Mode
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-    const productContext = products.map(p =>
-      `- ${p.name} (SKU: ${p.sku}): Brand ${p.brand}, Category ${p.category}, Price ₹${p.price}.`
-    ).join('\n');
+    const productContext = products.map(p => {
+      let dimensionsStr = 'N/A';
+      if (p.dimensions && (p.dimensions.length || p.dimensions.width || p.dimensions.height)) {
+        dimensionsStr = `${p.dimensions.length || 0}x${p.dimensions.width || 0}x${p.dimensions.height || 0} mm`;
+      }
+      const specsStr = p.specifications ? Object.entries(p.specifications).map(([k, v]) => `${k}: ${v}`).join(', ') : 'N/A';
+      return `- Name: ${p.name}
+  SKU: ${p.sku}
+  Brand: ${p.brand || 'N/A'}
+  Category: ${p.category || 'N/A'} (Subcategory: ${p.subcategory || 'N/A'})
+  Price: ₹${p.price}
+  Weight: ${p.weightKg ? p.weightKg + ' kg' : 'N/A'}
+  Dimensions (LxWxH): ${dimensionsStr}
+  Specifications: ${specsStr}
+  Description: ${p.description || 'N/A'}`;
+    }).join('\n\n');
 
     const systemPrompt = `You are a professional industrial product expert for "Fine Bearing".
     
-AVAILABLE CATALOG:
+AVAILABLE CATALOG WITH DETAILS (dimensions, weights, prices, specs):
 ${productContext}
 
 RULES:
 1. ONLY recommend products from the provided catalog above.
 2. If a product is not in the catalog, politely say you don't carry it but offer the closest alternative if possible.
 3. Be concise, professional, and helpful.
-4. Use Markdown for formatting (bold names, bullet points).
-5. Always provide the SKU when mentioning a product.`;
+4. Use Markdown for formatting (bold names, bullet points, tables where helpful).
+5. Always provide the SKU when mentioning a product.
+6. Provide specific product information (price, weight, dimensions, specifications, and descriptions) when asked.
+7. For every product recommended or mentioned in your response, ALWAYS append an Add to Cart link in the format: [Add to Cart](https://add-to-cart/SKU) right after or underneath the product description. Example: [Add to Cart](https://add-to-cart/ucp-204).`;
 
     // Format history for Gemini SDK
     const formattedHistory = (history || []).map(msg => ({
@@ -2699,7 +3060,7 @@ RULES:
       } catch (err) {
         lastError = err;
         console.warn(`⚠️ [Chat] Model ${modelName} failed:`, err.message);
-        continue; // Try the next model
+        continue; // Try the next model 
       }
     }
 
@@ -2707,7 +3068,25 @@ RULES:
       throw lastError || new Error("All models failed to respond.");
     }
 
-    res.json({ reply: responseText });
+    // Extract all unique SKUs mentioned in add-to-cart links (handles both add-to-cart: and https://add-to-cart/)
+    const skuMatches = [
+      ...responseText.matchAll(/add-to-cart:([a-zA-Z0-9_-]+)/g),
+      ...responseText.matchAll(/https:\/\/add-to-cart\/([a-zA-Z0-9_-]+)/g)
+    ].map(m => m[1].toLowerCase());
+    let mentionedProducts = [];
+    if (skuMatches.length > 0) {
+      try {
+        mentionedProducts = await Product.find({
+          sku: { $in: skuMatches.map(sku => new RegExp(`^${sku}$`, 'i')) }
+        })
+          .select('id sku name price image')
+          .lean();
+      } catch (err) {
+        console.error("Error fetching mentioned products for chat:", err);
+      }
+    }
+
+    res.json({ reply: responseText, products: mentionedProducts });
 
   } catch (error) {
     console.error("❌ [Chat Error]:", error);
@@ -2739,7 +3118,7 @@ const startServer = async () => {
       if (!user) return res.status(404).json({ message: "User not found" });
       res.json({ cart: user.cart || [] });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch cart", error: error.message });
+      sendErrorResponse(res, error, "Failed to fetch cart");
     }
   });
 
@@ -2754,7 +3133,7 @@ const startServer = async () => {
       await user.save();
       res.json({ success: true, message: "Cart synced successfully" });
     } catch (error) {
-      res.status(500).json({ message: "Failed to sync cart", error: error.message });
+      sendErrorResponse(res, error, "Failed to sync cart");
     }
   });
 
@@ -2822,7 +3201,7 @@ const startServer = async () => {
       });
     } catch (error) {
       console.error("Analytics Error:", error);
-      res.status(500).json({ message: "Failed to load analytics", error: error.message });
+      sendErrorResponse(res, error, "Failed to load analytics");
     }
   });
 
@@ -2837,3 +3216,4 @@ startServer();
 
 module.exports = app;
 
+// Trigger restart
