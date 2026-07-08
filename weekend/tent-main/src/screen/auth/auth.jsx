@@ -16,6 +16,7 @@ import {
 import { auth, googleProvider, db } from '../../firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import fineLogo from '../../assets/Fine LOGO.png';
+import { getEligibleGstCoupon } from '../../utils/couponHelper';
 import './auth.css';
 
 const Auth = () => {
@@ -23,9 +24,60 @@ const Auth = () => {
   const queryParams = new URLSearchParams(window.location.search);
   const redirectPath = queryParams.get('redirect') || '/';
 
-  // Navigation State
+  // ─── State Hooks ─────────────────────────────────────────────────────────
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [company, setCompany] = useState('');
+  const [gstNumber, setGstNumber] = useState('');
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [loginMethod, setLoginMethod] = useState('email'); // 'email' | 'phone'
+  const [isEmailSignupOtpSent, setIsEmailSignupOtpSent] = useState(false);
+  const [emailSignupOtp, setEmailSignupOtp] = useState('');
+  const [resendTimer, setResendTimer] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [isEmailLinkSent, setIsEmailLinkSent] = useState(false);
+  const [isEmailVerificationRequired, setIsEmailVerificationRequired] = useState(false);
+  const [honeypot, setHoneypot] = useState('');
+  const [captchaQuestion, setCaptchaQuestion] = useState({ num1: 0, num2: 0 });
+  const [captchaAnswer, setCaptchaAnswer] = useState('');
+  const [captchaError, setCaptchaError] = useState(false);
 
+  // ─── Sync User with MongoDB ──────────────────────────────────────────────
+  async function syncUserWithBackend(idToken, extraData = {}) {
+    try {
+      const res = await fetch(apiUrl('/api/auth/sync'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify(extraData)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('token', data.token || idToken);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        const role = data.user.role?.toLowerCase() || 'user';
+        localStorage.setItem('role', role);
+        localStorage.setItem('isAdminAuthenticated', role === 'admin' ? 'true' : 'false');
+        return data.user;
+      }
+      return { error: data.message || "Failed to sync profile with database." };
+    } catch (err) {
+      console.error("Sync error:", err);
+      return { error: err.message };
+    }
+  }
+
+  // ─── Navigation/Auth Status Effect ──────────────────────────────────────
   useEffect(() => {
     const authStatus = localStorage.getItem('isAdminAuthenticated');
     if (authStatus === 'true') {
@@ -33,7 +85,7 @@ const Auth = () => {
     }
   }, [navigate]);
 
-  // Handle Firebase Email Link Callback
+  // ─── Firebase Email Link Callback Effect ──────────────────────────────────
   useEffect(() => {
     if (isSignInWithEmailLink(auth, window.location.href)) {
       let emailForLink = window.localStorage.getItem('emailForSignIn');
@@ -58,63 +110,22 @@ const Auth = () => {
     }
   }, [navigate, redirectPath]);
 
-  // Helper: Sync User with MongoDB
-  const syncUserWithBackend = async (idToken, extraData = {}) => {
-    try {
-      const res = await fetch(apiUrl('/api/auth/sync'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify(extraData)
-      });
-      const data = await res.json();
-      if (res.ok) {
-        localStorage.setItem('token', idToken);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        const role = data.user.role?.toLowerCase() || 'user';
-        localStorage.setItem('role', role);
-        localStorage.setItem('isAdminAuthenticated', role === 'admin' ? 'true' : 'false');
-        return data.user;
-      }
-      return { error: data.message || "Failed to sync profile with database." };
-    } catch (err) {
-      console.error("Sync error:", err);
-      return { error: err.message };
+  // ─── Timer Effect ────────────────────────────────────────────────────────
+  useEffect(() => {
+    let interval;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
     }
-    return null;
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  const formatTimer = (seconds) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
   };
-
-
-
-  // Form State
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [company, setCompany] = useState('');
-  const [gstNumber, setGstNumber] = useState('');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [isOtpSent, setIsOtpSent] = useState(false);
-  const [loginMethod, setLoginMethod] = useState('email'); // 'email' | 'phone'
-  const [isEmailSignupOtpSent, setIsEmailSignupOtpSent] = useState(false);
-  const [emailSignupOtp, setEmailSignupOtp] = useState('');
-
-  // UI State
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
-  const [isEmailLinkSent, setIsEmailLinkSent] = useState(false);
-  const [isEmailVerificationRequired, setIsEmailVerificationRequired] = useState(false);
-
-  // Spam Protection State
-  const [honeypot, setHoneypot] = useState('');
-  const [captchaQuestion, setCaptchaQuestion] = useState({ num1: 0, num2: 0 });
-  const [captchaAnswer, setCaptchaAnswer] = useState('');
-  const [captchaError, setCaptchaError] = useState(false);
 
   const generateCaptcha = () => {
     const num1 = Math.floor(Math.random() * 10) + 1;
@@ -164,11 +175,8 @@ const Auth = () => {
       const data = await res.json();
       if (res.ok) {
         setIsOtpSent(true);
-        if (data.demoMode) {
-          setSuccessMsg(`[Demo Mode] OTP is: ${data.otp} (Enter this code below to proceed)`);
-        } else {
-          setSuccessMsg('OTP sent successfully!');
-        }
+        setResendTimer(0); // 0 seconds
+        setSuccessMsg('OTP sent successfully!');
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
       }
@@ -197,8 +205,18 @@ const Auth = () => {
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('role', 'user');
         localStorage.setItem('isAdminAuthenticated', 'false');
-        setSuccessMsg('Login successful! Redirecting...');
-        setTimeout(() => window.location.href = redirectPath, 1000);
+
+        let msg = 'Login successful! Redirecting...';
+        if (data.user.gstNumber) {
+          const couponRes = await getEligibleGstCoupon(data.user.gstNumber);
+          if (couponRes && couponRes.eligible) {
+            msg = `Login successful! You are eligible for the ${couponRes.code} coupon code! Redirecting...`;
+            localStorage.setItem('pendingGstCoupon', couponRes.code);
+          }
+        }
+
+        setSuccessMsg(msg);
+        setTimeout(() => window.location.href = redirectPath, 2000);
       } else {
         setErrorMsg(data.message || 'Invalid OTP');
       }
@@ -237,11 +255,8 @@ const Auth = () => {
       const data = await res.json();
       if (res.ok) {
         setIsOtpSent(true);
-        if (data.demoMode) {
-          setSuccessMsg(`[Demo Mode] OTP is: ${data.otp} (Enter this code below to proceed)`);
-        } else {
-          setSuccessMsg('OTP sent successfully!');
-        }
+        setResendTimer(0); // 0 seconds
+        setSuccessMsg('OTP sent successfully!');
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
       }
@@ -270,8 +285,18 @@ const Auth = () => {
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('role', 'user');
         localStorage.setItem('isAdminAuthenticated', 'false');
-        setSuccessMsg('Account created successfully! Redirecting...');
-        setTimeout(() => window.location.href = redirectPath, 1000);
+
+        let msg = 'Account created successfully! Redirecting...';
+        if (data.user.gstNumber) {
+          const couponRes = await getEligibleGstCoupon(data.user.gstNumber);
+          if (couponRes && couponRes.eligible) {
+            msg = `Account created successfully! You are eligible for the ${couponRes.code} coupon code! Redirecting...`;
+            localStorage.setItem('pendingGstCoupon', couponRes.code);
+          }
+        }
+
+        setSuccessMsg(msg);
+        setTimeout(() => window.location.href = redirectPath, 2000);
       } else {
         setErrorMsg(data.message || 'Invalid OTP');
       }
@@ -330,8 +355,17 @@ const Auth = () => {
         return;
       }
 
-      setSuccessMsg("Login successful! Redirecting...");
-      setTimeout(() => window.location.href = redirectPath, 1000);
+      let msg = "Login successful! Redirecting...";
+      if (syncedUser.gstNumber) {
+        const couponRes = await getEligibleGstCoupon(syncedUser.gstNumber);
+        if (couponRes && couponRes.eligible) {
+          msg = `Login successful! You are eligible for the ${couponRes.code} coupon code! Redirecting...`;
+          localStorage.setItem('pendingGstCoupon', couponRes.code);
+        }
+      }
+
+      setSuccessMsg(msg);
+      setTimeout(() => window.location.href = redirectPath, 2000);
     } catch (err) {
       console.error("Auth failed:", err);
       setErrorMsg(friendlyError(err.code || err.message));
@@ -432,11 +466,8 @@ const Auth = () => {
       const data = await res.json();
       if (res.ok) {
         setIsEmailSignupOtpSent(true);
-        if (data.demoMode) {
-          setSuccessMsg(`[Demo Mode] OTP is: ${data.otp} (Enter this code below to proceed)`);
-        } else {
-          setSuccessMsg('OTP sent to your phone! Please verify to complete signup.');
-        }
+        setResendTimer(0); // 0 seconds
+        setSuccessMsg('OTP sent to your phone! Please verify to complete signup.');
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
       }
@@ -525,8 +556,17 @@ const Auth = () => {
         return;
       }
 
-      setSuccessMsg('Signed in with Google! Redirecting…');
-      setTimeout(() => window.location.href = redirectPath, 1000);
+      let msg = 'Signed in with Google! Redirecting…';
+      if (syncedUser.gstNumber) {
+        const couponRes = await getEligibleGstCoupon(syncedUser.gstNumber);
+        if (couponRes && couponRes.eligible) {
+          msg = `Signed in with Google! You are eligible for the ${couponRes.code} coupon code! Redirecting…`;
+          localStorage.setItem('pendingGstCoupon', couponRes.code);
+        }
+      }
+
+      setSuccessMsg(msg);
+      setTimeout(() => window.location.href = redirectPath, 2000);
     } catch (err) {
       if (err.code !== 'auth/popup-closed-by-user') {
         setErrorMsg(friendlyError(err.code));
@@ -757,9 +797,15 @@ const Auth = () => {
                         onChange={(e) => setOtp(e.target.value)}
                         required
                       />
-                      <p style={{ fontSize: '12px', color: '#64748b', marginTop: '8px', cursor: 'pointer' }} onClick={handleSendOtp}>
-                        Didn't receive code? Resend
-                      </p>
+                      {resendTimer > 0 ? (
+                        <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '8px' }}>
+                          Resend OTP in {formatTimer(resendTimer)}
+                        </p>
+                      ) : (
+                        <p style={{ fontSize: '12px', color: '#64748b', marginTop: '8px', cursor: 'pointer' }} onClick={handleSendOtp}>
+                          Didn't receive code? Resend
+                        </p>
+                      )}
                     </div>
                   )}
 

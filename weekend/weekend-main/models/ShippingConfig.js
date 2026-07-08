@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const { encrypt, decrypt } = require("../services/encryptionService");
+
 
 const ShippingConfigSchema = new mongoose.Schema({
   zones: {
@@ -97,8 +99,8 @@ const ShippingConfigSchema = new mongoose.Schema({
         rateMultiplier: { type: Number, default: 1.0 },
         apiSettings: {
           apiUrl: { type: String, default: "" },
-          apiKey: { type: String, default: "" },
-          apiSecret: { type: String, default: "" }
+          apiKey: { type: mongoose.Schema.Types.Mixed, get: decrypt, set: encrypt },
+          apiSecret: { type: mongoose.Schema.Types.Mixed, get: decrypt, set: encrypt }
         }
       }
     ],
@@ -176,6 +178,10 @@ const ShippingConfigSchema = new mongoose.Schema({
     ],
     default: []
   }
-}, { timestamps: true });
+}, { 
+  timestamps: true,
+  toJSON: { getters: true },
+  toObject: { getters: true }
+});
 
 module.exports = mongoose.model("ShippingConfig", ShippingConfigSchema);

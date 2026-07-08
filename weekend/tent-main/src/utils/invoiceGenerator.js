@@ -25,11 +25,11 @@ export const downloadInvoice = async (order, letterheadUrl = null) => {
   invoiceElement.innerHTML = `
     <div style="position: relative; width: 100%; min-height: 1120px;">
       <!-- Letterhead Background / Header -->
-      ${letterheadUrl ? 
-        `<img src="${letterheadUrl}" style="position: absolute; top: 0; left: 0; width: 100%; z-index: 0;" />` : 
-        `<div style="height: 120px; background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%); display: flex; align-items: center; padding: 0 50px; color: white;">
+      ${letterheadUrl ?
+      `<img src="${letterheadUrl}" style="position: absolute; top: 0; left: 0; width: 100%; z-index: 0;" />` :
+      `<div style="height: 120px; background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%); display: flex; align-items: center; padding: 0 50px; color: white;">
            <h1 style="margin: 0; font-size: 24px; letter-spacing: 2px;">FINE BEARING & OIL SEAL STORE</h1>
-         </div>`
+       </div>`
       }
 
       <div style="position: relative; z-index: 1; padding: 50px; margin-top: ${letterheadUrl ? '150px' : '20px'};">

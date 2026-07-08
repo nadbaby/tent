@@ -5,8 +5,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { clearCart } from '../../redux/cartSlice';
 import { resolveImageUrl } from '../../components/home/ProductCard';
-import { MapPin, ShoppingBag, CreditCard, CheckCircle, ChevronRight, User, Phone, Mail, Building, ArrowLeft, Search, Loader2, Info } from 'lucide-react';
+import { MapPin, ShoppingBag, CreditCard, CheckCircle, ChevronRight, User, Phone, Mail, Building, ArrowLeft, Search, Loader2, Info, Truck } from 'lucide-react';
 import { indiaData } from '../../utils/indiaData';
+import { getEligibleGstCoupon } from '../../utils/couponHelper';
 import PaymentLoader from '../../components/common/PaymentLoader/PaymentLoader';
 import './checkout.css';
 
@@ -14,13 +15,10 @@ const Checkout = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { items, totalQuantity } = useSelector((state) => state.cart);
-  const dropdownRef = useRef(null);
-
   const userData = JSON.parse(localStorage.getItem('user')) || null;
   const specialDiscount = userData?.specialDiscount || 0;
 
   const [step, setStep] = useState(1);
-  const [addressSearch, setAddressSearch] = useState('');
 
   // Authentication Check
   useEffect(() => {
@@ -29,10 +27,7 @@ const Checkout = () => {
       navigate('/login?redirect=checkout');
     }
   }, [navigate]);
-  const [suggestions, setSuggestions] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
   const [error, setError] = useState('');
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [saveThisAddress, setSaveThisAddress] = useState(false);
@@ -71,133 +66,29 @@ const Checkout = () => {
     urgency: 'Normal'
   });
 
-  useEffect(() => {
-    if (addressData.city?.trim().toLowerCase() !== 'ludhiana') {
+  const handleSelectSavedAddress = (addr) => {
+    setAddressData({
+      fullName: addr.fullName || userData?.name || '',
+      phone: addr.phone || userData?.phone || '',
+      email: addr.email || userData?.email || '',
+      company: addr.company || '',
+      street: addr.street || '',
+      city: addr.city || '',
+      state: addr.state || '',
+      zip: addr.zip || '',
+      country: addr.country || 'India',
+      lat: addr.lat || '',
+      lng: addr.lng || '',
+      landmark: addr.landmark || '',
+      nearbyPlaces: addr.nearbyPlaces || '',
+      gstNumber: addr.gstNumber || userData?.gstNumber || '',
+      deliveryInstructions: addr.deliveryInstructions || ''
+    });
+    setSelectedAddressId(addr.id);
+    if (addr.city?.trim().toLowerCase() !== 'ludhiana') {
       setDeliveryMethod('STANDARD');
     }
-  }, [addressData.city]);
-
-  const GEOAPIFY_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY || '';
-
-  // Debounced Search Effect
-  useEffect(() => {
-    if (addressSearch.length < 3) {
-      setSuggestions([]);
-      setShowDropdown(false);
-      return;
-    }
-    const timer = setTimeout(() => fetchSuggestions(addressSearch), 400);
-    return () => clearTimeout(timer);
-  }, [addressSearch]);
-
-  // Click Outside logic
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setShowDropdown(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const fetchSuggestions = async (text) => {
-    if (!GEOAPIFY_KEY) {
-      console.warn("Geoapify API key is missing. Address autocomplete will not work.");
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(text)}&filter=countrycode:in&limit=5&apiKey=${GEOAPIFY_KEY}`
-      );
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      setSuggestions(data.features || []);
-      setShowDropdown(true);
-    } catch (error) {
-      console.error("Geoapify Autocomplete Error:", error);
-    } finally {
-      setIsLoading(false);
-    }
   };
-
-  const selectSuggestion = (feature) => {
-    const props = feature.properties;
-    const [lng, lat] = feature.geometry.coordinates;
-
-    setAddressData(prev => ({
-      ...prev,
-      street: props.formatted,
-      city: props.city || props.municipality || '',
-      state: props.state || '',
-      zip: props.postcode || '',
-      country: props.country || 'India',
-      lat: lat,
-      lng: lng
-    }));
-
-    setAddressSearch(props.formatted);
-    setShowDropdown(false);
-  };
-
-  const handleLocateMe = () => {
-    setError('');
-    if (!GEOAPIFY_KEY) {
-      setError("Location services are not configured. (Missing API Key)");
-      return;
-    }
-
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        try {
-          const res = await fetch(`https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&apiKey=${GEOAPIFY_KEY}`);
-          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-          const data = await res.json();
-          if (data.features?.length > 0) {
-            selectSuggestion(data.features[0]);
-          } else {
-            setError("Could not find address for your current location.");
-          }
-        } catch (err) {
-          console.error("Reverse geocode error", err);
-          setError("Failed to fetch address from coordinates.");
-        }
-      }, (err) => {
-        console.error("Geolocation error", err);
-        setError("Please enable location permissions in your browser.");
-      });
-    } else {
-      setError("Geolocation is not supported by your browser.");
-    }
-  };
-
-  // --- Auto-fetch Location via IP (Geoapify) ---
-  useEffect(() => {
-    const fetchLocationByIP = async () => {
-      if (!GEOAPIFY_KEY || addressData.city || addressData.state) return;
-
-      try {
-        const res = await fetch(`https://api.geoapify.com/v1/ipinfo?apiKey=${GEOAPIFY_KEY}`);
-        if (!res.ok) return;
-        
-        const data = await res.json();
-        if (data.city?.name || data.state?.name) {
-          setAddressData(prev => ({
-            ...prev,
-            city: data.city?.name || prev.city,
-            state: data.state?.name || prev.state,
-            country: data.country?.name || prev.country,
-            zip: data.postcode || prev.zip
-          }));
-          console.log("Auto-fetched location via IP:", data.city?.name, data.state?.name);
-        }
-      } catch (err) {
-        console.warn("IP Location fetch failed:", err);
-      }
-    };
-
-    fetchLocationByIP();
-  }, [GEOAPIFY_KEY]);
 
   // --- Fetch Saved Addresses ---
   useEffect(() => {
@@ -224,28 +115,6 @@ const Checkout = () => {
     };
     fetchSavedAddresses();
   }, []);
-
-  const handleSelectSavedAddress = (addr) => {
-    setAddressData({
-      fullName: addr.fullName || userData?.name || '',
-      phone: addr.phone || userData?.phone || '',
-      email: addr.email || userData?.email || '',
-      company: addr.company || '',
-      street: addr.street || '',
-      city: addr.city || '',
-      state: addr.state || '',
-      zip: addr.zip || '',
-      country: addr.country || 'India',
-      lat: addr.lat || '',
-      lng: addr.lng || '',
-      landmark: addr.landmark || '',
-      nearbyPlaces: addr.nearbyPlaces || '',
-      gstNumber: addr.gstNumber || userData?.gstNumber || '',
-      deliveryInstructions: addr.deliveryInstructions || ''
-    });
-    setSelectedAddressId(addr.id);
-    setAddressSearch(addr.street || '');
-  };
 
   const [shippingData, setShippingData] = useState({ 
     charge: 0, 
@@ -282,6 +151,14 @@ const Checkout = () => {
     };
     fetchCouriers();
   }, []);
+
+  const subtotal = items.reduce((sum, item) => sum + (item.totalPrice || (item.price * item.quantity) || 0), 0);
+  const discountAmount = (subtotal * specialDiscount) / 100;
+  const taxableAmount = subtotal - discountAmount;
+  const gstAmount = taxableAmount * 0.18;
+  const shippingCharge = shippingData.charge;
+  const couponDiscount = appliedCoupon ? appliedCoupon.discount : 0;
+  const totalPrice = Math.max(0, taxableAmount + gstAmount + shippingCharge - couponDiscount);
 
   // Fetch Shipping Charge dynamically based on address details, courier partner and prepaid/COD selection
   const fetchShippingCharge = async (zip, state, city, courierId = selectedCourierId, payMethod = paymentMethod) => {
@@ -323,8 +200,9 @@ const Checkout = () => {
     }
   };
   
-  const handleApplyCoupon = async () => {
-    if (!couponCode) return;
+  const handleApplyCoupon = async (autoApplyCode = null) => {
+    const codeToValidate = (typeof autoApplyCode === 'string' ? autoApplyCode : couponCode);
+    if (!codeToValidate) return;
     if (!addressData.gstNumber) {
       setCouponError('Please enter your GST number in the shipping form first.');
       return;
@@ -340,7 +218,7 @@ const Checkout = () => {
           ...(token && { 'Authorization': `Bearer ${token}` })
         },
         body: JSON.stringify({ 
-          code: couponCode, 
+          code: codeToValidate, 
           subtotal,
           gstNumber: addressData.gstNumber 
         })
@@ -349,10 +227,15 @@ const Checkout = () => {
       const data = await response.json();
       if (response.ok) {
         setAppliedCoupon(data);
+        if (typeof autoApplyCode === 'string') setCouponCode(autoApplyCode);
         setCouponError('');
       } else {
+        // If auto-applying fails (e.g. min cart value), clear the auto-applied code so they see why
         setCouponError(data.message || 'Invalid coupon');
-        setAppliedCoupon(null);
+        if (appliedCoupon && appliedCoupon.code === codeToValidate) {
+          setAppliedCoupon(null);
+        }
+        if (typeof autoApplyCode === 'string') setCouponCode('');
       }
     } catch (err) {
       setCouponError('Connection error');
@@ -361,39 +244,41 @@ const Checkout = () => {
     }
   };
 
+  useEffect(() => {
+    const checkEligibleCoupon = async () => {
+      const gst = addressData.gstNumber;
+      if (gst && gst.length >= 10) { // simple check before API call
+        const res = await getEligibleGstCoupon(gst);
+        if (res && res.eligible && res.code) {
+          if (!appliedCoupon || appliedCoupon.code !== res.code) {
+             handleApplyCoupon(res.code);
+          }
+        } else if (appliedCoupon && (appliedCoupon.code === 'MEFIRST' || appliedCoupon.code === 'MESECOND')) {
+           removeCoupon();
+        }
+      } else if (appliedCoupon && (appliedCoupon.code === 'MEFIRST' || appliedCoupon.code === 'MESECOND')) {
+         removeCoupon();
+      }
+    };
+    
+    // Add debounce to avoid calling on every keystroke
+    const timer = setTimeout(() => {
+      checkEligibleCoupon();
+    }, 800);
+    
+    return () => clearTimeout(timer);
+  }, [addressData.gstNumber, subtotal]); // Also re-run if subtotal changes so it reapplies if needed (e.g. min order changes)
+
   const removeCoupon = () => {
     setAppliedCoupon(null);
     setCouponCode('');
   };
 
   useEffect(() => {
-    if (deliveryMethod === 'PORTER') {
-      setShippingData(prev => ({
-        ...prev,
-        charge: 0,
-        days: 'Porter Delivery',
-        zone: 'Ludhiana Local',
-        billableWeight: 0,
-        weights: null,
-        breakdown: null,
-        isFreeShippingApplied: false,
-        apiIntegration: null,
-        loading: false
-      }));
-      return;
-    }
-    if (addressData.city) {
+    if (deliveryMethod !== 'PORTER' && addressData.city) {
       fetchShippingCharge(addressData.zip, addressData.state, addressData.city, selectedCourierId, paymentMethod);
     }
   }, [addressData.zip, addressData.state, addressData.city, selectedCourierId, paymentMethod, deliveryMethod]);
-
-  const subtotal = items.reduce((sum, item) => sum + (item.totalPrice || (item.price * item.quantity) || 0), 0);
-  const discountAmount = (subtotal * specialDiscount) / 100;
-  const taxableAmount = subtotal - discountAmount;
-  const gstAmount = taxableAmount * 0.18;
-  const shippingCharge = shippingData.charge;
-  const couponDiscount = appliedCoupon ? appliedCoupon.discount : 0;
-  const totalPrice = Math.max(0, taxableAmount + gstAmount + shippingCharge - couponDiscount);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -401,6 +286,9 @@ const Checkout = () => {
       setAddressData(prev => ({ ...prev, state: value, city: '' }));
     } else {
       setAddressData(prev => ({ ...prev, [name]: value }));
+      if (name === 'city' && value?.trim().toLowerCase() !== 'ludhiana') {
+        setDeliveryMethod('STANDARD');
+      }
     }
   };
 
@@ -576,9 +464,6 @@ const Checkout = () => {
                       <h3><MapPin size={20} /> Shipping Address</h3>
                       <p>Enter your details and address for fast delivery.</p>
                     </div>
-                    <button type="button" onClick={handleLocateMe} className="locate-btn">
-                      <MapPin size={14} /> Detect My Location
-                    </button>
                   </div>
                 </div>
                 
@@ -606,7 +491,6 @@ const Checkout = () => {
                         className={`saved-address-card new-address ${!selectedAddressId ? 'selected' : ''}`}
                         onClick={() => {
                           setSelectedAddressId(null);
-                          setAddressSearch('');
                           setAddressData(prev => ({ ...prev, street: '', city: '', state: '', zip: '', landmark: '', nearbyPlaces: '', deliveryInstructions: '' }));
                         }}
                       >
@@ -622,34 +506,6 @@ const Checkout = () => {
                   </div>
                 )}
 
-                <div className="map-search-container" ref={dropdownRef}>
-                  <div className="search-suggest-box">
-                    <Search size={18} />
-                    <input
-                      type="text"
-                      placeholder="Start typing your full address..."
-                      value={addressSearch}
-                      onChange={(e) => setAddressSearch(e.target.value)}
-                      onFocus={() => addressSearch.length >= 3 && setShowDropdown(true)}
-                    />
-                    {isLoading && <Loader2 className="search-loader animate-spin" size={18} />}
-                  </div>
-
-                  {showDropdown && (
-                    <div className="suggestions-list">
-                      {suggestions.length > 0 ? (
-                        suggestions.map((feature, index) => (
-                          <div key={index} className="suggestion-item" onClick={() => selectSuggestion(feature)}>
-                            <MapPin size={14} />
-                            <span>{feature.properties.formatted}</span>
-                          </div>
-                        ))
-                      ) : (
-                        !isLoading && <div className="no-results">No address found for "{addressSearch}"</div>
-                      )}
-                    </div>
-                  )}
-                </div>
 
                 <form className="address-form" onSubmit={handleNextStep}>
                   <div className="form-grid">
@@ -710,6 +566,18 @@ const Checkout = () => {
                             className={`courier-option-card ${deliveryMethod === 'PORTER' ? 'selected' : ''}`}
                             onClick={() => {
                               setDeliveryMethod('PORTER');
+                              setShippingData({
+                                charge: 0,
+                                days: 'Porter Delivery',
+                                zone: 'Ludhiana Local',
+                                billableWeight: 0,
+                                weights: null,
+                                breakdown: null,
+                                isFreeShippingApplied: false,
+                                freeShippingReason: '',
+                                apiIntegration: null,
+                                loading: false
+                              });
                               setPorterDetails(prev => ({
                                 ...prev,
                                 contactName: prev.contactName || addressData.fullName,
@@ -1031,14 +899,14 @@ const Checkout = () => {
                 {couponError && <div className="coupon-error">{couponError}</div>}
               </div>
 
-              {shippingData.weights && (
+              {shippingData.weights && shippingData.breakdown && (
                 <div className="shipping-breakdown-details">
                   <div className="breakdown-header">
                     <Info size={12} /> Shipping Breakdown
                   </div>
                   <div className="breakdown-body">
-                    <div className="b-row"><span>Actual Weight</span><span>{shippingData.weights.actual.toFixed(2)} kg</span></div>
-                    <div className="b-row"><span>Volumetric Weight</span><span>{shippingData.weights.volumetric.toFixed(2)} kg</span></div>
+                    <div className="b-row"><span>Actual Weight</span><span>{shippingData.weights.actual?.toFixed(2) || 0} kg</span></div>
+                    <div className="b-row"><span>Volumetric Weight</span><span>{shippingData.weights.volumetric?.toFixed(2) || 0} kg</span></div>
                     <div className="b-row highlighted"><span>Chargeable Weight</span><span>{shippingData.billableWeight} kg</span></div>
                     <div className="b-divider"></div>
                     <div className="b-row"><span>Base Freight</span><span>₹{shippingData.breakdown.baseFreight}</span></div>

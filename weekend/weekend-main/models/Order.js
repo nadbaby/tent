@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { encrypt, decrypt } = require("../services/encryptionService");
 
 const OrderSchema = new mongoose.Schema({
   orderId: { type: String, unique: true, required: true },
@@ -27,37 +28,37 @@ const OrderSchema = new mongoose.Schema({
     roundWeight: { type: Number }
   },
   shippingAddress: {
-    fullName: String,
-    phone: String,
-    email: String,
+    fullName: { type: mongoose.Schema.Types.Mixed, get: decrypt, set: encrypt },
+    phone: { type: mongoose.Schema.Types.Mixed, get: decrypt, set: encrypt },
+    email: { type: mongoose.Schema.Types.Mixed, get: decrypt, set: encrypt },
     company: String,
-    street: String,
+    street: { type: mongoose.Schema.Types.Mixed, get: decrypt, set: encrypt },
     city: String,
     state: String,
     zip: String,
     country: String,
     lat: Number,
     lng: Number,
-    landmark: String,
-    nearbyPlaces: String,
+    landmark: { type: mongoose.Schema.Types.Mixed, get: decrypt, set: encrypt },
+    nearbyPlaces: { type: mongoose.Schema.Types.Mixed, get: decrypt, set: encrypt },
     gstNumber: String,
-    deliveryInstructions: String
+    deliveryInstructions: { type: mongoose.Schema.Types.Mixed, get: decrypt, set: encrypt }
   },
   paymentDetails: {
     status: { type: String, enum: ["PENDING", "SUCCESS", "FAILED"], default: "PENDING" },
     transactionId: String,
     errorMessage: String,
-    gatewayResponse: mongoose.Schema.Types.Mixed,
+    gatewayResponse: { type: mongoose.Schema.Types.Mixed, get: decrypt, set: encrypt },
     updatedAt: { type: Date, default: Date.now }
   },
   deliveryMethod: { type: String, enum: ["STANDARD", "PORTER"], default: "STANDARD" },
   porterDeliveryDetails: {
-    fullName: String,
-    phone: String,
-    fullAddress: String,
-    landmark: String,
+    fullName: { type: mongoose.Schema.Types.Mixed, get: decrypt, set: encrypt },
+    phone: { type: mongoose.Schema.Types.Mixed, get: decrypt, set: encrypt },
+    fullAddress: { type: mongoose.Schema.Types.Mixed, get: decrypt, set: encrypt },
+    landmark: { type: mongoose.Schema.Types.Mixed, get: decrypt, set: encrypt },
     preferredTime: String,
-    deliveryInstructions: String,
+    deliveryInstructions: { type: mongoose.Schema.Types.Mixed, get: decrypt, set: encrypt },
     urgency: String, // Normal / Urgent / Machine Breakdown
     bookManually: { type: Boolean, default: false },
     porterStatus: { type: String, enum: ["Porter Booking Pending", "Assigned", "Picked Up", "Out for Delivery", "Delivered", "Cancelled"], default: "Porter Booking Pending" }
@@ -70,6 +71,9 @@ const OrderSchema = new mongoose.Schema({
   createdAt: { type: String, default: () => new Date().toISOString() },
   paidAt: { type: String },
   hiddenFromUser: { type: Boolean, default: false }
+}, {
+  toJSON: { getters: true },
+  toObject: { getters: true }
 });
 
 module.exports = mongoose.model("Order", OrderSchema);

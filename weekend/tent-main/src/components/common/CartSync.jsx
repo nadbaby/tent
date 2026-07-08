@@ -11,7 +11,7 @@ const CartSync = () => {
   const { items } = useSelector((state) => state.cart);
   const isFirstRender = useRef(true);
   const user = localStorage.getItem('user');
-
+  
   // 1. On Mount: Fetch cart from server if user is logged in
   useEffect(() => {
     if (user) {

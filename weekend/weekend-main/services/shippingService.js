@@ -22,11 +22,11 @@ const detectZone = async (city, state) => {
     return "DELHI_NCR";
   }
 
-  // 3. Check NORTH EAST
-  if (config.northEastStates.some(s => s.toLowerCase() === normalizedState)) {
+if (config.northEastStates.some(s => s.toLowerCase() === normalizedState)) {
     return "NORTH_EAST";
   }
-
+  // 3. Check NORTH EAST
+  
   // 4. Default to REST OF INDIA
   return "REST_OF_INDIA";
 };
@@ -34,7 +34,7 @@ const detectZone = async (city, state) => {
 /**
  * Calculate Chargeable Weight (Max of Actual vs Volumetric)
  * Volumetric = (L * W * H) / divisor
- */
+ */ 
 const getChargeableWeight = (items, config) => {
   let totalActual = 0;
   let totalVolumetric = 0;
@@ -154,7 +154,7 @@ const calculateCharges = async (items, zoneKey, method = "PER_KG", invoiceValue 
   baseFreight = (baseFreight * courierMultiplier) + courierAdjustment;
 
   // 6. Fuel Surcharges
-  const fuelSurcharge = (baseFreight * config.fuelSurcharge) / 100;
+  let fuelSurcharge = (baseFreight * config.fuelSurcharge) / 100;
   
   // 7. E-Way Bill Surcharge
   let ewayBillCharge = 0;
@@ -276,7 +276,7 @@ const initializeDefaultConfig = async () => {
 
 module.exports = {
   detectZone,
-  getChargeableWeight,
+  getChargeableWeiht,
   calculateCharges,
   initializeDefaultConfig
 };

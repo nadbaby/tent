@@ -307,7 +307,7 @@ const Orders = () => {
                           className="btn-secondary" 
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.location.href = '/support/create';
+                            window.location.href = `/support/create?orderId=${order.orderId}`;
                           }}
                           title="Raise Support Ticket"
                         >
@@ -389,7 +389,32 @@ const Orders = () => {
                         <h5 style={{ margin: 0, fontSize: '0.95rem' }}>{item.name}</h5>
                         <p style={{ margin: '4px 0 0', color: '#86868b', fontSize: '0.85rem' }}>{item.quantity} units</p>
                       </div>
-                      <div style={{ fontWeight: '700' }}>₹{item.totalPrice?.toLocaleString('en-IN')}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                        <div style={{ fontWeight: '700' }}>₹{item.totalPrice?.toLocaleString('en-IN')}</div>
+                        <button 
+                          style={{ 
+                            background: 'none', 
+                            border: 'none', 
+                            color: '#f47b20', 
+                            fontSize: '0.8rem', 
+                            fontWeight: '600', 
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            transition: 'background 0.2s'
+                          }}
+                          onClick={() => {
+                            window.location.href = `/support/create?orderId=${selectedOrder.orderId}&productSku=${item.sku || item.name}`;
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = '#ffe5d4'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                        >
+                          <LifeBuoy size={12} /> Raise Ticket
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -420,7 +445,7 @@ const Orders = () => {
               </div>
 
               {/* Action Buttons */}
-              <div style={{ marginTop: 'auto', paddingTop: '40px', display: 'flex', gap: '16px' }}>
+              <div style={{ marginTop: '40px', display: 'flex', gap: '16px', paddingBottom: '20px' }}>
                 <button 
                   className="btn-premium" 
                   style={{ flex: 1, justifyContent: 'center' }}
@@ -440,7 +465,7 @@ const Orders = () => {
                 <button 
                   className="btn-secondary" 
                   style={{ flex: 1, justifyContent: 'center' }}
-                  onClick={() => window.location.href = '/my-tickets'}
+                  onClick={() => window.location.href = `/support/create?orderId=${selectedOrder.orderId}`}
                 >
                   <LifeBuoy size={18} /> Support Ticket
                 </button>

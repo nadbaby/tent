@@ -5,12 +5,12 @@ import { Link } from 'react-router-dom';
 import './CategorySection.css';
 
 const categories = [
-  { id: 1, name: "Bearings", count: "142 Products", image: "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&q=80&w=400" },
-  { id: 2, name: "Hydraulics Tools", count: "86 Products", image: "https://images.unsplash.com/photo-1541888087799-a6e59ad7ebbf?auto=format&fit=crop&q=80&w=400" },
-  { id: 3, name: "Motors", count: "215 Products", image: "https://images.unsplash.com/photo-1601053075306-3837f401f5cf?auto=format&fit=crop&q=80&w=400" },
-  { id: 4, name: "CNC Machine Spares", count: "54 Products", image: "https://images.unsplash.com/photo-1586528116311-ad8ed7450141?auto=format&fit=crop&q=80&w=400" },
-  { id: 5, name: "Seals", count: "112 Products", image: "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&q=80&w=400" },
-  { id: 6, name: "Pneumatic", count: "24 Products", image: "https://images.unsplash.com/photo-1581092335397-9583eb92d232?auto=format&fit=crop&q=80&w=400" },
+  { id: 1, name: "Bearings", count: "142 Products", image: "/categories/bearing-new.jpg" },
+  { id: 2, name: "Hydraulic Valves", count: "86 Products", image: "/categories/hydraulic-valve-v2.jpg" },
+  { id: 3, name: "Motor", count: "215 Products", image: "/categories/electric-motor-v2.jpg" },
+  { id: 4, name: "Pump", count: "112 Products", image: "/categories/hydraulic-pump.jpg" },
+  { id: 5, name: "Linear Guideway", count: "54 Products", image: "/categories/linear-guideway-new.png" },
+  { id: 6, name: "Coupling", count: "24 Products", image: "/categories/coupling-v3.jpg" },
 ];
 
 const CategorySection = () => {
@@ -18,6 +18,9 @@ const CategorySection = () => {
     <section className="category-section">
       <div className="container">
         <div className="section-header">
+
+
+
           <div>
             <h2 className="section-title">Shop by Category</h2>
             <p className="section-subtitle">Find exactly what you need quickly and efficiently.</p>
@@ -43,5 +46,7 @@ const CategorySection = () => {
     </section>
   );
 };
+
+
 
 export default CategorySection;

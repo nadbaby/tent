@@ -6,11 +6,11 @@ const authToken = process.env.TWILIO_AUTH_TOKEN;
 const apiKeySid = process.env.TWILIO_API_KEY_SID;
 const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
 
-console.log("Twilio Config Loaded:", { 
-    accountSid: !!accountSid, 
-    authToken: !!authToken, 
-    apiKeySid: !!apiKeySid, 
-    phone: !!twilioPhoneNumber 
+console.log("Twilio Config Loaded:", {
+    accountSid: !!accountSid,
+    authToken: !!authToken,
+    apiKeySid: !!apiKeySid,
+    phone: !!twilioPhoneNumber
 });
 
 if (!accountSid || !authToken || !twilioPhoneNumber) {
@@ -19,14 +19,31 @@ if (!accountSid || !authToken || !twilioPhoneNumber) {
     console.log("✅ [Twilio] Configuration loaded successfully.");
 }
 
-// Initialize Twilio Client
+// Check if Twilio is properly configured (not using placeholders or empty values)
+const isTwilioConfigured = !(
+    !accountSid || 
+    !authToken || 
+    accountSid.includes('xxx') || 
+    accountSid.includes('your_') ||
+    authToken.includes('xxx') || 
+    authToken.includes('your_') ||
+    !twilioPhoneNumber || 
+    twilioPhoneNumber.includes('xxx') ||
+    twilioPhoneNumber.includes('your_')
+);
+
+// Initialize Twilio Client only if configured
 let client;
-if (apiKeySid && apiKeySid.startsWith('SK')) {
-    console.log("Using Twilio API Key authentication...");
-    client = twilio(apiKeySid, authToken, { accountSid: accountSid });
+if (isTwilioConfigured) {
+    if (apiKeySid && apiKeySid.startsWith('SK')) {
+        console.log("Using Twilio API Key authentication...");
+        client = twilio(apiKeySid, authToken, { accountSid: accountSid });
+    } else {
+        console.log("Using Twilio Account SID/Auth Token authentication...");
+        client = twilio(accountSid, authToken);
+    }
 } else {
-    console.log("Using Twilio Account SID/Auth Token authentication...");
-    client = twilio(accountSid, authToken);
+    console.warn("⚠️ [Twilio Warning] Running in offline/development mode. SMS messages will be logged to the console.");
 }
 
 // In-memory OTP storage (phone → { otp, expires, lastSent })
@@ -61,53 +78,44 @@ const sendOtp = async (phone) => {
         formattedPhone = `+91${formattedPhone}`;
     }
 
-    // Rate-limit: 60 seconds between requests per number
+    // Rate-limit: 10 minutes between requests per number
     const existing = otpStore.get(formattedPhone);
     const now = Date.now();
-    if (existing && (now - existing.lastSent < 60000)) {
-        const remaining = Math.ceil((60000 - (now - existing.lastSent)) / 1000);
-        throw new Error(`Please wait ${remaining} seconds before requesting a new OTP.`);
+    if (existing && (now - existing.lastSent < 600000)) {
+        const remainingMinutes = Math.ceil((600000 - (now - existing.lastSent)) / 60000);
+        throw new Error(`Please wait ${remainingMinutes} minutes before requesting a new OTP.`);
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiry = now + (5 * 60 * 1000); // 5 minutes
+    const expiry = now + (15 * 60 * 1000); // 15 minutes
 
-    // Graceful Demo Fallback when Twilio credentials are not set or are placeholders
-    const isPlaceholder = !accountSid || !authToken || accountSid.includes('xxx') || authToken.includes('xxx') || !twilioPhoneNumber || twilioPhoneNumber.includes('xxx');
-    if (isPlaceholder) {
-        otpStore.set(formattedPhone, { otp, expires: expiry, lastSent: now });
-        console.log(`[DEMO MODE OTP] Virtual OTP generated: ${otp} for ${formattedPhone}`);
-        return { 
-            success: true, 
-            demoMode: true, 
-            otp: otp,
-            messageId: "demo_" + Date.now()
-        };
+    // Store OTP in memory first
+    otpStore.set(formattedPhone, { otp, expires: expiry, lastSent: now });
+
+    if (!isTwilioConfigured) {
+        if (process.env.NODE_ENV !== "production") {
+            console.log(`\n==================================================`);
+            console.log(`[Twilio Dev Fallback] OTP for ${formattedPhone} is: ${otp}`);
+            console.log(`==================================================\n`);
+            return { success: true, messageId: "dev-fallback-sid", isDevFallback: true };
+        } else {
+            throw new Error("Twilio credentials are not configured properly in the server. Please check the .env file.");
+        }
     }
 
     try {
         const message = await client.messages.create({
-            body: `Your Fine Bearing OTP is: ${otp}\nValid for 5 minutes. Do not share this code.`,
+            body: `Your Fine Bearing OTP is: ${otp}\nValid for 15 minutes. Do not share this code.`,
             from: twilioPhoneNumber,
             to: formattedPhone
         });
 
-        otpStore.set(formattedPhone, { otp, expires: expiry, lastSent: now });
         console.log(`OTP sent via SMS to ${formattedPhone} | SID: ${message.sid}`);
         return { success: true, messageId: message.sid };
 
     } catch (error) {
         console.error('Twilio SMS Error:', error.code, error.message);
-
-        // Fall back to virtual OTP in dev/testing environment if Twilio API fails to ensure signup is never blocked
-        otpStore.set(formattedPhone, { otp, expires: expiry, lastSent: now });
-        console.log(`[FALLBACK DEMO OTP] Virtual OTP generated due to Twilio error: ${otp} for ${formattedPhone}`);
-        return { 
-            success: true, 
-            demoMode: true, 
-            otp: otp,
-            messageId: "demo_fallback_" + Date.now()
-        };
+        throw new Error(`Failed to send SMS: ${error.message}`);
     }
 };
 
@@ -162,16 +170,24 @@ const sendSMSOrderAlert = async (phone, orderId, status) => {
 
     const s = status.toLowerCase();
     const messageTemplates = {
-        confirmed:        `✅ Order Confirmed!\nOrder #${orderId} has been confirmed by Fine Bearing. We'll notify you when it's packed.`,
-        packed:           `📦 Order Packed!\nOrder #${orderId} is packed and ready for dispatch.`,
-        dispatched:       `🚚 Order Dispatched!\nOrder #${orderId} is on its way. Expect delivery updates soon.`,
+        confirmed: `✅ Order Confirmed!\nOrder #${orderId} has been confirmed by Fine Bearing. We'll notify you when it's packed.`,
+        packed: `📦 Order Packed!\nOrder #${orderId} is packed and ready for dispatch.`,
+        dispatched: `🚚 Order Dispatched!\nOrder #${orderId} is on its way. Expect delivery updates soon.`,
         out_for_delivery: `🛵 Out for Delivery!\nOrder #${orderId} is out for delivery. Please be available.`,
-        delivered:        `✅ Delivered!\nOrder #${orderId} has been delivered. Thank you for shopping with Fine Bearing!`,
-        cancelled:        `❌ Order Cancelled\nOrder #${orderId} has been cancelled. Contact us for support.`,
+        delivered: `✅ Delivered!\nOrder #${orderId} has been delivered. Thank you for shopping with Fine Bearing!`,
+        cancelled: `❌ Order Cancelled\nOrder #${orderId} has been cancelled. Contact us for support.`,
     };
 
-    const body = messageTemplates[s] || 
+    const body = messageTemplates[s] ||
         `📋 Order Update\nOrder #${orderId} status: ${status}. - Fine Bearing`;
+
+    if (!isTwilioConfigured) {
+        console.log(`\n==================================================`);
+        console.log(`[Twilio Dev Fallback] SMS Order Alert to ${formattedPhone}:`);
+        console.log(body);
+        console.log(`==================================================\n`);
+        return { success: true, messageId: "dev-fallback-alert-sid" };
+    }
 
     try {
         const message = await client.messages.create({
@@ -194,7 +210,6 @@ const sendSMSOrderAlert = async (phone, orderId, status) => {
  */
 const sendAdminNewOrderAlert = async (order) => {
     // Get list of admin/staff numbers from .env (comma separated)
-    // Example: ADMIN_NOTIFICATION_PHONES=+919888109761,+918146119761
     const numbersStr = process.env.ADMIN_NOTIFICATION_PHONES || process.env.ADMIN_PHONE || "";
     const numbers = numbersStr.split(',').map(n => n.trim()).filter(n => n.length > 5);
 
@@ -204,6 +219,14 @@ const sendAdminNewOrderAlert = async (order) => {
     }
 
     const body = `🚨 NEW ORDER RECEIVED!\n\nOrder ID: #${order.orderId}\nCustomer: ${order.user?.name || 'Guest'}\nAmount: ₹${order.total.toFixed(2)}\nItems: ${order.items.length}\n\nPlease check the Order Panel for details.`;
+
+    if (!isTwilioConfigured) {
+        console.log(`\n==================================================`);
+        console.log(`[Twilio Dev Fallback] Admin SMS Alert to ${numbers.join(', ')}:`);
+        console.log(body);
+        console.log(`==================================================\n`);
+        return;
+    }
 
     for (const phone of numbers) {
         try {
@@ -219,9 +242,9 @@ const sendAdminNewOrderAlert = async (order) => {
     }
 };
 
-module.exports = { 
-    sendOtp, 
-    verifyOtp, 
+module.exports = {
+    sendOtp,
+    verifyOtp,
     sendSMSOrderAlert,
     sendAdminNewOrderAlert
 };

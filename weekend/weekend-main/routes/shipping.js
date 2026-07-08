@@ -4,6 +4,16 @@ const ShippingConfig = require("../models/ShippingConfig");
 const { detectZone, calculateCharges } = require("../services/shippingService");
 const Product = require("../models/Product");
 
+// --- Helper: Secure Error Response ---
+const sendErrorResponse = (res, error, defaultMessage = "An internal server error occurred") => {
+  console.error("Shipping Route Error:", error);
+  const isProd = process.env.NODE_ENV === "production";
+  res.status(500).json({
+    success: false,
+    message: isProd ? defaultMessage : (error.message || defaultMessage)
+  });
+};
+
 /**
  * @route POST /api/shipping/calculate
  * @desc Calculate shipping charges for a cart and address
@@ -51,8 +61,7 @@ router.post("/calculate", async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Shipping Calculation Error:", error);
-    res.status(500).json({ success: false, message: error.message });
+    sendErrorResponse(res, error, "Failed to calculate shipping charges");
   }
 });
 
@@ -69,8 +78,7 @@ router.post("/preview", async (req, res) => {
     
     res.json(result);
   } catch (error) {
-    console.error("Shipping Preview Error:", error);
-    res.status(500).json({ message: error.message });
+    sendErrorResponse(res, error, "Failed to fetch shipping preview");
   }
 });
 
@@ -87,7 +95,7 @@ router.get("/config", async (req, res) => {
     }
     res.json({ success: true, data: config });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    sendErrorResponse(res, error, "Failed to retrieve shipping configuration");
   }
 });
 
@@ -104,7 +112,7 @@ router.put("/config", async (req, res) => {
     );
     res.json({ success: true, data: updatedConfig, message: "Shipping settings updated successfully" });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    sendErrorResponse(res, error, "Failed to update shipping configuration");
   }
 });
 
@@ -126,7 +134,7 @@ router.get("/analytics", async (req, res) => {
         ]);
         res.json({ success: true, data: stats });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        sendErrorResponse(res, error, "Failed to retrieve shipping analytics");
     }
 });
 

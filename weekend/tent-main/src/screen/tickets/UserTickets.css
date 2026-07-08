@@ -1,6 +1,6 @@
 .user-tickets-container {
   max-width: 1000px;
-  margin: 60px auto;
+  margin: 140px auto 60px auto;
   padding: 0 20px;
   font-family: 'Inter', sans-serif;
   animation: fadeIn 0.5s ease-out;

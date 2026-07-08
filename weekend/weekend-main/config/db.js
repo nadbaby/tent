@@ -1,15 +1,22 @@
 const mongoose = require("mongoose");
 
 let cachedPromise = null;
+let lastPingTime = 0;
+const PING_INTERVAL_MS = 30000; // Ping at most every 30 seconds
 
 const connectDB = async () => {
-  // 1. If already connected, do a health check
+  // 1. If already connected, do a health check only if interval has passed
   if (mongoose.connection.readyState === 1) {
+    const now = Date.now();
+    if (now - lastPingTime < PING_INTERVAL_MS) {
+      return true;
+    }
     try {
       await Promise.race([
         mongoose.connection.db.admin().ping(),
         new Promise((_, reject) => setTimeout(() => reject(new Error("Ping timeout")), 1000))
       ]);
+      lastPingTime = now;
       return true;
     } catch (error) {
       console.warn("⚠️ Stale connection, reconnecting...");
@@ -31,6 +38,10 @@ const connectDB = async () => {
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
         bufferCommands: false,
+        tls: true,
+        tlsAllowInvalidCertificates: false,
+        maxPoolSize: 10,
+        minPoolSize: 2,
       });
       console.log("✅ MongoDB Connected Successfully");
       return true;

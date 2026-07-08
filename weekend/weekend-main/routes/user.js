@@ -2,6 +2,26 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 
+// --- Helper: Secure Error Response ---
+const sendErrorResponse = (res, error, defaultMessage = "An internal server error occurred") => {
+  console.error("User Route Error:", error);
+  const isProd = process.env.NODE_ENV === "production";
+  res.status(500).json({
+    success: false,
+    message: isProd ? defaultMessage : (error.message || defaultMessage)
+  });
+};
+
+// --- Middleware: Validate and Bind User ID ---
+router.use((req, res, next) => {
+  const userId = req.user?.uid || req.user?.username;
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized: Invalid user session" });
+  }
+  req.userId = userId;
+  next();
+});
+
 // --- Cart Routes ---
 
 /**
@@ -10,15 +30,14 @@ const User = require("../models/User");
  */
 router.get("/cart", async (req, res) => {
   try {
-    const userId = req.user.uid || req.user.username;
     const user = await User.findOne({ 
-      $or: [{ firebaseUid: userId }, { username: userId }, { phone: userId }] 
+      $or: [{ firebaseUid: req.userId }, { username: req.userId }, { phone: req.userId }] 
     });
 
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json({ success: true, cart: user.cart || [] });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    sendErrorResponse(res, error, "Failed to retrieve cart");
   }
 });
 
@@ -29,10 +48,9 @@ router.get("/cart", async (req, res) => {
 router.post("/cart", async (req, res) => {
   try {
     const { cart } = req.body;
-    const userId = req.user.uid || req.user.username;
 
     const user = await User.findOneAndUpdate(
-      { $or: [{ firebaseUid: userId }, { username: userId }, { phone: userId }] },
+      { $or: [{ firebaseUid: req.userId }, { username: req.userId }, { phone: req.userId }] },
       { $set: { cart } },
       { new: true }
     );
@@ -40,7 +58,7 @@ router.post("/cart", async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json({ success: true, message: "Cart synced successfully", cart: user.cart });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    sendErrorResponse(res, error, "Failed to sync cart");
   }
 });
 
@@ -52,15 +70,14 @@ router.post("/cart", async (req, res) => {
  */
 router.get("/addresses", async (req, res) => {
   try {
-    const userId = req.user.uid || req.user.username;
     const user = await User.findOne({ 
-      $or: [{ firebaseUid: userId }, { username: userId }, { phone: userId }] 
+      $or: [{ firebaseUid: req.userId }, { username: req.userId }, { phone: req.userId }] 
     });
 
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json({ success: true, addresses: user.addresses || [] });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    sendErrorResponse(res, error, "Failed to retrieve addresses");
   }
 });
 
@@ -71,10 +88,9 @@ router.get("/addresses", async (req, res) => {
 router.post("/addresses", async (req, res) => {
   try {
     const addressData = req.body;
-    const userId = req.user.uid || req.user.username;
 
     const user = await User.findOne({ 
-      $or: [{ firebaseUid: userId }, { username: userId }, { phone: userId }] 
+      $or: [{ firebaseUid: req.userId }, { username: req.userId }, { phone: req.userId }] 
     });
 
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -92,7 +108,7 @@ router.post("/addresses", async (req, res) => {
 
     res.json({ success: true, message: "Address saved successfully", addresses: user.addresses });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    sendErrorResponse(res, error, "Failed to save address");
   }
 });
 
@@ -103,10 +119,9 @@ router.post("/addresses", async (req, res) => {
 router.delete("/addresses/:addressId", async (req, res) => {
   try {
     const { addressId } = req.params;
-    const userId = req.user.uid || req.user.username;
 
     const user = await User.findOneAndUpdate(
-      { $or: [{ firebaseUid: userId }, { username: userId }, { phone: userId }] },
+      { $or: [{ firebaseUid: req.userId }, { username: req.userId }, { phone: req.userId }] },
       { $pull: { addresses: { id: addressId } } },
       { new: true }
     );
@@ -114,7 +129,7 @@ router.delete("/addresses/:addressId", async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json({ success: true, message: "Address deleted", addresses: user.addresses });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    sendErrorResponse(res, error, "Failed to delete address");
   }
 });
 
@@ -125,10 +140,9 @@ router.delete("/addresses/:addressId", async (req, res) => {
 router.patch("/addresses/:addressId/default", async (req, res) => {
   try {
     const { addressId } = req.params;
-    const userId = req.user.uid || req.user.username;
 
     const user = await User.findOne({ 
-      $or: [{ firebaseUid: userId }, { username: userId }, { phone: userId }] 
+      $or: [{ firebaseUid: req.userId }, { username: req.userId }, { phone: req.userId }] 
     });
 
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -140,7 +154,7 @@ router.patch("/addresses/:addressId/default", async (req, res) => {
     await user.save();
     res.json({ success: true, message: "Default address updated", addresses: user.addresses });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    sendErrorResponse(res, error, "Failed to update default address");
   }
 });
 
@@ -151,7 +165,6 @@ router.patch("/addresses/:addressId/default", async (req, res) => {
 router.post("/update-profile", async (req, res) => {
   try {
     const { name, email, company, gstNumber, profilePic } = req.body;
-    const userId = req.user.uid || req.user.username;
 
     const updateData = {
       name,
@@ -165,7 +178,7 @@ router.post("/update-profile", async (req, res) => {
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
     const user = await User.findOneAndUpdate(
-      { $or: [{ firebaseUid: userId }, { username: userId }, { phone: userId }] },
+      { $or: [{ firebaseUid: req.userId }, { username: req.userId }, { phone: req.userId }] },
       { $set: updateData },
       { new: true }
     ).lean();
@@ -174,7 +187,7 @@ router.post("/update-profile", async (req, res) => {
 
     res.json({ success: true, message: "Profile updated successfully", user });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    sendErrorResponse(res, error, "Failed to update profile");
   }
 });
 

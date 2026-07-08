@@ -26,10 +26,6 @@ const ShippingManagement = () => {
   });
   const [testResult, setTestResult] = useState(null);
 
-  useEffect(() => {
-    fetchConfig();
-  }, []);
-
   const fetchConfig = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -49,6 +45,12 @@ const ShippingManagement = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      fetchConfig();
+    });
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
