@@ -1,0 +1,31 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Deny read/write access to all files by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // User-specific storage directories
+    match /users/{userId}/{allPaths=**} {
+      // Restrict read access to file owner or administrator
+      allow read: if request.auth != null && (request.auth.uid == userId || request.auth.token.role == 'admin');
+      
+      // Restrict write access to owner: max 5MB, images or PDF only, preventing executables
+      allow write: if request.auth != null && request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024
+                   && (request.resource.contentType.matches('image/.*') || request.resource.contentType == 'application/pdf');
+    }
+    
+    // Catalogues folder for product materials
+    match /catalogues/{allPaths=**} {
+      // Public read access allowed
+      allow read: if true;
+      
+      // Write access restricted to admin role, max 15MB PDF files only
+      allow write: if request.auth != null && request.auth.token.role == 'admin'
+                   && request.resource.size < 15 * 1024 * 1024
+                   && request.resource.contentType == 'application/pdf';
+    }
+  }
+}

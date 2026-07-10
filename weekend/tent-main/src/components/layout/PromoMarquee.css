@@ -1,0 +1,231 @@
+.promo-marquee-bar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 36px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  position: relative;
+  z-index: 9998;
+  font-family: var(--font-family), sans-serif;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.promo-marquee-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  position: relative;
+  height: 100%;
+}
+
+/* Subtle fade effect on the left and right edges for premium depth */
+.promo-marquee-container::before,
+.promo-marquee-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 60px;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.promo-marquee-container::before {
+  left: 0;
+  background: linear-gradient(90deg, #0f172a 0%, rgba(15, 23, 42, 0) 100%);
+}
+
+.promo-marquee-container::after {
+  right: 0;
+  background: linear-gradient(270deg, #0f172a 0%, rgba(15, 23, 42, 0) 100%);
+}
+
+.promo-marquee-track {
+  display: flex;
+  width: max-content;
+  align-items: center;
+  animation: promoMarqueeAnimation 45s linear infinite;
+  will-change: transform;
+}
+
+/* Pause scroll animation on hover so users can easily read/interact with coupon codes */
+.promo-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* Premium Interactive Copyable Coupon Codes */
+.promo-copyable-code {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px dashed rgba(255, 255, 255, 0.4);
+  padding: 1px 6px;
+  margin: 0 4px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: 700;
+  color: #fcd34d; /* Warm premium yellow */
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
+}
+
+.promo-copyable-code:hover {
+  background: rgba(252, 211, 77, 0.15);
+  border-color: #fcd34d;
+  color: #fef08a;
+  transform: scale(1.05);
+}
+
+.promo-copyable-code.copied {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #34d399;
+}
+
+/* Floating Micro-Tooltip */
+.promo-copyable-code .copy-tooltip {
+  visibility: hidden;
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background-color: #1e293b;
+  color: #ffffff;
+  text-align: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-family: var(--font-family), sans-serif;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 10000;
+  pointer-events: none;
+}
+
+.promo-copyable-code .copy-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -4px;
+  border-width: 4px;
+  border-style: solid;
+  border-color: #1e293b transparent transparent transparent;
+}
+
+.promo-copyable-code:hover .copy-tooltip {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.promo-marquee-group {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.promo-marquee-item {
+  display: flex;
+  align-items: center;
+  color: #f8fafc;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  padding: 0 16px;
+}
+
+.promo-icon {
+  margin-right: 8px;
+  opacity: 0.9;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.promo-marquee-badge {
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  margin-right: 10px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.promo-marquee-text {
+  opacity: 0.95;
+  color: #f1f5f9;
+}
+
+.promo-marquee-divider {
+  margin-left: 24px;
+  color: rgba(255, 255, 255, 0.25);
+  font-weight: bold;
+}
+
+/* Elegant close button */
+.promo-marquee-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 0 14px;
+  height: 100%;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  z-index: 3;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.promo-marquee-close:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+@keyframes promoMarqueeAnimation {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/* Dynamic styling tweaks for narrower viewports */
+@media (max-width: 640px) {
+  .promo-marquee-bar {
+    height: 34px;
+  }
+  .promo-marquee-item {
+    font-size: 0.75rem;
+    padding: 0 12px;
+  }
+  .promo-marquee-badge {
+    font-size: 0.6rem;
+    padding: 1px 5px;
+    margin-right: 8px;
+  }
+  .promo-marquee-divider {
+    margin-left: 16px;
+  }
+}
