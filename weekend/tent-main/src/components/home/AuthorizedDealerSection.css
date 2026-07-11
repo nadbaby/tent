@@ -1,0 +1,295 @@
+.authorized-dealer-section {
+  padding: var(--space-16) 0;
+  background-color: var(--color-bg-base);
+  overflow: hidden;
+}
+
+.authorized-header {
+  text-align: center;
+  margin-bottom: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.authorized-header .section-title {
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -1.2px;
+  margin-bottom: 20px;
+}
+
+.authorized-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background-color: transparent;
+  color: #e2e8f0;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 2px;
+  margin-bottom: var(--space-4);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  text-transform: uppercase;
+}
+
+.badge-glow-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #eab308;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.8);
+}
+
+.authorized-carousel-container {
+  --orbit-radius: 260px;
+  --card-width: 240px;
+  --card-height: 180px;
+  position: relative;
+  width: 100%;
+  height: 480px;
+  perspective: 1400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: var(--space-8) auto var(--space-12);
+  background: radial-gradient(circle at center 60%, rgba(202, 138, 4, 0.04) 0%, transparent 60%);
+}
+
+.authorized-spinner {
+  position: relative;
+  width: var(--card-width);
+  height: var(--card-height);
+  transform-style: preserve-3d;
+  animation: spinnerRotate 60s infinite linear;
+  /* Slower, heavier physics */
+  margin-top: -80px;
+}
+
+/* Sharp Metallic Ring Stage */
+.authorized-spinner::before {
+  content: '';
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  top: 110px;
+  left: 50%;
+  transform: translateX(-50%) rotateX(90deg);
+  border-radius: 50%;
+  border: 1px solid rgba(202, 138, 4, 0.3);
+  box-shadow: inset 0 0 40px rgba(234, 179, 8, 0.04);
+  pointer-events: none;
+}
+
+/* Floor Shadow/Pedestal to anchor the 3D effect */
+.authorized-spinner::after {
+  content: '';
+  position: absolute;
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.02) 40%, transparent 70%);
+  top: 130px;
+  left: 50%;
+  transform: translateX(-50%) rotateX(90deg);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.authorized-spinner:hover {
+  animation-play-state: paused;
+}
+
+@keyframes spinnerRotate {
+  from {
+    transform: rotateY(0deg);
+  }
+
+  to {
+    transform: rotateY(-360deg);
+  }
+}
+
+.card-3d-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* The transform (rotateY and translateZ) is handled inline by React */
+}
+
+.authorized-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  /* Crisp white for logo contrast */
+  border-radius: 8px;
+  /* Sharp, clean edges */
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
+  /* Clean realistic shadow */
+  padding: 0;
+  transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Elegant bezier curve */
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  /* Add subtle backface visibility styling to make the rotation look clean */
+  backface-visibility: visible;
+}
+
+.authorized-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #EA580C, #fef08a);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.card-3d-wrapper:hover .authorized-card {
+  transform: scale(1.08) translateY(-4px);
+  /* Slight lift and pop */
+  box-shadow: 0 30px 60px -15px rgba(202, 138, 4, 0.2);
+  border-color: rgba(202, 138, 4, 0.4);
+}
+
+.card-3d-wrapper:hover .authorized-card::before {
+  opacity: 1;
+}
+
+/* Glass Glare lighting effect */
+.authorized-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.6) 50%,
+      rgba(255, 255, 255, 0) 100%);
+  transform: skewX(-25deg);
+  transition: left 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.card-3d-wrapper:hover .authorized-card::after {
+  left: 150%;
+}
+
+.authorized-card-inner {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+}
+
+.authorized-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  /* Mix blend mode removed for pure white background integrity */
+}
+
+.authorized-card-footer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 12px;
+  background-color: #f8fafc;
+  border-top: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.explore-arrow {
+  position: absolute;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  color: #e2e8f0;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-3d-wrapper:hover .explore-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.verified-icon {
+  color: #e2e8f0;
+  display: flex;
+}
+
+.authorized-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.5px;
+  color: var(--color-text-primary);
+  text-transform: uppercase;
+}
+
+/* Responsive geometry engine: recalculates the physical orbit instead of lazy scaling */
+@media (max-width: 768px) {
+  .authorized-carousel-container {
+    height: 420px;
+    --orbit-radius: 200px;
+    --card-width: 200px;
+    --card-height: 150px;
+  }
+
+  .authorized-spinner::before {
+    width: 320px;
+    height: 320px;
+    top: 90px;
+  }
+
+  .authorized-spinner::after {
+    width: 340px;
+    height: 340px;
+    top: 110px;
+  }
+}
+
+@media (max-width: 480px) {
+  .authorized-header {
+    margin-bottom: 60px;
+  }
+
+  .authorized-carousel-container {
+    height: 340px;
+    --orbit-radius: 120px;
+    --card-width: 160px;
+    --card-height: 120px;
+    perspective: 700px;
+    /* Adjust focal length for tighter orbit */
+  }
+
+  .authorized-spinner::before {
+    width: 240px;
+    height: 240px;
+    top: 80px;
+  }
+
+  .authorized-spinner::after {
+    width: 260px;
+    height: 260px;
+    top: 100px;
+  }
+}
