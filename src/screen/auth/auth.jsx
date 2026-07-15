@@ -486,7 +486,7 @@ const Auth = () => {
     setErrorMsg('');
     try {
       // 1. Verify OTP first
-      const res = await fetch(apiUrl('/api/auth/verify-otp'), {
+      const res = await fetch(apiUrl('/api/auth/verify-otp-only'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, otp: emailSignupOtp }),
