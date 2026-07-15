@@ -1,5 +1,13 @@
 /* Premium Product Detail Page Stylesheet */
 
+:root {
+  --color-dark-navy: #0f172a;
+  --color-border-gray: #cbd5e1;
+  --color-muted-text: #64748b;
+  --color-body-text: #334155;
+  --color-heading: #0f172a;
+}
+
 .product-detail-page {
   padding-bottom: 6rem;
   background-color: var(--color-bg-base);
@@ -74,14 +82,17 @@
   padding: 3rem;
   border-radius: 16px;
   box-shadow: var(--shadow-sm), 0 4px 20px rgba(0, 0, 0, 0.02);
-  margin-bottom: 4rem;
+  margin-bottom: 5rem;
+  align-items: start;
 }
 
 /* Left: Large Product Gallery */
 .product-gallery {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
+  position: sticky;
+  top: 100px;
 }
 
 .image-card-container {
@@ -96,7 +107,7 @@
 .main-image-wrapper {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   background-color: var(--color-primary-orange) !important;
   cursor: zoom-in;
@@ -1786,6 +1797,108 @@
   .product-detail-page {
     padding-bottom: 8rem;
   }
+}
+
+/* Gallery Info Addons below thumbnails */
+.gallery-info-addons {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.addon-card {
+  background: #f8fafc;
+  border: 1px solid var(--color-border-gray);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  transition: all 0.3s ease;
+}
+
+.addon-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: #cbd5e1;
+}
+
+.support-card {
+  background: linear-gradient(135deg, #f8fafc 0%, #f0fdf4 100%);
+  border-left: 4px solid #ea5807;
+}
+
+.support-card .addon-icon {
+  color: #ea5807;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.addon-text h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-dark-navy);
+  margin-bottom: 0.5rem;
+  margin-top: 0;
+}
+
+.addon-text p {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--color-muted-text);
+  margin-bottom: 1rem;
+}
+
+.addon-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-dark-navy);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.addon-action-btn:hover {
+  background: #1e293b;
+  transform: translateY(-1px);
+  color: #fff;
+}
+
+.assurance-card {
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.assurance-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.assurance-item .check-icon {
+  color: #ea5807;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.assurance-item h5 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-dark-navy);
+  margin-bottom: 0.25rem;
+  margin-top: 0;
+}
+
+.assurance-item p {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--color-muted-text);
+  margin: 0;
 }
 
 @media (max-width: 485px) {

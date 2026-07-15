@@ -368,6 +368,39 @@ const ProductDetail = () => {
                 </div>
               ))}
             </div>
+
+            {/* Premium Features / Help / Guarantee Box */}
+            <div className="gallery-info-addons">
+              {/* Box 1: B2B Support & Assistance */}
+              <div className="addon-card support-card">
+                <HelpCircle className="addon-icon" size={24} />
+                <div className="addon-text">
+                  <h4>Need Technical Assistance?</h4>
+                  <p>Speak directly with our Ludhiana bearing engineers for custom sizing, compatibility questions, or wholesale supply contracts.</p>
+                  <a href="tel:+919876543210" className="addon-action-btn">
+                    Talk to an Expert
+                  </a>
+                </div>
+              </div>
+
+              {/* Box 2: Quality Certifications & Guarantees */}
+              <div className="addon-card assurance-card">
+                <div className="assurance-item">
+                  <ShieldCheck size={20} className="check-icon" />
+                  <div>
+                    <h5>100% Genuine Products</h5>
+                    <p>All items sourced directly from certified manufacturers with traceability certificates.</p>
+                  </div>
+                </div>
+                <div className="assurance-item">
+                  <Truck size={20} className="check-icon" />
+                  <div>
+                    <h5>Ludhiana Local Express</h5>
+                    <p>Same-day dispatch and immediate door-step deliveries within Punjab industrial regions.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* RIGHT: Product Information Column */}
