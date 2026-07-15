@@ -257,9 +257,6 @@ const ProductDetail = () => {
     return (
       <div className="product-detail-page">
         <div className="product-detail-container">
-          <nav className="breadcrumb-nav">
-            <Skeleton type="skeleton-text" style={{ width: '200px' }} />
-          </nav>
           <div className="product-main-content">
             <div className="product-gallery">
               <Skeleton type="skeleton-image" style={{ height: '450px', marginBottom: '1rem' }} />
@@ -309,23 +306,14 @@ const ProductDetail = () => {
       </div>
 
       <div className="product-detail-container">
-        {/* Breadcrumb nav */}
-        <nav className="breadcrumb-nav">
-          <Link to="/">Home</Link>
-          <ChevronRight size={14} />
-          <Link to="/products">Products</Link>
-          <ChevronRight size={14} />
-          <span className="current">{product.name}</span>
-        </nav>
-
         {/* Hero Section */}
         <div className="product-main-content">
-          
+
           {/* LEFT: Premium Product Images Column */}
           <div className="product-gallery">
             <div className="image-card-container">
               {/* Main image wrapper */}
-              <div 
+              <div
                 className="main-image-wrapper"
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
@@ -347,45 +335,32 @@ const ProductDetail = () => {
                     />
                     <div className="rotation-control-overlay">
                       <span className="rotation-label">Drag slider to rotate 360°</span>
-                      <input 
-                        type="range" 
-                        min="0" 
-                        max="360" 
-                        value={rotationAngle} 
+                      <input
+                        type="range"
+                        min="0"
+                        max="360"
+                        value={rotationAngle}
                         onChange={(e) => setRotationAngle(Number(e.target.value))}
-                        className="rotation-slider" 
+                        className="rotation-slider"
                       />
                     </div>
                   </div>
                 )}
 
                 {/* Overlaid Badges */}
-                <div className="gallery-float-badges">
-                  {product.discount > 0 && <span className="discount-float-badge">-{product.discount}% OFF</span>}
-                  <span className="gst-float-badge">18% GST INCLUDED</span>
-                </div>
+
               </div>
 
               {/* Special interactive buttons bar */}
-              <div className="gallery-interactive-bar">
-                <button className="interaction-btn" onClick={() => setIsFullscreenActive(true)} title="View Fullscreen">
-                  <Maximize2 size={16} /> <span>Fullscreen</span>
-                </button>
-                <button className={`interaction-btn ${is360Active ? 'active' : ''}`} onClick={() => { setIs360Active(!is360Active); setIsVideoActive(false); }}>
-                  <RotateCw size={16} /> <span>360° View</span>
-                </button>
-                <button className={`interaction-btn ${isVideoActive ? 'active' : ''}`} onClick={() => { setIsVideoActive(!isVideoActive); setIs360Active(false); }}>
-                  <PlayCircle size={16} /> <span>Video</span>
-                </button>
-              </div>
+
             </div>
 
             {/* Thumbnail list */}
             <div className="thumbnail-list">
               {product.images.map((img, index) => (
-                <div 
-                  key={index} 
-                  className={`thumbnail-item ${selectedImageIndex === index && !is360Active && !isVideoActive ? 'active' : ''}`} 
+                <div
+                  key={index}
+                  className={`thumbnail-item ${selectedImageIndex === index && !is360Active && !isVideoActive ? 'active' : ''}`}
                   onClick={() => { setSelectedImageIndex(index); setIs360Active(false); setIsVideoActive(false); }}
                   style={{ backgroundColor: '#EA580C' }}
                 >
@@ -406,7 +381,7 @@ const ProductDetail = () => {
 
             {/* Micro rating popover */}
             <div className="product-meta-top">
-              <div 
+              <div
                 className="rating-popover-trigger"
                 onMouseEnter={() => setShowRatingBreakdown(true)}
                 onMouseLeave={() => setShowRatingBreakdown(false)}
@@ -415,7 +390,7 @@ const ProductDetail = () => {
                   <Star size={16} fill="currentColor" /> {product.rating}
                 </span>
                 <span className="review-count">({product.reviewsCount} Reviews)</span>
-                
+
                 {showRatingBreakdown && (
                   <div className="rating-percentage-breakdown">
                     <h5 className="breakdown-title">Customer Ratings</h5>
@@ -461,9 +436,9 @@ const ProductDetail = () => {
                     <span className="save-badge">Save ₹{(product.mrp - product.price).toLocaleString()} ({product.discount}% OFF)</span>
                   </div>
                 )}
-                <div className="gst-inclusive-label">
+                {/* <div className="gst-inclusive-label">
                   <CheckCircle2 size={12} className="success-icon" /> Price is inclusive of 18% GST (GST invoice available at checkout)
-                </div>
+                </div> */}
               </div>
 
               {/* Status Badges */}
@@ -520,7 +495,7 @@ const ProductDetail = () => {
                   </button>
 
                   <div className="secondary-ctas-row">
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.preventDefault();
                         const user = localStorage.getItem('user');
@@ -544,7 +519,7 @@ const ProductDetail = () => {
                     <button onClick={handleViewCatalogue} className="industrial-catalog-btn">
                       <FileText size={16} /> Download Datasheet PDF
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         const userStr = localStorage.getItem('user');
                         if (!userStr) {
@@ -680,7 +655,7 @@ const ProductDetail = () => {
             <span className="price-val">₹{product.price?.toLocaleString()}</span>
           </div>
           <div className="button-group">
-            <button 
+            <button
               onClick={(e) => {
                 e.preventDefault();
                 dispatch(toggleWishlist(product));
@@ -699,11 +674,11 @@ const ProductDetail = () => {
       {isFullscreenActive && (
         <div className="fullscreen-overlay-modal" onClick={() => setIsFullscreenActive(false)}>
           <button className="close-fullscreen-overlay">Close ×</button>
-          <img 
-            src={resolveImageUrl(product.images[selectedImageIndex])} 
-            alt="Fullscreen preview" 
+          <img
+            src={resolveImageUrl(product.images[selectedImageIndex])}
+            alt="Fullscreen preview"
             className="fullscreen-image-target"
-            style={{ backgroundColor: '#EA580C' }} 
+            style={{ backgroundColor: '#EA580C' }}
           />
         </div>
       )}

@@ -639,12 +639,12 @@
 }
 
 .btn-buy-now-cta {
-  background: var(--color-primary-orange);
+  background: #ea5807;
   color: #fff;
 }
 
 .btn-buy-now-cta:hover {
-  background: var(--color-accent-hover);
+  background: #d44c06;
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(234, 88, 12, 0.2);
 }
@@ -1676,11 +1676,15 @@
 }
 
 .btn-mobile-buy {
-  background: var(--color-primary-orange);
+  background: #ea5807;
   color: #fff;
   flex: 1;
   max-width: 140px;
   box-shadow: 0 4px 10px rgba(234, 88, 12, 0.2);
+}
+
+.btn-mobile-buy:hover {
+  background: #d44c06;
 }
 
 /* Animations */
