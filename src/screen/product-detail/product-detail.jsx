@@ -18,6 +18,19 @@ import {
   Award, ShieldAlert, Lock, ChevronDown, Check, UserCheck, ThumbsUp
 } from 'lucide-react';
 
+const getSeriesPrefix = (name) => {
+  if (!name) return null;
+  const cleanName = name.trim();
+  const firstWord = cleanName.split(/\s+/)[0];
+  
+  if (/^\d+/.test(firstWord)) {
+    const match = firstWord.match(/^(\d{2})/);
+    return match ? { type: 'numeric', prefix: match[1] } : null;
+  } else {
+    return { type: 'alpha', prefix: firstWord };
+  }
+};
+
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -49,6 +62,8 @@ const ProductDetail = () => {
   const [showAllFeatures, setShowAllFeatures] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const [helpfulReviews, setHelpfulReviews] = useState({});
+  const [showSeriesModal, setShowSeriesModal] = useState(false);
+  const [seriesProducts, setSeriesProducts] = useState([]);
 
   // Refs
   const specsRef = useRef(null);
@@ -161,7 +176,7 @@ const ProductDetail = () => {
 
         setProduct(enrichedProduct);
 
-        // Fetch related products
+        // Fetch related products and compute series
         const allRes = await fetch(apiUrl('/api/products'));
         if (allRes.ok) {
           const allData = await allRes.json();
@@ -179,6 +194,26 @@ const ProductDetail = () => {
             related = [...related, ...remaining];
           }
           setRelatedProducts(related.slice(0, 4));
+
+          // Compute series products
+          const pattern = getSeriesPrefix(enrichedProduct.name);
+          if (pattern) {
+            let matchedSeries = [];
+            if (pattern.type === 'alpha') {
+              const regex = new RegExp(`^${pattern.prefix}\\b`, 'i');
+              matchedSeries = allData.filter(p => regex.test(p.name));
+            } else {
+              const regex = new RegExp(`^${pattern.prefix}\\d`, 'i');
+              matchedSeries = allData.filter(p => regex.test(p.name));
+            }
+            // Sort them numerically if possible (e.g. UCP 202, UCP 203)
+            matchedSeries.sort((a, b) => {
+              const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+              const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+              return numA - numB;
+            });
+            setSeriesProducts(matchedSeries);
+          }
         }
 
         setLoading(false);
@@ -224,6 +259,12 @@ const ProductDetail = () => {
     } else {
       window.open(resolveImageUrl(product.catalogue), '_blank');
     }
+  };
+
+  const handleSeriesSelect = (item) => {
+    const hasValidSlug = item.slug && item.slug.toLowerCase() !== 'sku' && item.slug.toLowerCase() !== 'default';
+    navigate(`/product/${hasValidSlug ? item.slug : item.id}`);
+    setShowSeriesModal(false);
   };
 
   const handleAddToCart = () => {
@@ -547,6 +588,49 @@ const ProductDetail = () => {
                 </div>
               )}
 
+              {/* Series Sizes Shortcut Button */}
+              {seriesProducts.length > 1 && (
+                <div style={{ marginBottom: '1.5rem', background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', padding: '16px', borderRadius: '12px', border: '1.5px dashed #ea580c', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Available In Other Sizes:
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                    <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: '600' }}>
+                      Explore all {seriesProducts.length} sizes in the <strong>{product.name.split(/\s+/)[0]}</strong> series.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowSeriesModal(true)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: 'linear-gradient(135deg, #ea580c 0%, #ff7e33 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        fontWeight: '700',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 10px rgba(234, 88, 12, 0.2)',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 6px 12px rgba(234, 88, 12, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'none';
+                        e.currentTarget.style.boxShadow = '0 4px 10px rgba(234, 88, 12, 0.2)';
+                      }}
+                    >
+                      <Maximize2 size={14} /> View All Sizes
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Quantity selector */}
               {!isAdminUser ? (
                 <div className="purchase-qty-selector">
@@ -778,6 +862,195 @@ const ProductDetail = () => {
             <div className="demo-placeholder-movie-text" style={{ padding: '40px', textAlign: 'center', color: '#fff' }}>
               <h3>Fine Bearing Dynamic Fit Installation Video</h3>
               <p>Simulating 3D structural fitting, shaft alignment guide, and double-lip rubber seal protection demonstration.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Series Sizes Modal */}
+      {showSeriesModal && (
+        <div 
+          className="fullscreen-overlay-modal" 
+          onClick={() => setShowSeriesModal(false)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 9999
+          }}
+        >
+          <div 
+            className="series-modal-content animate-in" 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#ffffff',
+              borderRadius: '20px',
+              width: '90%',
+              maxWidth: '650px',
+              maxHeight: '85vh',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              border: '1px solid #e2e8f0',
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              padding: '20px 24px',
+              borderBottom: '1px solid #e2e8f0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: '#f8fafc'
+            }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Maximize2 size={18} style={{ color: '#ea580c' }} />
+                  {product.name.split(/\s+/)[0]} Series Sizing
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+                  Select a size below to view details and pricing.
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowSeriesModal(false)}
+                style={{
+                  background: '#f1f5f9',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '36px',
+                  height: '36px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '1.2rem',
+                  color: '#64748b',
+                  transition: 'all 0.2s ease',
+                  fontWeight: 'bold'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#e2e8f0'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#f1f5f9'}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* List Container */}
+            <div style={{
+              padding: '20px 24px',
+              overflowY: 'auto',
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}>
+              {seriesProducts.map((item) => {
+                const isCurrent = String(item.id) === String(product.id);
+                return (
+                  <div 
+                    key={item.id}
+                    onClick={() => handleSeriesSelect(item)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 16px',
+                      borderRadius: '12px',
+                      border: isCurrent ? '2px solid #ea580c' : '1px solid #e2e8f0',
+                      background: isCurrent ? '#fff7ed' : '#ffffff',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isCurrent) {
+                        e.currentTarget.style.borderColor = '#ea580c';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.05)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isCurrent) {
+                        e.currentTarget.style.borderColor = '#e2e8f0';
+                        e.currentTarget.style.transform = 'none';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <div style={{
+                        width: '50px',
+                        height: '50px',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <ProtectedImage 
+                          src={resolveImageUrl(item.image)} 
+                          alt={item.name} 
+                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                        />
+                      </div>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>
+                          {item.name}
+                        </h4>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          SKU: {item.sku || 'N/A'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '1rem', fontWeight: 800, color: '#ea580c' }}>
+                          ₹{item.price?.toFixed(2)}
+                        </div>
+                        {isCurrent && (
+                          <span style={{ fontSize: '0.7rem', color: '#ea580c', fontWeight: 'bold', display: 'block' }}>
+                            Currently Viewing
+                          </span>
+                        )}
+                      </div>
+                      <ChevronRight size={18} style={{ color: isCurrent ? '#ea580c' : '#94a3b8' }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding: '16px 24px',
+              borderTop: '1px solid #e2e8f0',
+              textAlign: 'right',
+              background: '#f8fafc'
+            }}>
+              <button 
+                onClick={() => setShowSeriesModal(false)}
+                style={{
+                  background: '#64748b',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontWeight: '700',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#475569'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#64748b'}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
