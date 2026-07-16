@@ -22,7 +22,7 @@ const getSeriesPrefix = (name) => {
   if (!name) return null;
   const cleanName = name.trim();
   const firstWord = cleanName.split(/\s+/)[0];
-  
+
   if (/^\d+/.test(firstWord)) {
     const match = firstWord.match(/^(\d{2})/);
     return match ? { type: 'numeric', prefix: match[1] } : null;
@@ -151,7 +151,7 @@ const ProductDetail = () => {
           maintenance: "Inspect assembly monthly for alignment issues. In standard operations, pre-greasing lasts for a normal lifespan. Re-grease every 6-12 months for heavy-duty 24/7 industrial mill operations.",
           installation: "1. Clean and polish the hosting shaft using a clean cloth.\n2. Ensure the shaft has no metal burrs or pits.\n3. Position the bearing onto the shaft sleeve evenly using a pneumatic pressure cap.\n4. Tighten lock screws to standard torque configurations."
         };
-        
+
         // Derive default size options
         const bore = data.innerDiameter || specifications["Bore Diameter"];
         const outer = data.outerDiameter || specifications["Outer Diameter"];
@@ -701,7 +701,7 @@ const ProductDetail = () => {
             {/* Mini Trust Row */}
             <div className="mini-trust-footer">
               <span className="badge-item"><ShieldCheck size={16} /> Genuine Gear</span>
-              <span className="badge-item"><RotateCcw size={16} /> 7-Days Exchange</span>
+              {/* <span className="badge-item"><RotateCcw size={16} /> 7-Days Exchange</span> */}
               <span className="badge-item"><Award size={16} /> ISO Approved</span>
             </div>
           </div>
@@ -837,8 +837,8 @@ const ProductDetail = () => {
 
       {/* Series Sizes Modal */}
       {showSeriesModal && (
-        <div 
-          className="fullscreen-overlay-modal" 
+        <div
+          className="fullscreen-overlay-modal"
           onClick={() => setShowSeriesModal(false)}
           style={{
             display: 'flex',
@@ -849,8 +849,8 @@ const ProductDetail = () => {
             zIndex: 9999
           }}
         >
-          <div 
-            className="series-modal-content animate-in" 
+          <div
+            className="series-modal-content animate-in"
             onClick={(e) => e.stopPropagation()}
             style={{
               background: '#ffffff',
@@ -883,7 +883,7 @@ const ProductDetail = () => {
                   Select a size below to view details and pricing.
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => setShowSeriesModal(false)}
                 style={{
                   background: '#f1f5f9',
@@ -919,7 +919,7 @@ const ProductDetail = () => {
               {seriesProducts.map((item) => {
                 const isCurrent = String(item.id) === String(product.id);
                 return (
-                  <div 
+                  <div
                     key={item.id}
                     onClick={() => handleSeriesSelect(item)}
                     style={{
@@ -960,9 +960,9 @@ const ProductDetail = () => {
                         alignItems: 'center',
                         justifyContent: 'center'
                       }}>
-                        <ProtectedImage 
-                          src={resolveImageUrl(item.image)} 
-                          alt={item.name} 
+                        <ProtectedImage
+                          src={resolveImageUrl(item.image)}
+                          alt={item.name}
                           style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                         />
                       </div>
@@ -1001,7 +1001,7 @@ const ProductDetail = () => {
               textAlign: 'right',
               background: '#f8fafc'
             }}>
-              <button 
+              <button
                 onClick={() => setShowSeriesModal(false)}
                 style={{
                   background: '#64748b',
