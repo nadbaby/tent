@@ -126,6 +126,28 @@ const Products = () => {
   // Admin State
   const [showAdminForm, setShowAdminForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+
+  const handleSelectToggle = (productId) => {
+    setSelectedProductIds((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const handleSelectAll = (isChecked) => {
+    if (isChecked) {
+      const visibleIds = displayProducts.map((p) => p.id);
+      setSelectedProductIds((prev) => {
+        const union = new Set([...prev, ...visibleIds]);
+        return Array.from(union);
+      });
+    } else {
+      const visibleIds = displayProducts.map((p) => p.id);
+      setSelectedProductIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+    }
+  };
 
   const downloadTemplate = () => {
     const templateData = [
@@ -291,6 +313,7 @@ const Products = () => {
 
   const fetchProducts = async () => {
     try {
+      setSelectedProductIds([]);
       const response = await fetch(apiUrl('/api/products'));
       if (!response.ok) throw new Error('Failed to fetch products');
       const data = await response.json();
@@ -659,6 +682,69 @@ const Products = () => {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedProductIds.length === 0) return;
+
+    const selectedProducts = products.filter(p => selectedProductIds.includes(p.id));
+    
+    // Calculate variants
+    const allRelatedProducts = [];
+    selectedProducts.forEach(sp => {
+      const variants = getProductVariants(sp);
+      variants.forEach(v => {
+        if (!allRelatedProducts.some(p => p.id === v.id)) {
+          allRelatedProducts.push(v);
+        }
+      });
+    });
+
+    const hasVariants = allRelatedProducts.length > selectedProducts.length;
+
+    let deleteIds = selectedProducts.map(p => p.id);
+
+    if (hasVariants) {
+      const choice = window.confirm(
+        `You have selected ${selectedProducts.length} products.\n\n` +
+        `Click OK to delete these products AND all of their variants/sizes (total ${allRelatedProducts.length} items).\n` +
+        `Click CANCEL to only delete the specific selected variants.`
+      );
+      
+      if (choice) {
+        deleteIds = allRelatedProducts.map(p => p.id);
+      } else {
+        const secondChoice = window.confirm(`Delete only the specific selected items (${selectedProducts.length} items)?`);
+        if (!secondChoice) return;
+      }
+    } else {
+      if (!window.confirm(`Are you sure you want to delete the ${selectedProducts.length} selected products?`)) {
+        return;
+      }
+    }
+
+    try {
+      const response = await fetch(apiUrl('/api/products/bulk-delete'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ ids: deleteIds })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to bulk delete products');
+      }
+
+      const result = await response.json();
+      showToast(result.message || 'Products deleted successfully', 'success');
+      setSelectedProductIds([]);
+      fetchProducts();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   const categories = ['All', ...new Set(products.map(cat => cat.category).filter(Boolean))];
   const subcategories = ['All', ...new Set(products.filter(p => selectedCategory === 'All' || p.category === selectedCategory).map(p => p.subcategory).filter(Boolean))];
 
@@ -988,6 +1074,15 @@ const Products = () => {
                     <Download size={18} />
                     Export
                   </button>
+                  <label className="btn btn-secondary select-all-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#f1f5f9', color: '#0f172a', padding: '0.6rem 1.25rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontWeight: '600', userSelect: 'none', margin: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={displayProducts.length > 0 && displayProducts.every(p => selectedProductIds.includes(p.id))}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#ea580c' }}
+                    />
+                    Select All
+                  </label>
                 </div>
 
                 {/* Bulk Import Modal */}
@@ -1223,6 +1318,8 @@ const Products = () => {
                   onEdit={handleEditClick} 
                   onDelete={handleDeleteProduct} 
                   searchTerm={debouncedSearch} 
+                  isSelected={selectedProductIds.includes(product.id)}
+                  onSelectToggle={handleSelectToggle}
                 />
               ))}
 
@@ -1531,6 +1628,25 @@ const Products = () => {
                 </Link>
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Bulk Action Bar */}
+      {admin && selectedProductIds.length > 0 && (
+        <div className="floating-bulk-actions-bar">
+          <div className="bulk-actions-content">
+            <span className="selected-count">
+              <strong>{selectedProductIds.length}</strong> products selected
+            </span>
+            <div className="bulk-actions-buttons">
+              <button className="btn btn-outline-light" onClick={() => setSelectedProductIds([])}>
+                Clear Selection
+              </button>
+              <button className="btn btn-danger" onClick={handleBulkDelete}>
+                Delete Selected
+              </button>
             </div>
           </div>
         </div>

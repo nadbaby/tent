@@ -54,7 +54,7 @@ const highlightText = (text, highlight) => {
   );
 };
 
-const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm, onCardClick, displayName }) => {
+const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm, onCardClick, displayName, isSelected, onSelectToggle }) => {
   const dispatch = useDispatch();
   const cartItems = useSelector((state) => state.cart.items);
   const navigate = useNavigate();
@@ -125,8 +125,18 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm, onCardCli
   };
 
   return (
-    <div className={`product-card ${isShaking ? 'shake-animation' : ''}`} onClick={handleCardClick}>
+    <div className={`product-card ${isSelected ? 'admin-selected' : ''} ${isShaking ? 'shake-animation' : ''}`} onClick={handleCardClick}>
       <div className="product-image-container">
+        {isAdmin && onSelectToggle && (
+          <div className="admin-select-checkbox-container" onClick={(e) => e.stopPropagation()}>
+            <input
+              type="checkbox"
+              checked={isSelected || false}
+              onChange={() => onSelectToggle(product.id)}
+              className="admin-select-checkbox"
+            />
+          </div>
+        )}
         <div className="product-name-overlay">{highlightText(displayName || product.name, searchTerm)}</div>
         <ProtectedImage
           src={secureImageUrl}
