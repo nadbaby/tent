@@ -39,16 +39,27 @@ const Products = () => {
   const [selectedDrawerProduct, setSelectedDrawerProduct] = useState(null);
   const [drawerQuantity, setDrawerQuantity] = useState(1);
 
-  // Get all variants of the product (same name prefix/base, category)
+  // Get all variants of the product (same subcategory, or same name prefix/base)
   const getProductVariants = (currentProduct) => {
     if (!currentProduct) return [];
     
-    // Helper to get alphabetic prefix, e.g. "UCP" from "UCP 217 L3" or "OMS" from "OMS 80"
+    // If product has a subcategory, all products sharing the same category and subcategory are variants
+    if (currentProduct.subcategory && currentProduct.subcategory.trim() !== "" && currentProduct.subcategory.toLowerCase() !== "all") {
+      return products.filter(p => 
+        p.subcategory && 
+        p.subcategory.trim().toLowerCase() === currentProduct.subcategory.trim().toLowerCase() && 
+        p.category === currentProduct.category
+      );
+    }
+    
+    // Helper to get alphabetic/numeric prefix, e.g. "UCP" from "UCP 217 L3" or "6207" from "6207 2RS"
     const getPrefix = (name) => {
       if (!name) return "";
       const match = name.match(/^([a-zA-Z\s]+)/);
       if (match) return match[1].trim().toLowerCase();
-      return name.split(/[\s\-0-9]/)[0].toLowerCase();
+      // For names starting with numbers, extract the first token/word
+      const firstToken = name.trim().split(/[\s\-]/)[0];
+      return firstToken ? firstToken.toLowerCase() : name.toLowerCase();
     };
 
     const currentPrefix = getPrefix(currentProduct.name);
@@ -67,7 +78,9 @@ const Products = () => {
     const getPrefix = (name) => {
       if (!name) return "";
       const match = name.match(/^([a-zA-Z\s]+)/);
-      return match ? match[1].trim() : name.split(/[\s\-0-9]/)[0];
+      if (match) return match[1].trim();
+      const firstToken = name.trim().split(/[\s\-]/)[0];
+      return firstToken || name;
     };
 
     const prefix = getPrefix(baseProduct.name);
@@ -78,6 +91,7 @@ const Products = () => {
     const label = variantName.replace(regex, '').trim();
     return label || variantName;
   };
+
 
   const getProductDisplayName = (p) => {
     if (!p) return "";
@@ -667,20 +681,62 @@ const Products = () => {
   };
 
   const handleDeleteProduct = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+
+    const variants = getProductVariants(product);
+    const hasVariants = variants.length > 1;
+
+    let deleteIds = [id];
+
+    if (hasVariants) {
+      const choice = window.confirm(
+        `This product has ${variants.length} sizes/variants.\n\n` +
+        `Click OK to delete ALL ${variants.length} variants of this product/subcategory.\n` +
+        `Click CANCEL to delete ONLY this specific variant.`
+      );
+      if (choice) {
+        deleteIds = variants.map(v => v.id);
+      } else {
+        const secondChoice = window.confirm(`Delete only the specific item "${product.name}"?`);
+        if (!secondChoice) return;
+      }
+    } else {
+      if (!window.confirm('Are you sure you want to delete this product?')) return;
+    }
+
     try {
-      const response = await fetch(apiUrl(`/api/products/${id}`), {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
+      if (deleteIds.length > 1) {
+        const response = await fetch(apiUrl('/api/products/bulk-delete'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ ids: deleteIds })
+        });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to delete products');
         }
-      });
-      if (!response.ok) throw new Error('Failed to delete product');
+        const result = await response.json();
+        showToast(result.message || 'Products deleted successfully', 'success');
+      } else {
+        const response = await fetch(apiUrl(`/api/products/${id}`), {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (!response.ok) throw new Error('Failed to delete product');
+        showToast('Product deleted successfully', 'success');
+      }
       fetchProducts();
     } catch (err) {
       alert(err.message);
     }
   };
+
 
   const handleBulkDelete = async () => {
     if (selectedProductIds.length === 0) return;
