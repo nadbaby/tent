@@ -555,38 +555,6 @@ const ProductDetail = () => {
                 </div>
               </div>
 
-              {/* Size Option Selector */}
-              {sizeOptions.length > 0 && (
-                <div className="purchase-size-selector" style={{ marginBottom: '1.5rem', background: '#f8fafc', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                  <span className="qty-label" style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Select Size/Specification:
-                  </span>
-                  <div className="size-options-group" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {sizeOptions.map((option, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        className={`size-option-pill ${selectedSize === option ? 'active' : ''}`}
-                        onClick={() => setSelectedSize(option)}
-                        style={{
-                          padding: '8px 14px',
-                          border: selectedSize === option ? '2px solid #ea580c' : '1px solid #cbd5e1',
-                          background: selectedSize === option ? '#fff7ed' : '#fff',
-                          color: selectedSize === option ? '#ea580c' : '#475569',
-                          borderRadius: '8px',
-                          fontWeight: '700',
-                          fontSize: '0.8rem',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          outline: 'none'
-                        }}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Series Sizes Shortcut Button */}
               {seriesProducts.length > 1 && (
