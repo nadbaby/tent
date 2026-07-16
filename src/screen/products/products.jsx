@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { apiUrl } from '../../utils/api';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import ProductCard, { resolveImageUrl } from '../../components/home/ProductCard';
-import { Filter, ChevronDown, Search, Grid, List, SlidersHorizontal, Plus, X, Save, Download, Upload, Camera, Loader2 } from 'lucide-react';
+import { Filter, ChevronDown, Search, Grid, List, SlidersHorizontal, Plus, X, Save, Download, Upload, Camera, Loader2, Database, FileSpreadsheet } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addItem } from '../../redux/cartSlice';
 import { useToast } from '../../context/ToastContext';
@@ -1277,6 +1277,29 @@ const Products = () => {
                           </>
                         ) : (
                           <div className="import-progress-container" style={{ padding: '10px 0' }}>
+                            {/* Premium Import Animation */}
+                            <div className="upload-animation-container">
+                              <div className="upload-anim-node excel">
+                                <div className="upload-anim-icon-wrapper">
+                                  <FileSpreadsheet size={28} />
+                                </div>
+                                <span>Excel Sheet</span>
+                              </div>
+
+                              <div className="upload-flow-track">
+                                {importProgress.processed < importProgress.total && (
+                                  <div className="upload-flow-stream"></div>
+                                )}
+                              </div>
+
+                              <div className={`upload-anim-node server ${importProgress.processed < importProgress.total ? 'active' : ''}`}>
+                                <div className="upload-anim-icon-wrapper">
+                                  <Database size={28} />
+                                </div>
+                                <span>Database</span>
+                              </div>
+                            </div>
+
                             <div className="progress-percentage-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                               <span style={{ fontWeight: '700', fontSize: '1.1rem', color: '#0f172a' }}>
                                 {importProgress.processed < importProgress.total ? 'Importing Products...' : 'Import Complete'}
@@ -1288,13 +1311,9 @@ const Products = () => {
 
                             <div className="progress-bar-bg" style={{ background: '#f1f5f9', height: '12px', borderRadius: '6px', overflow: 'hidden', marginBottom: '24px', border: '1px solid #e2e8f0' }}>
                               <div 
-                                className="progress-bar-fill" 
+                                className="progress-bar-fill-animated" 
                                 style={{ 
-                                  background: 'linear-gradient(90deg, #ea580c 0%, #f97316 100%)', 
-                                  height: '100%', 
-                                  width: `${importProgress.total > 0 ? Math.round((importProgress.processed / importProgress.total) * 100) : 0}%`, 
-                                  transition: 'width 0.4s ease-out',
-                                  borderRadius: '6px'
+                                  width: `${importProgress.total > 0 ? Math.round((importProgress.processed / importProgress.total) * 100) : 0}%`
                                 }} 
                               />
                             </div>
@@ -1315,9 +1334,11 @@ const Products = () => {
                             </div>
 
                             {importProgress.processed < importProgress.total ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475569', fontSize: '0.9rem', marginBottom: '20px' }}>
-                                <span className="spinner-border" style={{ width: '1rem', height: '1rem', border: '2px solid #ea580c', borderRightColor: 'transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.75s linear infinite' }} />
-                                <span>Processing batch. Please keep this modal open...</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '0.9rem', marginBottom: '20px', background: '#fafaf9', padding: '12px 16px', borderRadius: '8px', border: '1px solid #f5f5f4' }}>
+                                <Loader2 size={18} style={{ color: '#ea580c', animation: 'spin 1s linear infinite' }} />
+                                <span style={{ fontWeight: '500' }}>
+                                  Uploading products... Processing rows {importProgress.processed + 1} to {Math.min(importProgress.processed + 25, importProgress.total)} of {importProgress.total}
+                                </span>
                               </div>
                             ) : (
                               <div style={{ marginBottom: '20px' }}>

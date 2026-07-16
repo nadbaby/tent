@@ -1079,3 +1079,136 @@
     transform: rotate(360deg);
   }
 }
+
+/* ── Bulk Import Premium Animation ── */
+.upload-animation-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border: 1px dashed #e2e8f0;
+  border-radius: 12px;
+  padding: 24px 32px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.upload-anim-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+}
+
+.upload-anim-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  position: relative;
+}
+
+.upload-anim-node.excel .upload-anim-icon-wrapper {
+  background: #f0fdf4;
+  border: 2px solid #bbf7d0;
+  color: #16a34a;
+  animation: pulseGlowGreen 2s infinite ease-in-out;
+}
+
+.upload-anim-node.server .upload-anim-icon-wrapper {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  color: #ea580c;
+  animation: pulseGlowOrange 2s infinite ease-in-out;
+}
+
+.upload-anim-node.server.active .upload-anim-icon-wrapper {
+  background: #fff7ed;
+  border-color: #ffedd5;
+  box-shadow: 0 0 15px rgba(234, 88, 12, 0.2);
+}
+
+.upload-anim-node span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Connecting flow animation */
+.upload-flow-track {
+  flex-grow: 1;
+  height: 4px;
+  background: #e2e8f0;
+  margin: 0 20px;
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+
+.upload-flow-stream {
+  position: absolute;
+  top: 0;
+  left: -100px;
+  width: 80px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, #ea580c, transparent);
+  animation: flowParticle 1.5s infinite linear;
+}
+
+/* Shimmering progress bar fill */
+.progress-bar-fill-animated {
+  background: linear-gradient(90deg, #ea580c 0%, #f97316 25%, #ea580c 50%, #f97316 75%, #ea580c 100%);
+  background-size: 200% 100%;
+  height: 100%;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 6px;
+  animation: progressShimmer 2s infinite linear;
+}
+
+/* Keyframes */
+@keyframes pulseGlowGreen {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.05);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(22, 163, 74, 0.2);
+  }
+}
+
+@keyframes pulseGlowOrange {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 6px -1px rgba(234, 88, 12, 0.05);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(234, 88, 12, 0.25);
+  }
+}
+
+@keyframes flowParticle {
+  0% {
+    left: -80px;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes progressShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
