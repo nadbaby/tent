@@ -24,11 +24,12 @@ const CartDrawer = ({ isOpen, onClose }) => {
       name: item.name,
       price: item.price,
       image: item.image,
+      size: item.size,
     }));
   };
 
-  const handleDecrement = (id) => {
-    dispatch(removeItem(id));
+  const handleDecrement = (item) => {
+    dispatch(removeItem({ id: item.id, size: item.size }));
   };
 
   const handleQuantityChange = (item, newQty) => {
@@ -41,6 +42,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
       price: item.price,
       image: item.image,
       quantity: qty,
+      size: item.size,
       replace: true
     }));
   };
@@ -113,7 +115,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
               {items.map((item) => {
                 const displayImage = resolveImageUrl(item.image);
                 return (
-                  <div key={item.id} className="cart-item">
+                  <div key={`${item.id}-${item.size || 'default'}`} className="cart-item">
                     <div className="cart-item-image">
                       <img
                         src={displayImage}
@@ -125,13 +127,18 @@ const CartDrawer = ({ isOpen, onClose }) => {
                     </div>
                     <div className="cart-item-details">
                       <h4 className="cart-item-name">{item.name}</h4>
+                      {item.size && (
+                        <p className="cart-item-size" style={{ fontSize: '0.75rem', color: '#ea580c', margin: '2px 0 6px 0', fontWeight: '600' }}>
+                          Size: {item.size}
+                        </p>
+                      )}
                       <p className="cart-item-price">
                         {item.price > 0 ? `₹${item.price.toLocaleString('en-IN')}` : 'Request Quote'}
                       </p>
                       <div className="cart-item-quantity">
                         <button
                           className="qty-btn"
-                          onClick={() => handleDecrement(item.id)}
+                          onClick={() => handleDecrement(item)}
                         >
                           <Minus size={12} />
                         </button>
@@ -158,7 +165,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                       </span>
                       <button
                         className="cart-item-remove"
-                        onClick={() => dispatch(deleteFromCart(item.id))}
+                        onClick={() => dispatch(deleteFromCart({ id: item.id, size: item.size }))}
                         title="Remove item"
                       >
                         <Trash2 size={14} />

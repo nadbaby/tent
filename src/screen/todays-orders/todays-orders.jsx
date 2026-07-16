@@ -508,6 +508,11 @@ const TodaysOrdersDashboard = () => {
                             <td>
                               <div className="item-cell">
                                 <strong>{item.name}</strong>
+                                {item.size && (
+                                  <span style={{ display: 'block', fontSize: '0.75rem', color: '#ea580c', fontWeight: 'bold', marginTop: '2px' }}>
+                                    Size: {item.size}
+                                  </span>
+                                )}
                               </div>
                             </td>
                             <td>{item.quantity}</td>
@@ -659,6 +664,11 @@ const TodaysOrdersDashboard = () => {
                                 <tr key={index} style={{ borderBottom: '1px solid #e2e8f0' }}>
                                   <td style={{ padding: '10px', fontSize: '0.9rem' }}>
                                     <strong style={{ color: '#0f172a', display: 'block' }}>{item.name}</strong>
+                                    {item.size && (
+                                      <span style={{ display: 'block', fontSize: '0.75rem', color: '#ea580c', fontWeight: 'bold', margin: '2px 0' }}>
+                                        Size: {item.size}
+                                      </span>
+                                    )}
                                     <small style={{ color: '#64748b' }}>ID: {item.id}</small>
                                   </td>
                                   <td style={{ padding: '10px', textAlign: 'center', fontSize: '0.9rem', color: '#0f172a' }}>{item.quantity}</td>

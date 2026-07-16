@@ -37,6 +37,8 @@ const ProductDetail = () => {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [zoomStyle, setZoomStyle] = useState({ transformOrigin: 'center center' });
   const [activeFaq, setActiveFaq] = useState(null);
+  const [selectedSize, setSelectedSize] = useState("");
+  const [sizeOptions, setSizeOptions] = useState([]);
 
   // Modal / Interactive States
   const [is360Active, setIs360Active] = useState(false);
@@ -134,6 +136,28 @@ const ProductDetail = () => {
           maintenance: "Inspect assembly monthly for alignment issues. In standard operations, pre-greasing lasts for a normal lifespan. Re-grease every 6-12 months for heavy-duty 24/7 industrial mill operations.",
           installation: "1. Clean and polish the hosting shaft using a clean cloth.\n2. Ensure the shaft has no metal burrs or pits.\n3. Position the bearing onto the shaft sleeve evenly using a pneumatic pressure cap.\n4. Tighten lock screws to standard torque configurations."
         };
+        
+        // Derive default size options
+        const bore = data.innerDiameter || specifications["Bore Diameter"];
+        const outer = data.outerDiameter || specifications["Outer Diameter"];
+        const width = data.width || specifications["Overall Width"];
+        let defaultSize = "Standard Size";
+        if (bore && outer && width) {
+          defaultSize = `${String(bore).replace(/\s*mm/gi, '')} x ${String(outer).replace(/\s*mm/gi, '')} x ${String(width).replace(/\s*mm/gi, '')} mm`;
+        } else if (bore) {
+          defaultSize = `${bore} Bore`;
+        }
+        setSelectedSize(defaultSize);
+
+        const options = [defaultSize];
+        const isBearing = (data.category || category || "").toLowerCase().includes("bearing");
+        if (isBearing) {
+          options.push(`${defaultSize} (C3 Clearance)`);
+          options.push(`${defaultSize} (CN Standard)`);
+        } else {
+          options.push(`${defaultSize} (Standard Fit)`);
+        }
+        setSizeOptions(options);
 
         setProduct(enrichedProduct);
 
@@ -219,6 +243,7 @@ const ProductDetail = () => {
       price: product.price || 0,
       image: product.image,
       quantity: quantity,
+      size: selectedSize,
       replace: true
     }));
     showToast(`${quantity} item(s) added to cart!`, 'success');
@@ -489,6 +514,39 @@ const ProductDetail = () => {
                 </div>
               </div>
 
+              {/* Size Option Selector */}
+              {sizeOptions.length > 0 && (
+                <div className="purchase-size-selector" style={{ marginBottom: '1.5rem', background: '#f8fafc', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <span className="qty-label" style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Select Size/Specification:
+                  </span>
+                  <div className="size-options-group" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {sizeOptions.map((option, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={`size-option-pill ${selectedSize === option ? 'active' : ''}`}
+                        onClick={() => setSelectedSize(option)}
+                        style={{
+                          padding: '8px 14px',
+                          border: selectedSize === option ? '2px solid #ea580c' : '1px solid #cbd5e1',
+                          background: selectedSize === option ? '#fff7ed' : '#fff',
+                          color: selectedSize === option ? '#ea580c' : '#475569',
+                          borderRadius: '8px',
+                          fontWeight: '700',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          outline: 'none'
+                        }}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Quantity selector */}
               {!isAdminUser ? (
                 <div className="purchase-qty-selector">
@@ -537,14 +595,10 @@ const ProductDetail = () => {
                         showToast(isWishlisted ? 'Removed from wishlist' : 'Added to wishlist', isWishlisted ? 'info' : 'success');
                       }}
                       className={`wishlist-cta-btn ${isWishlisted ? 'active' : ''}`}
+                      style={{ width: '100%' }}
                     >
                       <Heart size={18} fill={isWishlisted ? '#EF4444' : 'none'} />
                       <span>{isWishlisted ? 'Wishlisted' : 'Add to Wishlist'}</span>
-                    </button>
-
-                    <button onClick={scrollToSpecs} className="compare-cta-btn">
-                      <GitCompare size={18} />
-                      <span>Compare Spares</span>
                     </button>
                   </div>
 

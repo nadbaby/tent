@@ -93,7 +93,8 @@ const cartSlice = createSlice({
     addItem(state, action) {
       const newItem = action.payload;
       const quantityToAdd = newItem.quantity || 1;
-      const existingItem = state.items.find((item) => item.id === newItem.id);
+      const sizeToAdd = newItem.size || "";
+      const existingItem = state.items.find((item) => item.id === newItem.id && (item.size || "") === sizeToAdd);
 
       if (!existingItem) {
         state.totalQuantity += quantityToAdd;
@@ -104,6 +105,7 @@ const cartSlice = createSlice({
           quantity: quantityToAdd,
           totalPrice: newItem.price * quantityToAdd,
           image: newItem.image,
+          size: sizeToAdd,
         });
       } else {
         if (newItem.replace) {
@@ -121,12 +123,15 @@ const cartSlice = createSlice({
       saveState(state);
     },
     removeItem(state, action) {
-      const id = action.payload;
-      const existingItem = state.items.find((item) => item.id === id);
+      const payload = action.payload;
+      const id = typeof payload === 'object' && payload !== null ? payload.id : payload;
+      const size = typeof payload === 'object' && payload !== null ? payload.size : undefined;
+
+      const existingItem = state.items.find((item) => item.id === id && (size === undefined || (item.size || "") === (size || "")));
       if (existingItem) {
         state.totalQuantity--;
         if (existingItem.quantity === 1) {
-          state.items = state.items.filter((item) => item.id !== id);
+          state.items = state.items.filter((item) => !(item.id === id && (size === undefined || (item.size || "") === (size || ""))));
         } else {
           existingItem.quantity--;
           existingItem.totalPrice -= existingItem.price;
@@ -135,11 +140,14 @@ const cartSlice = createSlice({
       saveState(state);
     },
     deleteFromCart(state, action) {
-      const id = action.payload;
-      const existingItem = state.items.find((item) => item.id === id);
+      const payload = action.payload;
+      const id = typeof payload === 'object' && payload !== null ? payload.id : payload;
+      const size = typeof payload === 'object' && payload !== null ? payload.size : undefined;
+
+      const existingItem = state.items.find((item) => item.id === id && (size === undefined || (item.size || "") === (size || "")));
       if (existingItem) {
         state.totalQuantity -= existingItem.quantity;
-        state.items = state.items.filter((item) => item.id !== id);
+        state.items = state.items.filter((item) => !(item.id === id && (size === undefined || (item.size || "") === (size || ""))));
       }
       saveState(state);
     },
