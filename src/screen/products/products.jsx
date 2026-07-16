@@ -122,6 +122,8 @@ const Products = () => {
   // Bulk Import States
   const [showImportModal, setShowImportModal] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(null);
+  const [failedImportRows, setFailedImportRows] = useState([]);
 
   // Export States
   const [showExportModal, setShowExportModal] = useState(false);
@@ -428,40 +430,128 @@ const Products = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     setImporting(true);
-    try {
-      const response = await fetch(apiUrl("/api/admin/products/bulk-import"), {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}` },
-        body: formData,
-      });
+    setImportProgress({ total: 0, processed: 0, success: 0, failed: 0, errors: [] });
+    setFailedImportRows([]);
 
-      const result = await response.json();
-      if (response.ok) {
-        let msg = `Bulk Import Result:\n- Total rows processed: ${result.totalRows}\n- Successfully imported/updated: ${result.importedCount}`;
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet);
 
-        if (result.errors && result.errors.length > 0) {
-          msg += `\n\n⚠️ Some rows had issues:\n${result.errors.slice(0, 5).join('\n')}`;
-          if (result.errors.length > 5) msg += `\n...and ${result.errors.length - 5} more errors.`;
-          msg += `\n\nPlease check your headers and data types.`;
+        if (!rows || rows.length === 0) {
+          alert("No data found in the Excel file.");
+          setImporting(false);
+          return;
         }
 
-        alert(msg);
-        fetchProducts(); // Refresh the list
-      } else {
-        alert("Import failed: " + (result.message || "Unknown error"));
+        const totalRows = rows.length;
+        setImportProgress({ total: totalRows, processed: 0, success: 0, failed: 0, errors: [] });
+
+        const batchSize = 25; // 25 rows per batch is fast and extremely stable
+        let successCount = 0;
+        let failedCount = 0;
+        const accumulatedErrors = [];
+        const failedRowsObj = [];
+
+        for (let i = 0; i < totalRows; i += batchSize) {
+          const batch = rows.slice(i, i + batchSize);
+          const startRowIndex = i + 2;
+
+          try {
+            const response = await fetch(apiUrl("/api/admin/products/import-batch"), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({ products: batch, startRowIndex })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+              successCount += result.importedCount;
+              
+              if (result.errors && result.errors.length > 0) {
+                accumulatedErrors.push(...result.errors);
+              }
+              
+              if (result.failures && result.failures.length > 0) {
+                failedCount += result.failures.length;
+                failedRowsObj.push(...result.failures.map(f => ({
+                  rowData: f.rowData,
+                  error: f.error
+                })));
+              }
+            } else {
+              // Whole batch failed
+              failedCount += batch.length;
+              const errMsg = result.message || "Failed to process batch";
+              batch.forEach((row, idx) => {
+                accumulatedErrors.push(`Row ${startRowIndex + idx}: ${errMsg}`);
+                failedRowsObj.push({ rowData: row, error: errMsg });
+              });
+            }
+          } catch (err) {
+            // Network / fetch error
+            failedCount += batch.length;
+            batch.forEach((row, idx) => {
+              accumulatedErrors.push(`Row ${startRowIndex + idx}: Network error (${err.message})`);
+              failedRowsObj.push({ rowData: row, error: err.message });
+            });
+          }
+
+          // Update progress stats in real time
+          setImportProgress({
+            total: totalRows,
+            processed: Math.min(i + batch.length, totalRows),
+            success: successCount,
+            failed: failedCount,
+            errors: accumulatedErrors
+          });
+          setFailedImportRows(failedRowsObj);
+        }
+
+        fetchProducts(); // Refresh product list
+      } catch (err) {
+        console.error("Error reading file:", err);
+        alert("Error reading Excel file: " + err.message);
+        setImporting(false);
+      } finally {
+        setImporting(false);
       }
-    } catch (err) {
-      console.error("Bulk import error:", err);
-      alert("Error during bulk import. Please check connection and file format.");
-    } finally {
+    };
+
+    reader.onerror = (err) => {
+      console.error("FileReader error:", err);
+      alert("Error loading file.");
       setImporting(false);
-      // Clear the input
-      e.target.value = "";
-    }
+    };
+
+    reader.readAsArrayBuffer(file);
+    // Reset file input value so same file can be imported again
+    e.target.value = "";
+  };
+
+  const downloadFailedExcel = () => {
+    if (failedImportRows.length === 0) return;
+
+    // Transform the failed rows to include a "Failure Reason" column at the beginning
+    const dataToExport = failedImportRows.map(f => {
+      return {
+        "Failure Reason": f.error,
+        ...f.rowData
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Failed Products");
+    XLSX.writeFile(wb, `Failed_Imports_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   const handleImageScanChange = async (e) => {
@@ -1143,33 +1233,164 @@ const Products = () => {
 
                 {/* Bulk Import Modal */}
                 {showImportModal && (
-                  <div className="import-modal-overlay" onClick={() => setShowImportModal(false)}>
+                  <div className="import-modal-overlay" onClick={() => { if (!importing) setShowImportModal(false); }}>
                     <div className="import-modal-content" onClick={e => e.stopPropagation()}>
                       <div className="modal-header">
                         <h3>Bulk Product Import</h3>
-                        <button className="close-modal" onClick={() => setShowImportModal(false)}><X size={20} /></button>
+                        <button 
+                          className="close-modal" 
+                          onClick={() => { if (!importing) setShowImportModal(false); }}
+                          disabled={importing}
+                          style={{ cursor: importing ? 'not-allowed' : 'pointer', opacity: importing ? 0.5 : 1 }}
+                        >
+                          <X size={20} />
+                        </button>
                       </div>
                       <div className="modal-body">
-                        <p style={{ marginBottom: '1.25rem', color: '#64748b', fontSize: '0.95rem', lineHeight: '1.5' }}>
-                          Manage your inventory efficiently. Download our template, fill in your product details, and upload it back.
-                          <br />
-                          <strong style={{ color: '#0f172a' }}>💡 Smart Update:</strong> Existing products matching by <strong>Product ID</strong>, <strong>SKU</strong>, or <strong>Name</strong> will be updated automatically. Empty Excel cells will not overwrite existing database fields, ensuring no data loss.
-                        </p>
+                        {!importProgress ? (
+                          <>
+                            <p style={{ marginBottom: '1.25rem', color: '#64748b', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                              Manage your inventory efficiently. Download our template, fill in your product details, and upload it back.
+                              <br />
+                              <strong style={{ color: '#0f172a' }}>💡 Smart Update:</strong> Existing products matching by <strong>Product ID</strong>, <strong>SKU</strong>, or <strong>Name</strong> will be updated automatically. Empty Excel cells will not overwrite existing database fields, ensuring no data loss.
+                            </p>
 
-                        <div className="import-options">
-                          <div className="import-option-card" onClick={downloadTemplate}>
-                            <div className="option-icon"><Download size={32} /></div>
-                            <h4>Download Template</h4>
-                            <p>Get a pre-formatted Excel file with all required columns.</p>
+                            <div className="import-options">
+                              <div className="import-option-card" onClick={downloadTemplate}>
+                                <div className="option-icon"><Download size={32} /></div>
+                                <h4>Download Template</h4>
+                                <p>Get a pre-formatted Excel file with all required columns.</p>
+                              </div>
+
+                              <label className="import-option-card" style={{ cursor: 'pointer' }}>
+                                <div className="option-icon"><Upload size={32} /></div>
+                                <h4>Upload Excel</h4>
+                                <p>Select your filled Excel file to start importing products.</p>
+                                <input 
+                                  type="file" 
+                                  accept=".xlsx, .xls" 
+                                  style={{ display: 'none' }} 
+                                  onChange={handleBulkImport} 
+                                />
+                              </label>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="import-progress-container" style={{ padding: '10px 0' }}>
+                            <div className="progress-percentage-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <span style={{ fontWeight: '700', fontSize: '1.1rem', color: '#0f172a' }}>
+                                {importProgress.processed < importProgress.total ? 'Importing Products...' : 'Import Complete'}
+                              </span>
+                              <span style={{ fontWeight: '800', fontSize: '1.25rem', color: '#ea580c' }}>
+                                {importProgress.total > 0 ? Math.round((importProgress.processed / importProgress.total) * 100) : 0}%
+                              </span>
+                            </div>
+
+                            <div className="progress-bar-bg" style={{ background: '#f1f5f9', height: '12px', borderRadius: '6px', overflow: 'hidden', marginBottom: '24px', border: '1px solid #e2e8f0' }}>
+                              <div 
+                                className="progress-bar-fill" 
+                                style={{ 
+                                  background: 'linear-gradient(90deg, #ea580c 0%, #f97316 100%)', 
+                                  height: '100%', 
+                                  width: `${importProgress.total > 0 ? Math.round((importProgress.processed / importProgress.total) * 100) : 0}%`, 
+                                  transition: 'width 0.4s ease-out',
+                                  borderRadius: '6px'
+                                }} 
+                              />
+                            </div>
+
+                            <div className="import-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
+                              <div className="stat-card" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '0.8rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Total</div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a' }}>{importProgress.total}</div>
+                              </div>
+                              <div className="stat-card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '0.8rem', color: '#166534', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Success</div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#15803d' }}>{importProgress.success}</div>
+                              </div>
+                              <div className="stat-card" style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '0.8rem', color: '#991b1b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Failed</div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#b91c1c' }}>{importProgress.failed}</div>
+                              </div>
+                            </div>
+
+                            {importProgress.processed < importProgress.total ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475569', fontSize: '0.9rem', marginBottom: '20px' }}>
+                                <span className="spinner-border" style={{ width: '1rem', height: '1rem', border: '2px solid #ea580c', borderRightColor: 'transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.75s linear infinite' }} />
+                                <span>Processing batch. Please keep this modal open...</span>
+                              </div>
+                            ) : (
+                              <div style={{ marginBottom: '20px' }}>
+                                {importProgress.failed === 0 ? (
+                                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px', color: '#15803d', fontSize: '0.9rem', fontWeight: '500' }}>
+                                    🎉 All products imported successfully!
+                                  </div>
+                                ) : (
+                                  <div style={{ background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '8px', padding: '12px', color: '#b45309', fontSize: '0.9rem', fontWeight: '500' }}>
+                                    ⚠️ Imported with {importProgress.failed} failed items. Please download the failed products Excel sheet to inspect and correct the data.
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {importProgress.errors.length > 0 && (
+                              <div style={{ marginBottom: '24px' }}>
+                                <h5 style={{ fontSize: '0.85rem', color: '#334155', fontWeight: '700', marginBottom: '8px' }}>Error Details ({importProgress.errors.length})</h5>
+                                <div style={{ maxHeight: '120px', overflowY: 'auto', background: '#0f172a', color: '#fda4af', fontFamily: 'monospace', fontSize: '0.75rem', padding: '10px 12px', borderRadius: '8px', lineHeight: '1.5' }}>
+                                  {importProgress.errors.map((err, idx) => (
+                                    <div key={idx} style={{ marginBottom: '4px' }}>• {err}</div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="progress-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+                              {importProgress.processed === importProgress.total && failedImportRows.length > 0 && (
+                                <button 
+                                  className="btn btn-secondary" 
+                                  style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '8px', 
+                                    background: '#fee2e2', 
+                                    color: '#b91c1c', 
+                                    border: '1px solid #fca5a5',
+                                    fontWeight: '600',
+                                    padding: '0.6rem 1.2rem',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer'
+                                  }}
+                                  onClick={downloadFailedExcel}
+                                >
+                                  <Download size={16} />
+                                  Download Failed Excel
+                                </button>
+                              )}
+                              
+                              <button 
+                                className="btn"
+                                style={{ 
+                                  background: importProgress.processed === importProgress.total ? '#ea580c' : '#cbd5e1', 
+                                  color: '#fff', 
+                                  fontWeight: '600',
+                                  padding: '0.6rem 1.5rem',
+                                  borderRadius: '8px',
+                                  cursor: importProgress.processed === importProgress.total ? 'pointer' : 'not-allowed'
+                                }}
+                                disabled={importProgress.processed < importProgress.total}
+                                onClick={() => {
+                                  setShowImportModal(false);
+                                  setTimeout(() => {
+                                    setImportProgress(null);
+                                    setFailedImportRows([]);
+                                  }, 300);
+                                }}
+                              >
+                                Close
+                              </button>
+                            </div>
                           </div>
-
-                          <label className="import-option-card">
-                            <div className="option-icon"><Upload size={32} /></div>
-                            <h4>{importing ? 'Importing...' : 'Upload Excel'}</h4>
-                            <p>Select your filled Excel file to start importing products.</p>
-                            <input type="file" accept=".xlsx, .xls" style={{ display: 'none' }} onChange={(e) => { handleBulkImport(e); setShowImportModal(false); }} disabled={importing} />
-                          </label>
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>
