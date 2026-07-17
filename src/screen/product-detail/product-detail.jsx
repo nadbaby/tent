@@ -553,48 +553,86 @@ const ProductDetail = () => {
                   <strong>Urgent Ludhiana Delivery</strong>
                   <span>Immediate dispatch via Porter local delivery is available on request.</span>
                 </div>
-              </div>
-
-
-              {/* Series Sizes Shortcut Button */}
-              {seriesProducts.length > 1 && (
-                <div style={{ marginBottom: '1.5rem', background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', padding: '16px', borderRadius: '12px', border: '1.5px dashed #ea580c', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Available In Other Sizes:
+              </div>              {/* Size Option (Clearance / Fit Variant) */}
+              {sizeOptions.length > 1 && (
+                <div className="variant-selector-section">
+                  <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                    Select Option / Fit:
                   </span>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                    <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: '600' }}>
-                      Explore all {seriesProducts.length} sizes in the <strong>{product.name.split(/\s+/)[0]}</strong> series.
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {sizeOptions.map((option) => {
+                      const isSelected = option === selectedSize;
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => setSelectedSize(option)}
+                          className={`size-option-pill ${isSelected ? 'active' : ''}`}
+                        >
+                          {isSelected && <Check size={14} strokeWidth={3} />}
+                          {option}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Series Size Selector (Different Products/Sizes in the Series) */}
+              {seriesProducts.length > 1 && (
+                <div className="series-sizes-container">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Select Size ({seriesProducts.length} sizes available):
                     </span>
                     <button
                       type="button"
                       onClick={() => setShowSeriesModal(true)}
                       style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        background: 'linear-gradient(135deg, #ea580c 0%, #ff7e33 100%)',
-                        color: '#ffffff',
+                        background: 'none',
                         border: 'none',
-                        padding: '8px 16px',
-                        borderRadius: '8px',
+                        color: '#ea580c',
+                        fontSize: '0.8rem',
                         fontWeight: '700',
-                        fontSize: '0.85rem',
                         cursor: 'pointer',
-                        boxShadow: '0 4px 10px rgba(234, 88, 12, 0.2)',
-                        transition: 'all 0.2s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-1px)';
-                        e.currentTarget.style.boxShadow = '0 6px 12px rgba(234, 88, 12, 0.3)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'none';
-                        e.currentTarget.style.boxShadow = '0 4px 10px rgba(234, 88, 12, 0.2)';
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: 0
                       }}
                     >
-                      <Maximize2 size={14} /> View All Sizes
+                      <Maximize2 size={12} /> View Details
                     </button>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {seriesProducts.map((item) => {
+                      const isCurrent = String(item.id) === String(product.id);
+                      // Extract name code, e.g., "UCP 204" from "UCP 204 Pillow Block Bearing"
+                      const nameParts = item.name.split(/\s+/);
+                      const displayCode = (nameParts[0] && nameParts[1] && /^\d+/.test(nameParts[1]))
+                        ? `${nameParts[0]} ${nameParts[1]}`
+                        : item.name.split(/\s+/).slice(0, 2).join(' ');
+
+                      // Bore diameter info from item specs if available
+                      const boreVal = item.innerDiameter || (item.specifications && (item.specifications["Bore Diameter"] || item.specifications["bore diameter"]));
+                      const boreLabel = boreVal ? ` (${String(boreVal).replace(/\s*mm/gi, '')}mm)` : '';
+
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            if (!isCurrent) {
+                              const hasValidSlug = item.slug && item.slug.toLowerCase() !== 'sku' && item.slug.toLowerCase() !== 'default';
+                              navigate(`/product/${hasValidSlug ? item.slug : item.id}`);
+                            }
+                          }}
+                          className={`series-size-pill ${isCurrent ? 'active' : ''}`}
+                        >
+                          {displayCode}{boreLabel}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
