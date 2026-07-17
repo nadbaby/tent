@@ -18,112 +18,46 @@ import {
   Award, ShieldAlert, Lock, ChevronDown, Check, UserCheck, ThumbsUp
 } from 'lucide-react';
 
-const extractFamilyAndSize = (name, category) => {
-  if (!name) return { family: null, size: null };
-  const cleanName = name.trim().toUpperCase();
-
-  // If it's a seal, parse "10X18X4" format
-  if (category && category.toLowerCase().includes("seal")) {
-    const match = cleanName.match(/^(\d+)X(\d+)X([\d.]+)/i) || cleanName.match(/^(\d+)X(\d+)M([\d.]+)/i);
-    if (match) {
-      return { family: "SEAL", size: parseInt(match[1]), inner: parseInt(match[1]), outer: parseInt(match[2]), width: parseFloat(match[3]) };
-    }
-    // Fallback: search for first number in name
-    const numMatch = cleanName.match(/\d+/);
-    return { family: "SEAL", size: numMatch ? parseInt(numMatch[0]) : null };
-  }
-
-  // Check for patterns like "LM6UU", "KH1428PP", "HGH15CA"
-  const alphaNumericMatch = cleanName.match(/^([A-Z]+)(\d+)/);
-  if (alphaNumericMatch) {
-    return { family: alphaNumericMatch[1], size: parseInt(alphaNumericMatch[2]) };
-  }
-
-  // Check for space-separated patterns like "UCP 202 L3" or "OMS 80"
-  const parts = cleanName.split(/\s+/);
-  const firstWord = parts[0];
-  const secondWord = parts[1];
-
-  // If first word is purely alphabetic (like "UCP", "OMS", "A2F")
-  if (/^[A-Z]+$/.test(firstWord)) {
-    if (secondWord && /^\d+/.test(secondWord)) {
-      const sizeNum = parseInt(secondWord.match(/^\d+/)[0]);
-      return { family: firstWord, size: sizeNum };
-    }
-    return { family: firstWord, size: null };
-  }
-
-  // If first word starts with digits (like "6204", "6001")
-  if (/^\d+/.test(firstWord)) {
-    const digits = firstWord.match(/^\d+/)[0];
-    if (digits.length >= 4) {
-      return { family: digits.substring(0, 2), size: parseInt(digits.substring(2)) };
-    } else if (digits.length === 3) {
-      return { family: digits.substring(0, 2), size: parseInt(digits.substring(2)) };
-    }
-    return { family: digits, size: null };
-  }
-
-  return { family: firstWord, size: null };
-};
-
 const findSeriesProducts = (currentProduct, allData) => {
   if (!currentProduct) return [];
   const currentCat = currentProduct.category || "";
+  const currentSubcat = currentProduct.subcategory || "";
 
-  // Extract family for the current product
-  const currentInfo = extractFamilyAndSize(currentProduct.name, currentCat);
-  if (!currentInfo.family) return [];
-
-  // Filter allData to only have products in the same category
-  let candidates = allData.filter(p => p.category === currentCat);
-
-  // If category is Seal, handle it by finding seals with same or close inner diameter
-  if (currentInfo.family === "SEAL" && typeof currentInfo.inner === "number") {
-    // Parse all seal candidates
-    const parsedSeals = candidates.map(p => {
-      const info = extractFamilyAndSize(p.name, currentCat);
-      return { product: p, info };
-    }).filter(item => item.info.family === "SEAL" && typeof item.info.inner === "number");
-
-    // Sort by proximity of inner diameter, then outer diameter, then width
-    parsedSeals.sort((a, b) => {
-      const diffInner = Math.abs(a.info.inner - currentInfo.inner) - Math.abs(b.info.inner - currentInfo.inner);
-      if (diffInner !== 0) return diffInner;
-      const diffOuter = Math.abs(a.info.outer - currentInfo.outer) - Math.abs(b.info.outer - currentInfo.outer);
-      if (diffOuter !== 0) return diffOuter;
-      return Math.abs(a.info.width - currentInfo.width) - Math.abs(b.info.width - currentInfo.width);
-    });
-
-    const closest = parsedSeals.slice(0, 12).map(item => item.product);
-    closest.sort((a, b) => {
-      const infoA = extractFamilyAndSize(a.name, currentCat);
-      const infoB = extractFamilyAndSize(b.name, currentCat);
-      if (infoA.inner !== infoB.inner) return infoA.inner - infoB.inner;
-      if (infoA.outer !== infoB.outer) return infoA.outer - infoB.outer;
-      return infoA.width - infoB.width;
-    });
-    return closest;
+  // Filter candidates by same category and subcategory
+  let candidates = [];
+  if (currentSubcat) {
+    candidates = allData.filter(p => p.category === currentCat && p.subcategory === currentSubcat);
+  } else {
+    candidates = allData.filter(p => p.category === currentCat);
   }
 
-  // For non-seal products, match by family prefix
-  let matched = candidates.filter(p => {
-    const pInfo = extractFamilyAndSize(p.name, currentCat);
-    return pInfo.family === currentInfo.family;
-  });
-
-  // Sort them numerically by size if available
-  matched.sort((a, b) => {
-    const infoA = extractFamilyAndSize(a.name, currentCat);
-    const infoB = extractFamilyAndSize(b.name, currentCat);
-    if (infoA.size !== null && infoB.size !== null) {
-      return infoA.size - infoB.size;
+  // Sort them numerically by size / number in name
+  candidates.sort((a, b) => {
+    // If it's a seal, extract dimensions (e.g. "80X96X10")
+    const isSeal = currentCat.toLowerCase().includes("seal");
+    if (isSeal) {
+      const matchA = a.name.match(/^(\d+)/);
+      const matchB = b.name.match(/^(\d+)/);
+      if (matchA && matchB) {
+        const valA = parseInt(matchA[1]);
+        const valB = parseInt(matchB[1]);
+        if (valA !== valB) return valA - valB;
+      }
     }
+
+    // Default numeric sort: extract first contiguous digit sequence in name
+    const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
+    const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
+    if (numA !== numB) {
+      return numA - numB;
+    }
+    // Fallback to alphabetical
     return a.name.localeCompare(b.name);
   });
 
-  return matched;
+  return candidates;
 };
+
 
 
 const ProductDetail = () => {
@@ -683,18 +617,25 @@ const ProductDetail = () => {
                       <Maximize2 size={12} /> View Details
                     </button>
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '8px',
+                    maxHeight: seriesProducts.length > 15 ? '180px' : 'none',
+                    overflowY: seriesProducts.length > 15 ? 'auto' : 'visible',
+                    padding: seriesProducts.length > 15 ? '8px' : '0',
+                    border: seriesProducts.length > 15 ? '1px solid #cbd5e1' : 'none',
+                    borderRadius: seriesProducts.length > 15 ? '8px' : '0',
+                    backgroundColor: seriesProducts.length > 15 ? '#f8fafc' : 'transparent'
+                  }}>
                     {seriesProducts.map((item) => {
                       const isCurrent = String(item.id) === String(product.id);
-                      // Extract name code, e.g., "UCP 204" from "UCP 204 Pillow Block Bearing"
-                      const nameParts = item.name.split(/\s+/);
-                      const displayCode = (nameParts[0] && nameParts[1] && /^\d+/.test(nameParts[1]))
-                        ? `${nameParts[0]} ${nameParts[1]}`
-                        : item.name.split(/\s+/).slice(0, 2).join(' ');
+                      const displayCode = item.name;
 
                       // Bore diameter info from item specs if available
                       const boreVal = item.innerDiameter || (item.specifications && (item.specifications["Bore Diameter"] || item.specifications["bore diameter"]));
-                      const boreLabel = boreVal ? ` (${String(boreVal).replace(/\s*mm/gi, '')}mm)` : '';
+                      const hasBoreInName = boreVal ? displayCode.toUpperCase().includes(String(boreVal).replace(/\s*mm/gi, '').toUpperCase()) : false;
+                      const boreLabel = (boreVal && !hasBoreInName) ? ` (${String(boreVal).replace(/\s*mm/gi, '')}mm)` : '';
 
                       return (
                         <button
