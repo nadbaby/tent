@@ -18,18 +18,113 @@ import {
   Award, ShieldAlert, Lock, ChevronDown, Check, UserCheck, ThumbsUp
 } from 'lucide-react';
 
-const getSeriesPrefix = (name) => {
-  if (!name) return null;
-  const cleanName = name.trim();
-  const firstWord = cleanName.split(/\s+/)[0];
+const extractFamilyAndSize = (name, category) => {
+  if (!name) return { family: null, size: null };
+  const cleanName = name.trim().toUpperCase();
 
-  if (/^\d+/.test(firstWord)) {
-    const match = firstWord.match(/^(\d{2})/);
-    return match ? { type: 'numeric', prefix: match[1] } : null;
-  } else {
-    return { type: 'alpha', prefix: firstWord };
+  // If it's a seal, parse "10X18X4" format
+  if (category && category.toLowerCase().includes("seal")) {
+    const match = cleanName.match(/^(\d+)X(\d+)X([\d.]+)/i) || cleanName.match(/^(\d+)X(\d+)M([\d.]+)/i);
+    if (match) {
+      return { family: "SEAL", size: parseInt(match[1]), inner: parseInt(match[1]), outer: parseInt(match[2]), width: parseFloat(match[3]) };
+    }
+    // Fallback: search for first number in name
+    const numMatch = cleanName.match(/\d+/);
+    return { family: "SEAL", size: numMatch ? parseInt(numMatch[0]) : null };
   }
+
+  // Check for patterns like "LM6UU", "KH1428PP", "HGH15CA"
+  const alphaNumericMatch = cleanName.match(/^([A-Z]+)(\d+)/);
+  if (alphaNumericMatch) {
+    return { family: alphaNumericMatch[1], size: parseInt(alphaNumericMatch[2]) };
+  }
+
+  // Check for space-separated patterns like "UCP 202 L3" or "OMS 80"
+  const parts = cleanName.split(/\s+/);
+  const firstWord = parts[0];
+  const secondWord = parts[1];
+
+  // If first word is purely alphabetic (like "UCP", "OMS", "A2F")
+  if (/^[A-Z]+$/.test(firstWord)) {
+    if (secondWord && /^\d+/.test(secondWord)) {
+      const sizeNum = parseInt(secondWord.match(/^\d+/)[0]);
+      return { family: firstWord, size: sizeNum };
+    }
+    return { family: firstWord, size: null };
+  }
+
+  // If first word starts with digits (like "6204", "6001")
+  if (/^\d+/.test(firstWord)) {
+    const digits = firstWord.match(/^\d+/)[0];
+    if (digits.length >= 4) {
+      return { family: digits.substring(0, 2), size: parseInt(digits.substring(2)) };
+    } else if (digits.length === 3) {
+      return { family: digits.substring(0, 2), size: parseInt(digits.substring(2)) };
+    }
+    return { family: digits, size: null };
+  }
+
+  return { family: firstWord, size: null };
 };
+
+const findSeriesProducts = (currentProduct, allData) => {
+  if (!currentProduct) return [];
+  const currentCat = currentProduct.category || "";
+
+  // Extract family for the current product
+  const currentInfo = extractFamilyAndSize(currentProduct.name, currentCat);
+  if (!currentInfo.family) return [];
+
+  // Filter allData to only have products in the same category
+  let candidates = allData.filter(p => p.category === currentCat);
+
+  // If category is Seal, handle it by finding seals with same or close inner diameter
+  if (currentInfo.family === "SEAL" && typeof currentInfo.inner === "number") {
+    // Parse all seal candidates
+    const parsedSeals = candidates.map(p => {
+      const info = extractFamilyAndSize(p.name, currentCat);
+      return { product: p, info };
+    }).filter(item => item.info.family === "SEAL" && typeof item.info.inner === "number");
+
+    // Sort by proximity of inner diameter, then outer diameter, then width
+    parsedSeals.sort((a, b) => {
+      const diffInner = Math.abs(a.info.inner - currentInfo.inner) - Math.abs(b.info.inner - currentInfo.inner);
+      if (diffInner !== 0) return diffInner;
+      const diffOuter = Math.abs(a.info.outer - currentInfo.outer) - Math.abs(b.info.outer - currentInfo.outer);
+      if (diffOuter !== 0) return diffOuter;
+      return Math.abs(a.info.width - currentInfo.width) - Math.abs(b.info.width - currentInfo.width);
+    });
+
+    const closest = parsedSeals.slice(0, 12).map(item => item.product);
+    closest.sort((a, b) => {
+      const infoA = extractFamilyAndSize(a.name, currentCat);
+      const infoB = extractFamilyAndSize(b.name, currentCat);
+      if (infoA.inner !== infoB.inner) return infoA.inner - infoB.inner;
+      if (infoA.outer !== infoB.outer) return infoA.outer - infoB.outer;
+      return infoA.width - infoB.width;
+    });
+    return closest;
+  }
+
+  // For non-seal products, match by family prefix
+  let matched = candidates.filter(p => {
+    const pInfo = extractFamilyAndSize(p.name, currentCat);
+    return pInfo.family === currentInfo.family;
+  });
+
+  // Sort them numerically by size if available
+  matched.sort((a, b) => {
+    const infoA = extractFamilyAndSize(a.name, currentCat);
+    const infoB = extractFamilyAndSize(b.name, currentCat);
+    if (infoA.size !== null && infoB.size !== null) {
+      return infoA.size - infoB.size;
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  return matched;
+};
+
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -195,25 +290,9 @@ const ProductDetail = () => {
           }
           setRelatedProducts(related.slice(0, 4));
 
-          // Compute series products
-          const pattern = getSeriesPrefix(enrichedProduct.name);
-          if (pattern) {
-            let matchedSeries = [];
-            if (pattern.type === 'alpha') {
-              const regex = new RegExp(`^${pattern.prefix}\\b`, 'i');
-              matchedSeries = allData.filter(p => regex.test(p.name));
-            } else {
-              const regex = new RegExp(`^${pattern.prefix}\\d`, 'i');
-              matchedSeries = allData.filter(p => regex.test(p.name));
-            }
-            // Sort them numerically if possible (e.g. UCP 202, UCP 203)
-            matchedSeries.sort((a, b) => {
-              const numA = parseInt(a.name.replace(/\D/g, '')) || 0;
-              const numB = parseInt(b.name.replace(/\D/g, '')) || 0;
-              return numA - numB;
-            });
-            setSeriesProducts(matchedSeries);
-          }
+          // Compute series products using the smart size matcher
+          const matchedSeries = findSeriesProducts(enrichedProduct, allData);
+          setSeriesProducts(matchedSeries);
         }
 
         setLoading(false);
