@@ -83,10 +83,10 @@ const Chatbot = () => {
   };
 
   const suggestions = [
+    { label: "🛠️ Show all available products", query: "Please show me a list of all the products that have been added to the catalog." },
     { label: "🔍 Search bearings by size", query: "Can you help me search for a bearing if I give you the dimensions?" },
     { label: "📦 Track my order", query: "How can I track my order status?" },
-    { label: "🏢 Contact sales team", query: "What is your customer support phone number and email?" },
-    { label: "⭐ Show top brands", query: "Which bearing brands do you supply?" }
+    { label: "🏢 Contact sales team", query: "What is your customer support phone number and email?" }
   ];
 
   const scrollToBottom = () => {
