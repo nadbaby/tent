@@ -44,19 +44,19 @@ const Home = () => {
 
   // Filter or slice products for different sections
   const featuredProducts = products.filter(p => p.isActive).slice(0, 4);
-  const newArrivals = products.filter(p => p.isActive).reverse().slice(0, 4);
+  const newArrivals = products.filter(p => p.isActive).reverse().slice(0, 8);
 
   return (
     <div className="home-screen">
       <HeroSection />
+      <CategorySection />
       <AuthorizedBrandsSection />
       <BrandsSection />
-      <CategorySection />
 
       {loading ? (
-        <section className="product-section bg-alt" style={{ padding: '80px 0' }}>
+        <section className="product-section bg-alt" style={{ padding: '60px 0' }}>
           <div className="container">
-            <div className="section-header" style={{ textAlign: 'center', marginBottom: '40px' }}>
+            <div className="section-header" style={{ textAlign: 'center', marginBottom: '24px' }}>
               <Skeleton type="skeleton-title" style={{ margin: '0 auto 10px', width: '300px' }} />
               <Skeleton type="skeleton-text" style={{ margin: '0 auto', width: '500px' }} />
             </div>
@@ -78,13 +78,13 @@ const Home = () => {
       <StatsSection />
 
       {loading ? (
-        <section className="product-section" style={{ padding: '80px 0' }}>
+        <section className="product-section" style={{ padding: '60px 0' }}>
           <div className="container">
-            <div className="section-header" style={{ textAlign: 'center', marginBottom: '40px' }}>
+            <div className="section-header" style={{ textAlign: 'center', marginBottom: '24px' }}>
               <Skeleton type="skeleton-title" style={{ margin: '0 auto 10px', width: '300px' }} />
               <Skeleton type="skeleton-text" style={{ margin: '0 auto', width: '500px' }} />
             </div>
-            <SkeletonProductGrid count={4} />
+            <SkeletonProductGrid count={8} />
           </div>
         </section>
       ) : (

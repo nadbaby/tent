@@ -1,56 +1,35 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import './InquirySection.css';
 
 const InquirySection = () => {
   const navigate = useNavigate();
+  
   return (
-    <section className="inquiry-section">
-      {/* Liquid Background Blobs */}
-      <div className="liquid-blob blob-1"></div>
-      <div className="liquid-blob blob-2"></div>
-      
-      <div className="container inquiry-container">
-        <div className="inquiry-content">
-          <h2 className="section-title">Request a Custom Quote</h2>
-          <p className="section-subtitle">
-            Need pricing for bulk orders or specialized machinery? Tell us your requirements and our sales engineering team will get back to you within 24 hours.
-          </p>
-        </div>
+    <section className="clean-inquiry-section">
+      <div className="container">
         
-        <div className="inquiry-form-wrapper">
-          <form className="inquiry-form">
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="name">Full Name</label>
-                <input type="text" id="name" placeholder="John Doe" required />
-              </div>
-              <div className="form-group">
-                <label htmlFor="company">Company Name</label>
-                <input type="text" id="company" placeholder="Acme Corp" required />
-              </div>
+        <div className="clean-inquiry-box">
+          <div className="clean-inquiry-header">
+            <h2>Let's Build Together</h2>
+            <p>Our engineering sales team is ready to deliver tailored solutions and bulk pricing within 24 hours.</p>
+          </div>
+          
+          <form className="clean-inquiry-form">
+            <div className="form-row-clean">
+              <input type="text" placeholder="Full Name" required />
+              <input type="email" placeholder="Email Address" required />
             </div>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="email">Email Address</label>
-                <input type="email" id="email" placeholder="john@example.com" required />
-              </div>
-              <div className="form-group">
-                <label htmlFor="phone">Phone Number</label>
-                <input type="tel" id="phone" placeholder="+1 (555) 000-0000" />
-              </div>
+            <div className="form-row-clean">
+              <input type="text" placeholder="Company Name (Optional)" />
+              <input type="tel" placeholder="Phone Number" required />
             </div>
-            
-            <div className="form-group">
-              <label htmlFor="message">Project Requirements</label>
-              <textarea id="message" rows="4" placeholder="Describe the machinery, quantities, or custom specs you need..." required></textarea>
-            </div>
+            <textarea rows="4" placeholder="Describe your requirements or specific part numbers..." required></textarea>
             
             <button 
               type="button" 
-              className="btn btn-primary submit-btn"
+              className="clean-inquiry-submit"
               onClick={() => {
                 const userStr = localStorage.getItem('user');
                 if (!userStr) {
@@ -60,10 +39,11 @@ const InquirySection = () => {
                 }
               }}
             >
-              Submit Request <Send size={18} />
+              Get Your Custom Quote <ArrowRight size={18} />
             </button>
           </form>
         </div>
+
       </div>
     </section>
   );

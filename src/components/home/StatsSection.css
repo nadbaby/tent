@@ -1,133 +1,92 @@
-.stats-section {
-  padding: 90px 0;
-  background:
-    radial-gradient(circle at top left, rgba(234, 88, 12, 0.18), transparent 30%),
-    linear-gradient(135deg, #0f172a 0%, #111827 55%, #020617 100%);
-  color: #ffffff;
-  position: relative;
-  overflow: hidden;
+.stats-brutalist-section {
+  padding: 60px 0;
+  background-color: #020617; /* Very deep slate */
+  color: #f8fafc;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.stats-section::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0.05;
-  background-image: radial-gradient(#ffffff 1px, transparent 1px);
-  background-size: 22px 22px;
-  pointer-events: none;
-}
-
-.stats-grid {
+.stats-brutalist-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-  position: relative;
-  z-index: 2;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 40px 20px;
 }
 
-.stat-card {
-  position: relative;
-  min-height: 200px;
-  padding: 40px 24px;
-  border-radius: 24px;
-  text-align: center;
-  overflow: hidden;
-
-  /* Premium Glassmorphism */
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-
+.stat-brutalist-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1;
+  position: relative;
+  padding-left: 20px;
 }
 
-.stat-card:hover {
-  transform: translateY(-10px);
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(234, 88, 12, 0.4);
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), 0 0 20px rgba(234, 88, 12, 0.1);
-}
-
-.stat-card::after {
+/* Accent Line */
+.stat-brutalist-card::before {
   content: '';
   position: absolute;
-  top: -40px;
-  right: -40px;
-  width: 100px;
-  height: 100px;
-  background: radial-gradient(circle, rgba(234, 88, 12, 0.2) 0%, transparent 70%);
-  border-radius: 50%;
-  pointer-events: none;
+  left: 0;
+  top: 10px;
+  bottom: 0;
+  width: 4px;
+  background-color: #ea580c;
+  border-radius: 4px;
 }
 
-.stat-icon {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 24px;
-  border-radius: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  background: linear-gradient(135deg, #ea580c 0%, #fb923c 100%);
-  box-shadow: 0 10px 25px rgba(234, 88, 12, 0.3);
-  position: relative;
-  z-index: 2;
-  transition: all 0.4s ease;
-}
-
-.stat-card:hover .stat-icon {
-  transform: scale(1.1) rotate(-5deg);
-  box-shadow: 0 15px 35px rgba(234, 88, 12, 0.5);
-}
-
-.stat-value {
+.stat-giant-value {
   font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  transition: transform 0.4s ease;
+}
+
+.stat-brutalist-card:hover .stat-giant-value {
+  transform: translateY(-5px);
+  background: linear-gradient(135deg, #ea580c 0%, #ff782b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.stat-brutalist-label {
+  font-size: 1.1rem;
   font-weight: 800;
-  line-height: 1;
   margin-bottom: 8px;
-  color: #ea580c; /* Orange accent for numbers to pop */
-  position: relative;
-  z-index: 2;
-  letter-spacing: -2px;
-  text-shadow: 0 2px 10px rgba(234, 88, 12, 0.2);
+  color: #e2e8f0;
+  letter-spacing: -0.01em;
 }
 
-.stat-label {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.7);
-  font-weight: 500;
-  position: relative;
-  z-index: 2;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+.stat-brutalist-desc {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  line-height: 1.5;
+  max-width: 80%;
 }
 
-@media (max-width: 991px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+@media (max-width: 1024px) {
+  .stats-brutalist-grid {
+    gap: 60px 30px;
+  }
+  .stat-brutalist-desc {
+    max-width: 100%;
   }
 }
 
-@media (max-width: 576px) {
-  .stats-section {
-    padding: 70px 0;
+@media (max-width: 640px) {
+  .stats-brutalist-section {
+    padding: 80px 0;
   }
-
-  .stats-grid {
+  .stats-brutalist-grid {
     grid-template-columns: 1fr;
+    gap: 60px 0;
   }
-
-  .stat-card {
-    min-height: 210px;
-    padding: 30px 20px;
+  .stat-giant-value {
+    font-size: 4.5rem;
+  }
+  .stat-brutalist-label {
+    font-size: 1.35rem;
   }
 }
