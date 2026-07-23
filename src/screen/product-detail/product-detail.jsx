@@ -25,10 +25,34 @@ const findSeriesProducts = (currentProduct, allData) => {
 
   // Filter candidates by same category and subcategory
   let candidates = [];
-  if (currentSubcat) {
-    candidates = allData.filter(p => p.category === currentCat && p.subcategory === currentSubcat);
+
+  const isRailOrHgr = (p) => {
+    const text = `${p.name || ''} ${p.category || ''} ${p.subcategory || ''}`.toLowerCase();
+    return text.includes('rail') || text.includes('hgr');
+  };
+
+  if (isRailOrHgr(currentProduct)) {
+    candidates = allData.filter(p => isRailOrHgr(p));
   } else {
-    candidates = allData.filter(p => p.category === currentCat);
+    // Start with category and subcategory filtering
+    let baseGroup = currentSubcat
+      ? allData.filter(p => p.category === currentCat && p.subcategory === currentSubcat)
+      : allData.filter(p => p.category === currentCat);
+
+    // Group items strictly by their alphabetic prefix (e.g., LMK, LMF, LM, SK)
+    const getAlphabeticPrefix = (name) => {
+      if (!name) return "";
+      const match = name.match(/^([a-zA-Z]+)/);
+      return match ? match[1].toLowerCase() : "";
+    };
+
+    const currentPrefix = getAlphabeticPrefix(currentProduct.name);
+
+    if (currentPrefix) {
+      baseGroup = baseGroup.filter(p => getAlphabeticPrefix(p.name) === currentPrefix);
+    }
+
+    candidates = baseGroup;
   }
 
   // Sort them numerically by size / number in name
@@ -68,6 +92,19 @@ const ProductDetail = () => {
   const cartItems = useSelector((state) => state.cart.items);
   const isAdminUser = isAdmin();
   const isWishlisted = useSelector((state) => state.wishlist?.items?.some(item => String(item.id) === String(id)));
+
+  const userStr = localStorage.getItem('user');
+  let isLudhianaUser = false;
+  if (userStr) {
+    try {
+      const userObj = JSON.parse(userStr);
+      const address = userObj.address || '';
+      const city = userObj.city || '';
+      if (address.toLowerCase().includes('ludhiana') || city.toLowerCase().includes('ludhiana')) {
+        isLudhianaUser = true;
+      }
+    } catch (e) { }
+  }
 
   // States
   const [product, setProduct] = useState(null);
@@ -456,9 +493,9 @@ const ProductDetail = () => {
                 <div className="addon-text">
                   <h4>Need Technical Assistance?</h4>
                   <p>Speak directly with our Ludhiana bearing engineers for custom sizing, compatibility questions, or wholesale supply contracts.</p>
-                  <a href="tel:+919876543210" className="addon-action-btn">
-                    Talk to an Expert
-                  </a>
+                  <button type="button" onClick={() => window.dispatchEvent(new Event('open-chatbot'))} className="addon-action-btn" style={{ border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Talk to AI Chat bot
+                  </button>
                 </div>
               </div>
 
@@ -471,13 +508,15 @@ const ProductDetail = () => {
                     <p>All items sourced directly from certified manufacturers with traceability certificates.</p>
                   </div>
                 </div>
-                <div className="assurance-item">
-                  <Truck size={20} className="check-icon" />
-                  <div>
-                    <h5>Ludhiana Local Express</h5>
-                    <p>Same-day dispatch and immediate door-step deliveries within Punjab industrial regions.</p>
+                {isLudhianaUser && (
+                  <div className="assurance-item">
+                    <Truck size={20} className="check-icon" />
+                    <div>
+                      <h5>Ludhiana Local Express</h5>
+                      <p>Same-day dispatch and immediate door-step deliveries within Punjab industrial regions.</p>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -560,13 +599,15 @@ const ProductDetail = () => {
               </div>
 
               {/* Local delivery info */}
-              <div className="porter-delivery-alert">
-                <Truck size={18} className="alert-truck-icon" />
-                <div className="alert-text-block">
-                  <strong>Urgent Ludhiana Delivery</strong>
-                  <span>Immediate dispatch via Porter local delivery is available on request.</span>
+              {isLudhianaUser && (
+                <div className="porter-delivery-alert">
+                  <Truck size={18} className="alert-truck-icon" />
+                  <div className="alert-text-block">
+                    <strong>Urgent Ludhiana Delivery</strong>
+                    <span>Immediate dispatch via Porter local delivery is available on request.</span>
+                  </div>
                 </div>
-              </div>              {/* Size Option (Clearance / Fit Variant) */}
+              )}              {/* Size Option (Clearance / Fit Variant) */}
               {sizeOptions.length > 1 && (
                 <div className="variant-selector-section">
                   <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
@@ -1045,6 +1086,41 @@ const ProductDetail = () => {
                           </span>
                         )}
                       </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const user = localStorage.getItem('user');
+                          if (!user) {
+                            navigate('/login');
+                            return;
+                          }
+                          dispatch(addItem({
+                            id: item.id,
+                            name: item.name,
+                            price: item.price || 0,
+                            image: item.images ? item.images[0] : item.image,
+                            quantity: 1,
+                            size: item.specifications ? item.specifications["Bore Diameter"] : "Standard Size",
+                            replace: false
+                          }));
+                          showToast('Item added to cart!', 'success');
+                        }}
+                        style={{
+                          background: '#ea580c',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '32px',
+                          height: '32px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer'
+                        }}
+                        title="Add to Cart"
+                      >
+                        <ShoppingCart size={16} />
+                      </button>
                       <ChevronRight size={18} style={{ color: isCurrent ? '#ea580c' : '#94a3b8' }} />
                     </div>
                   </div>

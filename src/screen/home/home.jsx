@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
 import HeroSection from '../../components/home/HeroSection';
-import AuthorizedBrandsSection from '../../components/home/AuthorizedBrandsSection';
 import BrandsSection from '../../components/home/BrandsSection';
 import CategorySection from '../../components/home/CategorySection';
 import ProductSection from '../../components/home/ProductSection';
@@ -16,6 +15,19 @@ import './home.css';
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const userStr = localStorage.getItem('user');
+  let isLudhianaUser = false;
+  if (userStr) {
+    try {
+      const userObj = JSON.parse(userStr);
+      const address = userObj.address || '';
+      const city = userObj.city || '';
+      if (address.toLowerCase().includes('ludhiana') || city.toLowerCase().includes('ludhiana')) {
+        isLudhianaUser = true;
+      }
+    } catch (e) { }
+  }
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -50,7 +62,6 @@ const Home = () => {
     <div className="home-screen">
       <HeroSection />
       <CategorySection />
-      <AuthorizedBrandsSection />
       <BrandsSection />
 
       {loading ? (
@@ -99,7 +110,7 @@ const Home = () => {
         )
       )}
 
-      <PorterDeliverySection />
+      {isLudhianaUser && <PorterDeliverySection />}
       <WhyChooseUsSection />
       <TestimonialsSection />
       <InquirySection />
