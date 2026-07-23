@@ -24,25 +24,17 @@ const CategorySection = () => {
           <p className="subtitle-new">Precision components designed for extreme industrial demands.</p>
         </div>
 
-        <div className="cat-accordion">
-          {categories.map((cat) => (
-            <div 
-              key={cat.id} 
-              className={`cat-panel ${activeId === cat.id ? 'active' : ''}`}
-              onMouseEnter={() => setActiveId(cat.id)}
-              onClick={() => setActiveId(cat.id)}
+        <div className="cat-bento-grid">
+          {categories.map((cat, index) => (
+            <div
+              key={cat.id}
+              className={`bento-card bento-item-${index + 1}`}
             >
               <div className="cat-bg-wrapper">
                 <ProtectedImage src={cat.image} alt={cat.name} className="cat-bg-img" />
               </div>
               <div className="cat-overlay"></div>
-              
-              {/* Inactive State Title (Vertical) */}
-              <div className="cat-title-inactive">
-                <span>{cat.name}</span>
-              </div>
 
-              {/* Active State Content */}
               <div className="cat-content">
                 <div className="cat-info">
                   <h3>{cat.name}</h3>
