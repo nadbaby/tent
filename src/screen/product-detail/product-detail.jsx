@@ -18,6 +18,8 @@ import {
   Award, ShieldAlert, Lock, ChevronDown, Check, UserCheck, ThumbsUp
 } from 'lucide-react';
 
+let globalProductsCache = null;
+
 const findSeriesProducts = (currentProduct, allData) => {
   if (!currentProduct) return [];
   const currentCat = currentProduct.category || "";
@@ -149,9 +151,19 @@ const ProductDetail = () => {
     const fetchProduct = async () => {
       if (!product) setLoading(true);
       try {
-        const response = await fetch(apiUrl(`/api/products/${id}`));
-        if (!response.ok) throw new Error('Product not found');
-        const data = await response.json();
+        let dataPromise = fetch(apiUrl(`/api/products/${id}`)).then(res => {
+          if (!res.ok) throw new Error('Product not found');
+          return res.json();
+        });
+
+        let allDataPromise = globalProductsCache
+          ? Promise.resolve(globalProductsCache)
+          : fetch(apiUrl('/api/products')).then(res => res.ok ? res.json() : []).then(d => {
+            globalProductsCache = d;
+            return d;
+          });
+
+        const [data, allData] = await Promise.all([dataPromise, allDataPromise]);
 
         // Dynamically enrich features to avoid double checkmarks and add industrial detail
         const dbFeatures = data.features || [];
@@ -243,9 +255,7 @@ const ProductDetail = () => {
         setProduct(enrichedProduct);
 
         // Fetch related products and compute series
-        const allRes = await fetch(apiUrl('/api/products'));
-        if (allRes.ok) {
-          const allData = await allRes.json();
+        if (allData && allData.length > 0) {
           const filtered = allData.filter(p => String(p.id) !== String(data.id) && String(p.slug) !== String(data.slug));
           let related = [];
           if (data.category) {
