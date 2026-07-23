@@ -132,6 +132,7 @@ const ProductDetail = () => {
   const [helpfulReviews, setHelpfulReviews] = useState({});
   const [showSeriesModal, setShowSeriesModal] = useState(false);
   const [seriesProducts, setSeriesProducts] = useState([]);
+  const [seriesSearchItem, setSeriesSearchItem] = useState('');
 
   // Refs
   const specsRef = useRef(null);
@@ -992,6 +993,27 @@ const ProductDetail = () => {
               </button>
             </div>
 
+            {/* Search Bar */}
+            <div style={{ padding: '0 24px', margin: '20px 0 0' }}>
+              <input
+                type="text"
+                placeholder="Search precise sizes or SKUs..."
+                value={seriesSearchItem}
+                onChange={(e) => setSeriesSearchItem(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  borderRadius: '10px',
+                  border: '1px solid #cbd5e1',
+                  background: '#f8fafc',
+                  outline: 'none',
+                  fontSize: '0.95rem',
+                  color: '#0f172a'
+                }}
+              />
+            </div>
+
             {/* List Container */}
             <div style={{
               padding: '20px 24px',
@@ -1001,7 +1023,7 @@ const ProductDetail = () => {
               flexDirection: 'column',
               gap: '12px'
             }}>
-              {seriesProducts.map((item) => {
+              {seriesProducts.filter(item => item.name.toLowerCase().includes(seriesSearchItem.toLowerCase()) || (item.sku && item.sku.toLowerCase().includes(seriesSearchItem.toLowerCase()))).map((item) => {
                 const isCurrent = String(item.id) === String(product.id);
                 return (
                   <div
