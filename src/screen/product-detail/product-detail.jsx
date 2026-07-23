@@ -147,7 +147,7 @@ const ProductDetail = () => {
   // Load product data
   useEffect(() => {
     const fetchProduct = async () => {
-      setLoading(true);
+      if (!product) setLoading(true);
       try {
         const response = await fetch(apiUrl(`/api/products/${id}`));
         if (!response.ok) throw new Error('Product not found');
@@ -607,31 +607,7 @@ const ProductDetail = () => {
                     <span>Immediate dispatch via Porter local delivery is available on request.</span>
                   </div>
                 </div>
-              )}              {/* Size Option (Clearance / Fit Variant) */}
-              {sizeOptions.length > 1 && (
-                <div className="variant-selector-section">
-                  <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                    Select Option / Fit:
-                  </span>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {sizeOptions.map((option) => {
-                      const isSelected = option === selectedSize;
-                      return (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() => setSelectedSize(option)}
-                          className={`size-option-pill ${isSelected ? 'active' : ''}`}
-                        >
-                          {isSelected && <Check size={14} strokeWidth={3} />}
-                          {option}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
               )}
-
               {/* Series Size Selector (Different Products/Sizes in the Series) */}
               {seriesProducts.length > 1 && (
                 <div className="series-sizes-container">
@@ -1086,6 +1062,55 @@ const ProductDetail = () => {
                           </span>
                         )}
                       </div>
+                      <div style={{ display: 'flex', alignItems: 'center', background: '#f1f5f9', borderRadius: '100px', padding: '4px', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)', marginLeft: '10px' }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const input = document.getElementById(`qty-${item.id}`);
+                            if (input && parseInt(input.value) > 1) {
+                              input.value = parseInt(input.value) - 1;
+                            }
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                          style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#ffffff', border: 'none', cursor: 'pointer', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', transition: 'all 0.2s ease' }}
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <input
+                          id={`qty-${item.id}`}
+                          type="number"
+                          min="1"
+                          defaultValue={1}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            width: '36px',
+                            border: 'none',
+                            textAlign: 'center',
+                            fontSize: '0.95rem',
+                            fontWeight: '700',
+                            color: '#0f172a',
+                            background: 'transparent',
+                            outline: 'none',
+                            WebkitAppearance: 'none',
+                            MozAppearance: 'textfield'
+                          }}
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const input = document.getElementById(`qty-${item.id}`);
+                            if (input) {
+                              input.value = parseInt(input.value) + 1;
+                            }
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                          style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#ffffff', border: 'none', cursor: 'pointer', color: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', transition: 'all 0.2s ease' }}
+                        >
+                          <Plus size={14} strokeWidth={3} />
+                        </button>
+                      </div>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1094,12 +1119,15 @@ const ProductDetail = () => {
                             navigate('/login');
                             return;
                           }
+                          const qtyInput = document.getElementById(`qty-${item.id}`);
+                          const addQty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+
                           dispatch(addItem({
                             id: item.id,
                             name: item.name,
                             price: item.price || 0,
                             image: item.images ? item.images[0] : item.image,
-                            quantity: 1,
+                            quantity: addQty,
                             size: item.specifications ? item.specifications["Bore Diameter"] : "Standard Size",
                             replace: false
                           }));
