@@ -14,10 +14,8 @@ import ContactPage from './screen/contact/contact';
 import OrderOperationsDashboard from './screen/employee-panel/employee-panel';
 import StaffOperationsDashboard from './screen/employee-management/employee-management';
 import CustomerOperationsDashboard from './screen/user-management/user-management';
-import PromotionsDashboard from './screen/promotions/PromotionsDashboard';
 import TodaysOrdersDashboard from './screen/todays-orders/todays-orders';
 import AboutPage from './screen/about/about';
-import QuoteOperationsDashboard from './screen/employee-quotes/employee-quotes';
 import RequestQuotePage from './screen/request-quote/request-quote';
 import LegalPage from './screen/legal/legal';
 import ProductDetailPage from './screen/product-detail/product-detail';
@@ -45,7 +43,6 @@ import './App.css';
 
 import { ToastProvider } from './context/ToastContext';
 import { LoaderProvider, useLoader } from './context/LoaderContext';
-
 const AppInitializer = ({ children }) => {
   const { showLoader, hideLoader } = useLoader();
   const [isReady, setIsReady] = useState(false);
@@ -129,8 +126,6 @@ const AppLayout = () => {
           <Route path="/employee-panel" element={<OrderOperationsDashboard />} />
           <Route path="/admin/employees" element={<StaffOperationsDashboard />} />
           <Route path="/admin/users" element={<CustomerOperationsDashboard />} />
-          <Route path="/admin/promotions" element={<PromotionsDashboard />} />
-          <Route path="/admin/quotes" element={<QuoteOperationsDashboard />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/quote" element={<RequestQuotePage />} />
           <Route path="/privacy" element={<LegalPage />} />

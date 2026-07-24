@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
-import { Users, Search, Percent, Save, User as UserIcon, Building2, Phone, Calendar, CheckCircle2, Mail, Shield, Package, RefreshCw, Filter, Download, Megaphone, DollarSign } from 'lucide-react';
+import { Users, Search, Percent, Save, User as UserIcon, Building2, Phone, Calendar, CheckCircle2, Mail, Shield, Package, RefreshCw, Filter, Download } from 'lucide-react';
 import { getAuthToken, isAdmin } from '../../utils/auth';
 import { NavLink } from 'react-router-dom';
 import { Skeleton, SkeletonTable, SkeletonStatsGrid } from '../../components/common/Skeleton/Skeleton';
@@ -136,12 +136,10 @@ const CustomerOperationsDashboard = () => {
         <div className="admin-tabs">
           <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
           <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
-          <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
           <div className="admin-tab active"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
           {user?.role?.toLowerCase() === 'admin' && (
             <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
           )}
-          <div className="admin-tab"><Skeleton type="skeleton-text" style={{ width: '80px', marginBottom: 0 }} /></div>
         </div>
         <div className="users-table-container" style={{ border: 'none' }}>
           <SkeletonTable rows={8} columns={7} />
@@ -170,34 +168,26 @@ const CustomerOperationsDashboard = () => {
           </div>
         </div>
 
-        <div className="admin-tabs">
-          <NavLink to="/admin/todays-orders" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-            <Calendar size={18} />
-            <span>Today's Orders</span>
-          </NavLink>
-          <NavLink to="/employee-panel" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-            <Package size={18} />
-            <span>Past Orders</span>
-          </NavLink>
-          <NavLink to="/admin/quotes" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-            <DollarSign size={18} />
-            <span>B2B RFQs</span>
-          </NavLink>
-          <NavLink to="/admin/users" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-            <Users size={18} />
-            <span>Customer Discounts</span>
-          </NavLink>
-          {user?.role?.toLowerCase() === 'admin' && (
-            <NavLink to="/admin/employees" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-              <Shield size={18} />
-              <span>Team Management</span>
+          <div className="admin-tabs">
+            <NavLink to="/admin/todays-orders" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+              <Calendar size={18} />
+              <span>Today's Orders</span>
             </NavLink>
-          )}
-          <NavLink to="/admin/promotions" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-            <Megaphone size={18} />
-            <span>Promotions</span>
-          </NavLink>
-        </div>
+            <NavLink to="/employee-panel" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+              <Package size={18} />
+              <span>Past Orders</span>
+            </NavLink>
+            <NavLink to="/admin/users" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+              <Users size={18} />
+              <span>Customer Discounts</span>
+            </NavLink>
+            {user?.role?.toLowerCase() === 'admin' && (
+              <NavLink to="/admin/employees" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
+                <Shield size={18} />
+                <span>Team Management</span>
+              </NavLink>
+            )}
+          </div>
 
         <div className="mgmt-toolbar">
           <div className="search-box">

@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom';
 import { 
   Search, Edit2, Save, X, Calendar, User, Phone, Mail, 
   MessageSquare, ChevronRight, Check, Shield, Users, 
-  Package, DollarSign, RefreshCw, Filter, Clock, Info, Eye, Send, Loader2, Megaphone
+  Package, DollarSign, RefreshCw, Filter, Clock, Info, Eye, Send, Loader2
 } from 'lucide-react';
 import { resolveImageUrl } from '../../components/home/ProductCard';
 import './employee-quotes.css';
@@ -198,10 +198,6 @@ const QuoteOperationsDashboard = () => {
               <span>Employee Mgmt</span>
             </NavLink>
           )}
-          <NavLink to="/admin/promotions" className={({ isActive }) => `admin-tab ${isActive ? 'active' : ''}`}>
-            <Megaphone size={18} />
-            <span>Promotions</span>
-          </NavLink>
         </div>
 
         {error && <div className="panel-error-alert">{error}</div>}

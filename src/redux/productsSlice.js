@@ -25,7 +25,7 @@ const productsSlice = createSlice({
     // Optimistic local updates for admin operations
     addProductLocally(state, action) {
       state.items.unshift(action.payload);
-    },
+    }, 
     updateProductLocally(state, action) {
       const idx = state.items.findIndex(p => p.id === action.payload.id);
       if (idx !== -1) state.items[idx] = { ...state.items[idx], ...action.payload };

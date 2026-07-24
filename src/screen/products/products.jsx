@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiUrl } from '../../utils/api';
-import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import ProductCard, { resolveImageUrl } from '../../components/home/ProductCard';
 import { Filter, ChevronDown, Search, Grid, List, SlidersHorizontal, Plus, X, Save, Download, Upload, Camera, Loader2 } from 'lucide-react';
-import { useDispatch, useSelector } from 'react-redux';
-import { addItem } from '../../redux/cartSlice';
-import { useToast } from '../../context/ToastContext';
 import { isAdmin, getAuthToken } from '../../utils/auth';
 import * as XLSX from 'xlsx';
 import { storage } from '../../firebase';
@@ -30,66 +27,6 @@ const Products = () => {
   const [selectedBrand, setSelectedBrand] = useState(brandParam || 'All');
   const [sortBy, setSortBy] = useState('default');
 
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { showToast } = useToast();
-  const cartItems = useSelector((state) => state.cart.items);
-
-  // Drawer States
-  const [selectedDrawerProduct, setSelectedDrawerProduct] = useState(null);
-  const [drawerQuantity, setDrawerQuantity] = useState(1);
-
-  // Get all variants of the product (same name prefix/base, category)
-  const getProductVariants = (currentProduct) => {
-    if (!currentProduct) return [];
-    
-    // Helper to get alphabetic prefix, e.g. "UCP" from "UCP 217 L3" or "OMS" from "OMS 80"
-    const getPrefix = (name) => {
-      if (!name) return "";
-      const match = name.match(/^([a-zA-Z\s]+)/);
-      if (match) return match[1].trim().toLowerCase();
-      return name.split(/[\s\-0-9]/)[0].toLowerCase();
-    };
-
-    const currentPrefix = getPrefix(currentProduct.name);
-    if (!currentPrefix) return [currentProduct];
-
-    // Find all products in the database that share the same prefix and category
-    return products.filter(p => {
-      const pPrefix = getPrefix(p.name);
-      return pPrefix === currentPrefix && p.category === currentProduct.category;
-    });
-  };
-
-  const getVariantSizeLabel = (variantName, baseProduct) => {
-    if (!baseProduct) return variantName;
-    
-    const getPrefix = (name) => {
-      if (!name) return "";
-      const match = name.match(/^([a-zA-Z\s]+)/);
-      return match ? match[1].trim() : name.split(/[\s\-0-9]/)[0];
-    };
-
-    const prefix = getPrefix(baseProduct.name);
-    if (!prefix) return variantName;
-
-    // Remove the prefix from the name (case-insensitive)
-    const regex = new RegExp(`^${prefix}\\s*[-_\\s]*`, 'i');
-    const label = variantName.replace(regex, '').trim();
-    return label || variantName;
-  };
-
-  const getProductDisplayName = (p) => {
-    if (!p) return "";
-    if (p.subcategory && p.subcategory.toLowerCase().trim() !== 'all') {
-      return p.subcategory.trim();
-    }
-    if (!p.name) return "";
-    const match = p.name.match(/^([a-zA-Z\s]+)/);
-    if (match) return match[1].trim();
-    return p.name.split(/[\s\-0-9]/)[0];
-  };
-
   // Pagination / Infinite Scroll
   const [visibleCount, setVisibleCount] = useState(12);
   const observerTarget = useRef(null);
@@ -108,11 +45,6 @@ const Products = () => {
   // Bulk Import States
   const [showImportModal, setShowImportModal] = useState(false);
   const [importing, setImporting] = useState(false);
-
-  // Export States
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [exportCategories, setExportCategories] = useState(['All']);
-  const [exportSubcategories, setExportSubcategories] = useState(['All']);
 
   // AI Visual Scanner States
   const [isScanning, setIsScanning] = useState(false);
@@ -159,104 +91,6 @@ const Products = () => {
     XLSX.utils.book_append_sheet(wb, ws, "Products Template");
     XLSX.writeFile(wb, "Product_Bulk_Import_Template.xlsx");
   };
-
-  const handleCategoryChange = (cat, isChecked) => {
-    let updatedCats;
-    if (cat === 'All') {
-      updatedCats = isChecked ? ['All'] : [];
-    } else {
-      if (isChecked) {
-        updatedCats = exportCategories.filter(c => c !== 'All').concat(cat);
-      } else {
-        updatedCats = exportCategories.filter(c => c !== cat);
-      }
-      if (updatedCats.length === 0) {
-        updatedCats = ['All'];
-      }
-    }
-    setExportCategories(updatedCats);
-
-    // Sync subcategories: calculate new available subcategories based on updated categories selection
-    const newAvailableSubcats = [...new Set(
-      products
-        .filter(p => updatedCats.includes('All') || updatedCats.length === 0 || updatedCats.includes(p.category))
-        .map(p => p.subcategory)
-        .filter(Boolean)
-    )];
-
-    setExportSubcategories(prev => {
-      if (prev.includes('All')) return ['All'];
-      const filtered = prev.filter(s => newAvailableSubcats.includes(s));
-      return filtered.length > 0 ? filtered : ['All'];
-    });
-  };
-
-  const handleSubcategoryChange = (sub, isChecked) => {
-    if (sub === 'All') {
-      setExportSubcategories(isChecked ? ['All'] : []);
-    } else {
-      let updatedSubs;
-      if (isChecked) {
-        updatedSubs = exportSubcategories.filter(s => s !== 'All').concat(sub);
-      } else {
-        updatedSubs = exportSubcategories.filter(s => s !== sub);
-      }
-      if (updatedSubs.length === 0) {
-        updatedSubs = ['All'];
-      }
-      setExportSubcategories(updatedSubs);
-    }
-  };
-
-  const handleExportProducts = () => {
-    let productsToExport = products;
-    
-    // Filter by categories if specific categories are selected
-    if (exportCategories.length > 0 && !exportCategories.includes('All')) {
-      productsToExport = productsToExport.filter(p => exportCategories.includes(p.category));
-    }
-
-    // Filter by subcategories if specific subcategories are selected
-    if (exportSubcategories.length > 0 && !exportSubcategories.includes('All')) {
-      productsToExport = productsToExport.filter(p => exportSubcategories.includes(p.subcategory));
-    }
-
-    if (productsToExport.length === 0) {
-      alert("No products match the selected categories and subcategories.");
-      return;
-    }
-
-    const dataToExport = productsToExport.map(p => ({
-      "Product ID": p.id || "",
-      "Product Name": p.name || "",
-      "SKU": p.sku || "",
-      "Slug": p.slug || "",
-      "Brand": p.brand || "",
-      "Category": p.category || "",
-      "Subcategory": p.subcategory || "",
-      "Price": p.price || "",
-      "Stock": p.stock || "",
-      "Weight (Kg)": p.weightKg || "",
-      "Length (cm)": p.dimensions?.length || "",
-      "Width (cm)": p.dimensions?.width || "",
-      "Height (cm)": p.dimensions?.height || "",
-      "Technical PDF Catalogue": p.catalogue || "",
-      "Main Image URL": p.image || "",
-      "Additional Images": Array.isArray(p.images) ? p.images.join(", ") : "",
-      "Keywords (comma separated)": p.keywords || "",
-      "HSN Code": p.hsnCode || "",
-      "Description": p.description || "",
-      "Features (One per line)": Array.isArray(p.features) ? p.features.join("\n") : (p.features || ""),
-      "Specifications (Key: Value per line)": p.specifications && Object.keys(p.specifications).length > 0 ? Object.entries(p.specifications).map(([k, v]) => `${k}: ${v}`).join('\n') : ""
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(dataToExport);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Products Export");
-    XLSX.writeFile(wb, "Products_Export.xlsx");
-    setShowExportModal(false);
-  };
-
   const initialFormData = {
     id: "",
     sku: "",
@@ -457,16 +291,7 @@ const Products = () => {
       });
 
       if (!response.ok) {
-        let errorMsg = 'AI Vision Scanner could not process this image. Please make sure the image is in JPG/PNG format.';
-        try {
-          const errData = await response.json();
-          if (errData.message || errData.error) {
-            errorMsg = errData.message + (errData.error ? ': ' + errData.error : '');
-          }
-        } catch (e) {
-          // ignore parsing error
-        }
-        throw new Error(errorMsg);
+        throw new Error('AI Vision Scanner could not process this image. Please make sure the image is in JPG/PNG format.');
       }
 
       const data = await response.json();
@@ -661,13 +486,6 @@ const Products = () => {
 
   const categories = ['All', ...new Set(products.map(cat => cat.category).filter(Boolean))];
   const subcategories = ['All', ...new Set(products.filter(p => selectedCategory === 'All' || p.category === selectedCategory).map(p => p.subcategory).filter(Boolean))];
-
-  const exportAvailableSubcategories = [...new Set(
-    products
-      .filter(p => exportCategories.includes('All') || exportCategories.length === 0 || exportCategories.includes(p.category))
-      .map(p => p.subcategory)
-      .filter(Boolean)
-  )].sort();
   const searchParam = queryParams.get('search');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
@@ -747,11 +565,11 @@ const Products = () => {
     .filter(p => {
       const selectedLower = selectedCategory.toLowerCase().trim();
       const pCatLower = (p.category || '').toLowerCase().trim();
-
-      const matchesCategory = selectedCategory === 'All' ||
-        pCatLower === selectedLower ||
-        (pCatLower && selectedLower.includes(pCatLower)) ||
-        (pCatLower && pCatLower.includes(selectedLower.replace(/s$/, '')));
+      
+      const matchesCategory = selectedCategory === 'All' || 
+                              pCatLower === selectedLower || 
+                              (pCatLower && selectedLower.includes(pCatLower)) || 
+                              (pCatLower && pCatLower.includes(selectedLower.replace(/s$/, '')));
       const matchesSubcategory = selectedSubcategory === 'All' || p.subcategory === selectedSubcategory;
       const matchesBrand = selectedBrand === 'All' || p.brand === selectedBrand;
       return p.searchScore > 0 && matchesCategory && matchesSubcategory && matchesBrand;
@@ -779,33 +597,6 @@ const Products = () => {
           return 0;
       }
     });
-
-  const displayProducts = (() => {
-    const collapsed = [];
-    const seen = new Set();
-    
-    const getFamilyKey = (p) => {
-      if (p.subcategory && p.subcategory.toLowerCase().trim() !== 'all') {
-        return `sub_${p.subcategory.toLowerCase().trim()}`;
-      }
-      const getPrefix = (name) => {
-        if (!name) return "";
-        const match = name.match(/^([a-zA-Z\s]+)/);
-        if (match) return match[1].trim().toLowerCase();
-        return name.split(/[\s\-0-9]/)[0].toLowerCase();
-      };
-      return `prefix_${getPrefix(p.name)}_${p.category || ''}`;
-    };
-
-    filteredProducts.forEach(p => {
-      const familyKey = getFamilyKey(p);
-      if (!seen.has(familyKey)) {
-        seen.add(familyKey);
-        collapsed.push(p);
-      }
-    });
-    return collapsed;
-  })();
 
   const [didYouMean, setDidYouMean] = useState('');
   useEffect(() => {
@@ -848,7 +639,7 @@ const Products = () => {
         observer.unobserve(target);
       }
     };
-  }, [products, displayProducts, visibleCount]);
+  }, [products, filteredProducts, visibleCount]);
 
 
   if (loading) {
@@ -984,10 +775,6 @@ const Products = () => {
                     <Save size={18} />
                     Bulk Import
                   </button>
-                  <button className="btn btn-secondary export-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#f1f5f9', color: '#0f172a', padding: '0.6rem 1.25rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontWeight: '600' }} onClick={() => { setExportCategories(['All']); setExportSubcategories(['All']); setShowExportModal(true); }}>
-                    <Download size={18} />
-                    Export
-                  </button>
                 </div>
 
                 {/* Bulk Import Modal */}
@@ -1019,95 +806,6 @@ const Products = () => {
                             <input type="file" accept=".xlsx, .xls" style={{ display: 'none' }} onChange={(e) => { handleBulkImport(e); setShowImportModal(false); }} disabled={importing} />
                           </label>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Export Modal */}
-                {showExportModal && (
-                  <div className="import-modal-overlay" onClick={() => setShowExportModal(false)}>
-                    <div className="import-modal-content" style={{ maxWidth: '800px' }} onClick={e => e.stopPropagation()}>
-                      <div className="modal-header">
-                        <h3>Export Products to Excel</h3>
-                        <button className="close-modal" onClick={() => setShowExportModal(false)}><X size={20} /></button>
-                      </div>
-                      <div className="modal-body">
-                        <p style={{ marginBottom: '1.25rem', color: '#64748b', fontSize: '0.95rem', lineHeight: '1.5' }}>
-                          Select categories and subcategories to filter your export. Leave them as "All" to export all products.
-                        </p>
-                        
-                        <div className="export-filters-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-                          {/* Categories Section */}
-                          <div className="export-filter-column">
-                            <h4 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>Categories</span>
-                              <span style={{ fontSize: '0.8rem', fontWeight: '500', color: '#64748b' }}>({exportCategories.includes('All') ? 'All Selected' : `${exportCategories.length} Selected`})</span>
-                            </h4>
-                            <div className="selection-scrollbox" style={{ border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px', height: '220px', overflowY: 'auto', background: '#f8fafc' }}>
-                              <label className="category-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', margin: '2px 0' }}>
-                                <input 
-                                  type="checkbox" 
-                                  checked={exportCategories.includes('All')}
-                                  onChange={(e) => handleCategoryChange('All', e.target.checked)} 
-                                />
-                                <span style={{ fontWeight: '600' }}>All Categories</span>
-                              </label>
-                              {categories.filter(c => c !== 'All').map(cat => (
-                                <label key={cat} className="category-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', margin: '2px 0' }}>
-                                  <input 
-                                    type="checkbox" 
-                                    checked={exportCategories.includes(cat)} 
-                                    onChange={(e) => handleCategoryChange(cat, e.target.checked)} 
-                                  />
-                                  <span>{cat}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Subcategories Section */}
-                          <div className="export-filter-column">
-                            <h4 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>Subcategories</span>
-                              <span style={{ fontSize: '0.8rem', fontWeight: '500', color: '#64748b' }}>({exportSubcategories.includes('All') ? 'All Selected' : `${exportSubcategories.length} Selected`})</span>
-                            </h4>
-                            <div className="selection-scrollbox" style={{ border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px', height: '220px', overflowY: 'auto', background: '#f8fafc' }}>
-                              <label className="category-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', margin: '2px 0' }}>
-                                <input 
-                                  type="checkbox" 
-                                  checked={exportSubcategories.includes('All')}
-                                  onChange={(e) => handleSubcategoryChange('All', e.target.checked)} 
-                                />
-                                <span style={{ fontWeight: '600' }}>All Subcategories</span>
-                              </label>
-                              {exportAvailableSubcategories.map(sub => (
-                                <label key={sub} className="category-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', margin: '2px 0' }}>
-                                  <input 
-                                    type="checkbox" 
-                                    checked={exportSubcategories.includes(sub)} 
-                                    onChange={(e) => handleSubcategoryChange(sub, e.target.checked)} 
-                                  />
-                                  <span>{sub}</span>
-                                </label>
-                              ))}
-                              {exportAvailableSubcategories.length === 0 && (
-                                <div style={{ padding: '10px', color: '#64748b', fontSize: '0.85rem', textAlign: 'center', fontStyle: 'italic' }}>
-                                  No subcategories available for selected categories.
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <button 
-                          className="btn btn-primary" 
-                          style={{ width: '100%', padding: '12px', fontSize: '1rem', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
-                          onClick={handleExportProducts}
-                        >
-                          <Download size={20} />
-                          Export to Excel
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -1214,24 +912,16 @@ const Products = () => {
             )}
 
             <div className="products-grid-page">
-              {displayProducts.slice(0, visibleCount).map(product => (
-                <ProductCard 
-                  key={product.id} 
-                  product={product} 
-                  displayName={getProductDisplayName(product)}
-                  isAdmin={admin} 
-                  onEdit={handleEditClick} 
-                  onDelete={handleDeleteProduct} 
-                  searchTerm={debouncedSearch} 
-                />
+              {filteredProducts.slice(0, visibleCount).map(product => (
+                <ProductCard key={product.id} product={product} isAdmin={admin} onEdit={handleEditClick} onDelete={handleDeleteProduct} searchTerm={debouncedSearch} />
               ))}
 
               {/* Observer Target for Infinite Scroll */}
-              {displayProducts.length > visibleCount && (
+              {filteredProducts.length > visibleCount && (
                 <div ref={observerTarget} className="scroll-sentinel" style={{ height: '20px', gridColumn: '1 / -1' }}></div>
               )}
 
-              {displayProducts.length === 0 && (
+              {filteredProducts.length === 0 && (
                 <div className="no-results-container" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
                   <Search size={48} color="#cbd5e1" style={{ marginBottom: '20px' }} />
                   <h3 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '10px' }}>No exact matches found</h3>
@@ -1351,186 +1041,6 @@ const Products = () => {
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Product Drawer Overlay */}
-      {selectedDrawerProduct && (
-        <div className="product-drawer-overlay" onClick={() => setSelectedDrawerProduct(null)}>
-          <div className="product-drawer-content" onClick={e => e.stopPropagation()}>
-            <div className="drawer-header">
-              <h3>Product Quick View</h3>
-              <button className="close-modal" onClick={() => setSelectedDrawerProduct(null)}>
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="drawer-body">
-              <div className="drawer-image-section">
-                <img 
-                  src={resolveImageUrl(selectedDrawerProduct.image)} 
-                  alt={selectedDrawerProduct.name} 
-                  className="drawer-image" 
-                />
-              </div>
-
-              <div className="drawer-details">
-                {selectedDrawerProduct.brand && (
-                  <span className="drawer-brand">{selectedDrawerProduct.brand}</span>
-                )}
-                <h2 className="drawer-title">{selectedDrawerProduct.name}</h2>
-                <span className="drawer-category">
-                  {selectedDrawerProduct.category} {selectedDrawerProduct.subcategory ? `> ${selectedDrawerProduct.subcategory}` : ''}
-                </span>
-                
-                {selectedDrawerProduct.price ? (
-                  <div className="drawer-price">
-                    ₹{selectedDrawerProduct.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </div>
-                ) : (
-                  <div className="drawer-price" style={{ fontSize: '1.2rem', color: '#ea580c' }}>
-                    Price on Request
-                  </div>
-                )}
-              </div>
-
-              {/* Sizes / Variants Selector */}
-              {getProductVariants(selectedDrawerProduct).length > 1 && (
-                <div className="drawer-sizes-section">
-                  <h4 className="drawer-section-title">Available Sizes / Models</h4>
-                  <div className="drawer-sizes-grid">
-                    {getProductVariants(selectedDrawerProduct).map(variant => (
-                      <button
-                        key={variant.id}
-                        className={`drawer-size-btn ${variant.id === selectedDrawerProduct.id ? 'active' : ''}`}
-                        onClick={() => {
-                          setSelectedDrawerProduct(variant);
-                          const existingCartItem = cartItems.find(item => String(item.id) === String(variant.id));
-                          setDrawerQuantity(existingCartItem ? existingCartItem.quantity : 1);
-                        }}
-                        title={variant.name}
-                      >
-                        {getVariantSizeLabel(variant.name, selectedDrawerProduct)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Description / Features */}
-              {selectedDrawerProduct.description && (
-                <div className="drawer-desc-section">
-                  <h4 className="drawer-section-title">Description</h4>
-                  <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: '1.5', margin: 0 }}>
-                    {selectedDrawerProduct.description}
-                  </p>
-                </div>
-              )}
-
-              {selectedDrawerProduct.features && selectedDrawerProduct.features.length > 0 && (
-                <div className="drawer-features-section">
-                  <h4 className="drawer-section-title">Key Features</h4>
-                  <ul className="drawer-features">
-                    {selectedDrawerProduct.features.slice(0, 3).map((feat, idx) => (
-                      <li key={idx}>{feat}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Drawer Actions */}
-              <div className="drawer-actions-container" style={{ marginTop: 'auto', borderTop: '1px solid #f1f5f9', paddingTop: '20px' }}>
-                {!admin ? (
-                  <div className="drawer-actions">
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
-                      <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>Quantity:</span>
-                      <div className="drawer-qty-selector">
-                        <div className="drawer-qty-control">
-                          <button 
-                            className="drawer-qty-btn" 
-                            onClick={() => setDrawerQuantity(Math.max(1, drawerQuantity - 1))}
-                          >
-                            -
-                          </button>
-                          <span className="drawer-qty-val">{drawerQuantity}</span>
-                          <button 
-                            className="drawer-qty-btn" 
-                            onClick={() => setDrawerQuantity(drawerQuantity + 1)}
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <button 
-                        className="drawer-cart-btn" 
-                        style={{ flex: 1 }}
-                        onClick={() => {
-                          const user = localStorage.getItem('user');
-                          if (!user) {
-                            showToast("Login required to add to cart", "error");
-                            navigate('/login');
-                            return;
-                          }
-                          dispatch(addItem({
-                            id: selectedDrawerProduct.id,
-                            name: selectedDrawerProduct.name,
-                            price: selectedDrawerProduct.price || 0,
-                            image: selectedDrawerProduct.image,
-                            quantity: drawerQuantity,
-                            replace: true
-                          }));
-                          showToast("Added to cart", "success");
-                        }}
-                      >
-                        Add to Cart
-                      </button>
-                      
-                      {selectedDrawerProduct.price && (
-                        <button 
-                          className="drawer-checkout-btn" 
-                          style={{ flex: 1 }}
-                          onClick={() => {
-                            const user = localStorage.getItem('user');
-                            if (!user) {
-                              navigate('/login');
-                              return;
-                            }
-                            dispatch(addItem({
-                              id: selectedDrawerProduct.id,
-                              name: selectedDrawerProduct.name,
-                              price: selectedDrawerProduct.price || 0,
-                              image: selectedDrawerProduct.image,
-                              quantity: drawerQuantity,
-                              replace: true
-                            }));
-                            navigate('/checkout');
-                          }}
-                        >
-                          Buy Now
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ textAlign: 'center', color: '#94a3b8', fontStyle: 'italic', fontSize: '0.9rem' }}>
-                    Admin View - Purchasing Disabled
-                  </div>
-                )}
-                
-                <Link 
-                  to={`/product/${selectedDrawerProduct.slug || selectedDrawerProduct.id}`} 
-                  className="drawer-view-specs"
-                  onClick={() => setSelectedDrawerProduct(null)}
-                >
-                  View Full Specifications & Downloads →
-                </Link>
-              </div>
-
             </div>
           </div>
         </div>

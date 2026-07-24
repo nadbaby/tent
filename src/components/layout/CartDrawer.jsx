@@ -13,7 +13,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
 
   const userData = JSON.parse(localStorage.getItem('user')) || null;
   const specialDiscount = userData?.specialDiscount || 0;
-
+  
   const subtotal = items.reduce((sum, item) => sum + (item.totalPrice || (item.price * item.quantity) || 0), 0);
   const discountAmount = (subtotal * specialDiscount) / 100;
   const totalPrice = subtotal - discountAmount;
@@ -34,7 +34,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
   const handleQuantityChange = (item, newQty) => {
     const qty = parseInt(newQty);
     if (isNaN(qty) || qty < 1) return;
-
+    
     dispatch(addItem({
       id: item.id,
       name: item.name,

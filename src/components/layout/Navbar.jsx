@@ -3,7 +3,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { Search, ShoppingCart, User, Users, Menu, X, ChevronDown, LogOut, Shield, Package, Settings, Heart, ArrowLeft } from 'lucide-react';
+import { Search, ShoppingCart, User, Users, Menu, X, ChevronDown, LogOut, Shield, Package, Settings, Heart } from 'lucide-react';
 import CartDrawer from './CartDrawer';
 import fineLogo from '../../assets/Fine LOGO.png';
 import './Navbar.css';
@@ -190,16 +190,6 @@ const Navbar = () => {
     <>
       <nav className={`navbar ${isScrolled ? 'scrolled' : ''}`}>
         <div className="navbar-container container">
-          {/* Back Button */}
-          {location.pathname !== '/' && (
-            <button 
-              className="navbar-back-btn"
-              onClick={() => navigate(-1)}
-              aria-label="Go back"
-            >
-              <ArrowLeft size={20} />
-            </button>
-          )}
           {/* Logo */}
           <Link to="/" className="navbar-logo">
             <img src={fineLogo} alt="Fine Bearing Logo" className="logo-image" />
@@ -318,6 +308,7 @@ const Navbar = () => {
                                 <span className="suggestion-name">{highlightMatch(product.name, searchQuery)}</span>
                                 <div className="suggestion-meta-row">
                                   <span className="suggestion-brand-tag">{product.brand}</span>
+                                  {product.sku && <span className="suggestion-sku-tag">{product.sku}</span>}
                                 </div>
                               </div>
                               <div className="suggestion-price-col">
@@ -457,6 +448,7 @@ const Navbar = () => {
                           <span className="ios-result-name">{highlightMatch(product.name, searchQuery)}</span>
                           <div className="ios-result-meta">
                             <span className="ios-brand-badge">{product.brand}</span>
+                            {product.sku && <span className="ios-sku-text">SKU: {product.sku}</span>}
                           </div>
                         </div>
                         <span className="ios-result-price">

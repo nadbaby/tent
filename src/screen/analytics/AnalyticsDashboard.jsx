@@ -12,8 +12,7 @@ import {
   Truck, 
   CheckCircle, 
   ArrowUpRight,
-  RefreshCw,
-  Download
+  RefreshCw
 } from 'lucide-react';
 import { apiUrl } from '../../utils/api';
 import './AnalyticsDashboard.css';
@@ -24,38 +23,6 @@ const AnalyticsDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [exporting, setExporting] = useState(false);
-
-  const handleDownloadExcel = async () => {
-    setExporting(true);
-    try {
-      const token = localStorage.getItem('token');
-      const queryParams = new URLSearchParams();
-      if (startDate) queryParams.append('startDate', startDate);
-      if (endDate) queryParams.append('endDate', endDate);
-
-      const res = await fetch(apiUrl(`/api/admin/reports/excel?${queryParams.toString()}`), {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to generate report. Make sure you are an administrator.');
-      
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `GST_Tax_Report_${startDate || 'all_time'}_to_${endDate || 'all_time'}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      alert(err.message || 'Failed to download report');
-    } finally {
-      setExporting(false);
-    }
-  };
 
   const fetchAnalytics = async () => {
     setLoading(true);
@@ -110,53 +77,10 @@ const AnalyticsDashboard = () => {
           <h1>Business Insights</h1>
           <p>Real-time performance overview of Fine Bearing & Oil Seal Store</p>
         </div>
-        <div className="analytics-header-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="date-picker-group" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <input 
-              type="date" 
-              value={startDate} 
-              onChange={(e) => setStartDate(e.target.value)} 
-              className="analytics-date-input"
-              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.85rem' }}
-            />
-            <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>to</span>
-            <input 
-              type="date" 
-              value={endDate} 
-              onChange={(e) => setEndDate(e.target.value)} 
-              className="analytics-date-input"
-              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.85rem' }}
-            />
-          </div>
-          <button 
-            className="btn-excel-download" 
-            onClick={handleDownloadExcel} 
-            disabled={exporting}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '6px', 
-              padding: '8px 16px', 
-              borderRadius: '8px', 
-              border: 'none', 
-              background: '#16a34a', 
-              color: '#fff', 
-              fontWeight: '600', 
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-              transition: 'background 0.2s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = '#15803d'}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#16a34a'}
-          >
-            <Download size={16} />
-            {exporting ? 'Exporting...' : 'Export Excel'}
-          </button>
-          <button className="btn-refresh" onClick={fetchAnalytics}>
-            <RefreshCw size={18} />
-            Refresh
-          </button>
-        </div>
+        <button className="btn-refresh" onClick={fetchAnalytics}>
+          <RefreshCw size={18} />
+          Refresh
+        </button>
       </div>
 
       {/* KPI Cards */}

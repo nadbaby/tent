@@ -54,7 +54,7 @@ const highlightText = (text, highlight) => {
   );
 };
 
-const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm, onCardClick, displayName }) => {
+const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
   const dispatch = useDispatch();
   const cartItems = useSelector((state) => state.cart.items);
   const navigate = useNavigate();
@@ -114,20 +114,13 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm, onCardCli
   };
 
   const handleCardClick = () => {
-    if (onCardClick) {
-      onCardClick(product);
-    } else {
-      const hasValidSlug = product.slug && 
-                           product.slug.toLowerCase() !== 'sku' && 
-                           product.slug.toLowerCase() !== 'default';
-      navigate(`/product/${hasValidSlug ? product.slug : product.id}`);
-    }
+    navigate(`/product/${product.slug || product.id}`);
   };
 
   return (
     <div className={`product-card ${isShaking ? 'shake-animation' : ''}`} onClick={handleCardClick}>
       <div className="product-image-container">
-        <div className="product-name-overlay">{highlightText(displayName || product.name, searchTerm)}</div>
+        <div className="product-name-overlay">{highlightText(product.name, searchTerm)}</div>
         <ProtectedImage
           src={secureImageUrl}
           alt={product.name}
@@ -172,6 +165,7 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm, onCardCli
       <div className="product-info">
         <div className="product-meta">
           <p className="product-category">{highlightText(product.category, searchTerm)}</p>
+          {product.sku && <span className="product-sku">SKU: {highlightText(product.sku, searchTerm)}</span>}
         </div>
 
         {/* Mobile Badges - Visible only on mobile inside info section, ensuring 0% image overlap */}
