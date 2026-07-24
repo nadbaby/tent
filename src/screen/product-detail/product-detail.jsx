@@ -546,7 +546,9 @@ const ProductDetail = () => {
               <span className="category-tag">{product.category}</span>
             </div>
 
-            <h1 className="product-title">{product.name}</h1>
+            <h1 className="product-title">
+              {(product.category || "").toLowerCase().includes("seal") ? (product.sku || product.name) : product.name}
+            </h1>
 
             {/* Micro rating popover */}
             <div className="product-meta-top">
@@ -665,12 +667,14 @@ const ProductDetail = () => {
                   }}>
                     {seriesProducts.map((item) => {
                       const isCurrent = String(item.id) === String(product.id);
-                      const displayCode = item.name;
+
+                      const isSealItem = (item.category || "").toLowerCase().includes("seal");
+                      const displayCode = isSealItem ? (item.sku || item.name) : item.name;
 
                       // Bore diameter info from item specs if available
                       const boreVal = item.innerDiameter || (item.specifications && (item.specifications["Bore Diameter"] || item.specifications["bore diameter"]));
                       const hasBoreInName = boreVal ? displayCode.toUpperCase().includes(String(boreVal).replace(/\s*mm/gi, '').toUpperCase()) : false;
-                      const boreLabel = (boreVal && !hasBoreInName) ? ` (${String(boreVal).replace(/\s*mm/gi, '')}mm)` : '';
+                      const boreLabel = (boreVal && !hasBoreInName && !isSealItem) ? ` (${String(boreVal).replace(/\s*mm/gi, '')}mm)` : '';
 
                       return (
                         <button
@@ -1082,7 +1086,7 @@ const ProductDetail = () => {
                       </div>
                       <div>
                         <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>
-                          {item.name}
+                          {(item.category || "").toLowerCase().includes("seal") ? (item.sku || item.name) : item.name}
                         </h4>
                         <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                           SKU: {item.sku || 'N/A'}
