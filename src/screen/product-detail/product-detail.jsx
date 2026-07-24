@@ -33,8 +33,15 @@ const findSeriesProducts = (currentProduct, allData) => {
     return text.includes('rail') || text.includes('hgr');
   };
 
+  const isMonoblock = (p) => {
+    const text = `${p.name || ''} ${p.category || ''} ${p.subcategory || ''}`.toLowerCase();
+    return text.includes('monoblock');
+  };
+
   if (isRailOrHgr(currentProduct)) {
     candidates = allData.filter(p => isRailOrHgr(p));
+  } else if (isMonoblock(currentProduct)) {
+    candidates = allData.filter(p => isMonoblock(p));
   } else {
     // Start with category and subcategory filtering
     let baseGroup = currentSubcat
