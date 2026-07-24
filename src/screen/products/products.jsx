@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiUrl } from '../../utils/api';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import ProductCard, { resolveImageUrl } from '../../components/home/ProductCard';
-import { Filter, ChevronDown, Search, Grid, List, SlidersHorizontal, Plus, X, Save, Download, Upload, Camera, Loader2 } from 'lucide-react';
+import { Filter, ChevronDown, Search, Grid, List, SlidersHorizontal, Plus, X, Save, Download, Upload, Camera, Loader2, Database, FileSpreadsheet } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { addItem } from '../../redux/cartSlice';
+import { useToast } from '../../context/ToastContext';
 import { isAdmin, getAuthToken } from '../../utils/auth';
 import * as XLSX from 'xlsx';
 import { storage } from '../../firebase';
@@ -27,6 +30,80 @@ const Products = () => {
   const [selectedBrand, setSelectedBrand] = useState(brandParam || 'All');
   const [sortBy, setSortBy] = useState('default');
 
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const cartItems = useSelector((state) => state.cart.items);
+
+  // Drawer States
+  const [selectedDrawerProduct, setSelectedDrawerProduct] = useState(null);
+  const [drawerQuantity, setDrawerQuantity] = useState(1);
+
+  // Get all variants of the product (same subcategory, or same name prefix/base)
+  const getProductVariants = (currentProduct) => {
+    if (!currentProduct) return [];
+    
+    // If product has a subcategory, all products sharing the same category and subcategory are variants
+    if (currentProduct.subcategory && currentProduct.subcategory.trim() !== "" && currentProduct.subcategory.toLowerCase() !== "all") {
+      return products.filter(p => 
+        p.subcategory && 
+        p.subcategory.trim().toLowerCase() === currentProduct.subcategory.trim().toLowerCase() && 
+        p.category === currentProduct.category
+      );
+    }
+    
+    // Helper to get alphabetic/numeric prefix, e.g. "UCP" from "UCP 217 L3" or "6207" from "6207 2RS"
+    const getPrefix = (name) => {
+      if (!name) return "";
+      const match = name.match(/^([a-zA-Z\s]+)/);
+      if (match) return match[1].trim().toLowerCase();
+      // For names starting with numbers, extract the first token/word
+      const firstToken = name.trim().split(/[\s\-]/)[0];
+      return firstToken ? firstToken.toLowerCase() : name.toLowerCase();
+    };
+
+    const currentPrefix = getPrefix(currentProduct.name);
+    if (!currentPrefix) return [currentProduct];
+
+    // Find all products in the database that share the same prefix and category
+    return products.filter(p => {
+      const pPrefix = getPrefix(p.name);
+      return pPrefix === currentPrefix && p.category === currentProduct.category;
+    });
+  };
+
+  const getVariantSizeLabel = (variantName, baseProduct) => {
+    if (!baseProduct) return variantName;
+    
+    const getPrefix = (name) => {
+      if (!name) return "";
+      const match = name.match(/^([a-zA-Z\s]+)/);
+      if (match) return match[1].trim();
+      const firstToken = name.trim().split(/[\s\-]/)[0];
+      return firstToken || name;
+    };
+
+    const prefix = getPrefix(baseProduct.name);
+    if (!prefix) return variantName;
+
+    // Remove the prefix from the name (case-insensitive)
+    const regex = new RegExp(`^${prefix}\\s*[-_\\s]*`, 'i');
+    const label = variantName.replace(regex, '').trim();
+    return label || variantName;
+  };
+
+
+  const getProductDisplayName = (p) => {
+    if (!p) return "";
+    if (p.subcategory && p.subcategory.toLowerCase().trim() !== 'all') {
+      return p.subcategory.trim();
+    }
+    if (!p.name) return "";
+    const match = p.name.match(/^([a-zA-Z\s]+)/);
+    if (match) return match[1].trim();
+    return p.name.split(/[\s\-0-9]/)[0];
+  };
+
   // Pagination / Infinite Scroll
   const [visibleCount, setVisibleCount] = useState(12);
   const observerTarget = useRef(null);
@@ -45,6 +122,13 @@ const Products = () => {
   // Bulk Import States
   const [showImportModal, setShowImportModal] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(null);
+  const [failedImportRows, setFailedImportRows] = useState([]);
+
+  // Export States
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportCategories, setExportCategories] = useState(['All']);
+  const [exportSubcategories, setExportSubcategories] = useState(['All']);
 
   // AI Visual Scanner States
   const [isScanning, setIsScanning] = useState(false);
@@ -58,6 +142,28 @@ const Products = () => {
   // Admin State
   const [showAdminForm, setShowAdminForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+
+  const handleSelectToggle = (productId) => {
+    setSelectedProductIds((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const handleSelectAll = (isChecked) => {
+    if (isChecked) {
+      const visibleIds = displayProducts.map((p) => p.id);
+      setSelectedProductIds((prev) => {
+        const union = new Set([...prev, ...visibleIds]);
+        return Array.from(union);
+      });
+    } else {
+      const visibleIds = displayProducts.map((p) => p.id);
+      setSelectedProductIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+    }
+  };
 
   const downloadTemplate = () => {
     const templateData = [
@@ -91,6 +197,104 @@ const Products = () => {
     XLSX.utils.book_append_sheet(wb, ws, "Products Template");
     XLSX.writeFile(wb, "Product_Bulk_Import_Template.xlsx");
   };
+
+  const handleCategoryChange = (cat, isChecked) => {
+    let updatedCats;
+    if (cat === 'All') {
+      updatedCats = isChecked ? ['All'] : [];
+    } else {
+      if (isChecked) {
+        updatedCats = exportCategories.filter(c => c !== 'All').concat(cat);
+      } else {
+        updatedCats = exportCategories.filter(c => c !== cat);
+      }
+      if (updatedCats.length === 0) {
+        updatedCats = ['All'];
+      }
+    }
+    setExportCategories(updatedCats);
+
+    // Sync subcategories: calculate new available subcategories based on updated categories selection
+    const newAvailableSubcats = [...new Set(
+      products
+        .filter(p => updatedCats.includes('All') || updatedCats.length === 0 || updatedCats.includes(p.category))
+        .map(p => p.subcategory)
+        .filter(Boolean)
+    )];
+
+    setExportSubcategories(prev => {
+      if (prev.includes('All')) return ['All'];
+      const filtered = prev.filter(s => newAvailableSubcats.includes(s));
+      return filtered.length > 0 ? filtered : ['All'];
+    });
+  };
+
+  const handleSubcategoryChange = (sub, isChecked) => {
+    if (sub === 'All') {
+      setExportSubcategories(isChecked ? ['All'] : []);
+    } else {
+      let updatedSubs;
+      if (isChecked) {
+        updatedSubs = exportSubcategories.filter(s => s !== 'All').concat(sub);
+      } else {
+        updatedSubs = exportSubcategories.filter(s => s !== sub);
+      }
+      if (updatedSubs.length === 0) {
+        updatedSubs = ['All'];
+      }
+      setExportSubcategories(updatedSubs);
+    }
+  };
+
+  const handleExportProducts = () => {
+    let productsToExport = products;
+    
+    // Filter by categories if specific categories are selected
+    if (exportCategories.length > 0 && !exportCategories.includes('All')) {
+      productsToExport = productsToExport.filter(p => exportCategories.includes(p.category));
+    }
+
+    // Filter by subcategories if specific subcategories are selected
+    if (exportSubcategories.length > 0 && !exportSubcategories.includes('All')) {
+      productsToExport = productsToExport.filter(p => exportSubcategories.includes(p.subcategory));
+    }
+
+    if (productsToExport.length === 0) {
+      alert("No products match the selected categories and subcategories.");
+      return;
+    }
+
+    const dataToExport = productsToExport.map(p => ({
+      "Product ID": p.id || "",
+      "Product Name": p.name || "",
+      "SKU": p.sku || "",
+      "Slug": p.slug || "",
+      "Brand": p.brand || "",
+      "Category": p.category || "",
+      "Subcategory": p.subcategory || "",
+      "Price": p.price || "",
+      "Stock": p.stock || "",
+      "Weight (Kg)": p.weightKg || "",
+      "Length (cm)": p.dimensions?.length || "",
+      "Width (cm)": p.dimensions?.width || "",
+      "Height (cm)": p.dimensions?.height || "",
+      "Technical PDF Catalogue": p.catalogue || "",
+      "Main Image URL": p.image || "",
+      "Additional Images": Array.isArray(p.images) ? p.images.join(", ") : "",
+      "Keywords (comma separated)": p.keywords || "",
+      "HSN Code": p.hsnCode || "",
+      "Description": p.description || "",
+      "Features (One per line)": Array.isArray(p.features) ? p.features.join("\n") : (p.features || ""),
+      "Specifications (Key: Value per line)": p.specifications && Object.keys(p.specifications).length > 0 ? Object.entries(p.specifications).map(([k, v]) => `${k}: ${v}`).join('\n') : ""
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Products Export");
+    XLSX.writeFile(wb, "Products_Export.xlsx");
+    setShowExportModal(false);
+  };
+
   const initialFormData = {
     id: "",
     sku: "",
@@ -125,6 +329,7 @@ const Products = () => {
 
   const fetchProducts = async () => {
     try {
+      setSelectedProductIds([]);
       const response = await fetch(apiUrl('/api/products'));
       if (!response.ok) throw new Error('Failed to fetch products');
       const data = await response.json();
@@ -225,40 +430,128 @@ const Products = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     setImporting(true);
-    try {
-      const response = await fetch(apiUrl("/api/admin/products/bulk-import"), {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}` },
-        body: formData,
-      });
+    setImportProgress({ total: 0, processed: 0, success: 0, failed: 0, errors: [] });
+    setFailedImportRows([]);
 
-      const result = await response.json();
-      if (response.ok) {
-        let msg = `Bulk Import Result:\n- Total rows processed: ${result.totalRows}\n- Successfully imported/updated: ${result.importedCount}`;
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet);
 
-        if (result.errors && result.errors.length > 0) {
-          msg += `\n\n⚠️ Some rows had issues:\n${result.errors.slice(0, 5).join('\n')}`;
-          if (result.errors.length > 5) msg += `\n...and ${result.errors.length - 5} more errors.`;
-          msg += `\n\nPlease check your headers and data types.`;
+        if (!rows || rows.length === 0) {
+          alert("No data found in the Excel file.");
+          setImporting(false);
+          return;
         }
 
-        alert(msg);
-        fetchProducts(); // Refresh the list
-      } else {
-        alert("Import failed: " + (result.message || "Unknown error"));
+        const totalRows = rows.length;
+        setImportProgress({ total: totalRows, processed: 0, success: 0, failed: 0, errors: [] });
+
+        const batchSize = 25; // 25 rows per batch is fast and extremely stable
+        let successCount = 0;
+        let failedCount = 0;
+        const accumulatedErrors = [];
+        const failedRowsObj = [];
+
+        for (let i = 0; i < totalRows; i += batchSize) {
+          const batch = rows.slice(i, i + batchSize);
+          const startRowIndex = i + 2;
+
+          try {
+            const response = await fetch(apiUrl("/api/admin/products/import-batch"), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({ products: batch, startRowIndex })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+              successCount += result.importedCount;
+              
+              if (result.errors && result.errors.length > 0) {
+                accumulatedErrors.push(...result.errors);
+              }
+              
+              if (result.failures && result.failures.length > 0) {
+                failedCount += result.failures.length;
+                failedRowsObj.push(...result.failures.map(f => ({
+                  rowData: f.rowData,
+                  error: f.error
+                })));
+              }
+            } else {
+              // Whole batch failed
+              failedCount += batch.length;
+              const errMsg = result.message || "Failed to process batch";
+              batch.forEach((row, idx) => {
+                accumulatedErrors.push(`Row ${startRowIndex + idx}: ${errMsg}`);
+                failedRowsObj.push({ rowData: row, error: errMsg });
+              });
+            }
+          } catch (err) {
+            // Network / fetch error
+            failedCount += batch.length;
+            batch.forEach((row, idx) => {
+              accumulatedErrors.push(`Row ${startRowIndex + idx}: Network error (${err.message})`);
+              failedRowsObj.push({ rowData: row, error: err.message });
+            });
+          }
+
+          // Update progress stats in real time
+          setImportProgress({
+            total: totalRows,
+            processed: Math.min(i + batch.length, totalRows),
+            success: successCount,
+            failed: failedCount,
+            errors: accumulatedErrors
+          });
+          setFailedImportRows(failedRowsObj);
+        }
+
+        fetchProducts(); // Refresh product list
+      } catch (err) {
+        console.error("Error reading file:", err);
+        alert("Error reading Excel file: " + err.message);
+        setImporting(false);
+      } finally {
+        setImporting(false);
       }
-    } catch (err) {
-      console.error("Bulk import error:", err);
-      alert("Error during bulk import. Please check connection and file format.");
-    } finally {
+    };
+
+    reader.onerror = (err) => {
+      console.error("FileReader error:", err);
+      alert("Error loading file.");
       setImporting(false);
-      // Clear the input
-      e.target.value = "";
-    }
+    };
+
+    reader.readAsArrayBuffer(file);
+    // Reset file input value so same file can be imported again
+    e.target.value = "";
+  };
+
+  const downloadFailedExcel = () => {
+    if (failedImportRows.length === 0) return;
+
+    // Transform the failed rows to include a "Failure Reason" column at the beginning
+    const dataToExport = failedImportRows.map(f => {
+      return {
+        "Failure Reason": f.error,
+        ...f.rowData
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Failed Products");
+    XLSX.writeFile(wb, `Failed_Imports_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   const handleImageScanChange = async (e) => {
@@ -291,7 +584,16 @@ const Products = () => {
       });
 
       if (!response.ok) {
-        throw new Error('AI Vision Scanner could not process this image. Please make sure the image is in JPG/PNG format.');
+        let errorMsg = 'AI Vision Scanner could not process this image. Please make sure the image is in JPG/PNG format.';
+        try {
+          const errData = await response.json();
+          if (errData.message || errData.error) {
+            errorMsg = errData.message + (errData.error ? ': ' + errData.error : '');
+          }
+        } catch (e) {
+          // ignore parsing error
+        }
+        throw new Error(errorMsg);
       }
 
       const data = await response.json();
@@ -469,15 +771,120 @@ const Products = () => {
   };
 
   const handleDeleteProduct = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+
+    const variants = getProductVariants(product);
+    const hasVariants = variants.length > 1;
+
+    let deleteIds = [id];
+
+    if (hasVariants) {
+      const choice = window.confirm(
+        `This product has ${variants.length} sizes/variants.\n\n` +
+        `Click OK to delete ALL ${variants.length} variants of this product/subcategory.\n` +
+        `Click CANCEL to delete ONLY this specific variant.`
+      );
+      if (choice) {
+        deleteIds = variants.map(v => v.id);
+      } else {
+        const secondChoice = window.confirm(`Delete only the specific item "${product.name}"?`);
+        if (!secondChoice) return;
+      }
+    } else {
+      if (!window.confirm('Are you sure you want to delete this product?')) return;
+    }
+
     try {
-      const response = await fetch(apiUrl(`/api/products/${id}`), {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
+      if (deleteIds.length > 1) {
+        const response = await fetch(apiUrl('/api/products/bulk-delete'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ ids: deleteIds })
+        });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to delete products');
+        }
+        const result = await response.json();
+        showToast(result.message || 'Products deleted successfully', 'success');
+      } else {
+        const response = await fetch(apiUrl(`/api/products/${id}`), {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (!response.ok) throw new Error('Failed to delete product');
+        showToast('Product deleted successfully', 'success');
+      }
+      fetchProducts();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+
+  const handleBulkDelete = async () => {
+    if (selectedProductIds.length === 0) return;
+
+    const selectedProducts = products.filter(p => selectedProductIds.includes(p.id));
+    
+    // Calculate variants
+    const allRelatedProducts = [];
+    selectedProducts.forEach(sp => {
+      const variants = getProductVariants(sp);
+      variants.forEach(v => {
+        if (!allRelatedProducts.some(p => p.id === v.id)) {
+          allRelatedProducts.push(v);
         }
       });
-      if (!response.ok) throw new Error('Failed to delete product');
+    });
+
+    const hasVariants = allRelatedProducts.length > selectedProducts.length;
+
+    let deleteIds = selectedProducts.map(p => p.id);
+
+    if (hasVariants) {
+      const choice = window.confirm(
+        `You have selected ${selectedProducts.length} products.\n\n` +
+        `Click OK to delete these products AND all of their variants/sizes (total ${allRelatedProducts.length} items).\n` +
+        `Click CANCEL to only delete the specific selected variants.`
+      );
+      
+      if (choice) {
+        deleteIds = allRelatedProducts.map(p => p.id);
+      } else {
+        const secondChoice = window.confirm(`Delete only the specific selected items (${selectedProducts.length} items)?`);
+        if (!secondChoice) return;
+      }
+    } else {
+      if (!window.confirm(`Are you sure you want to delete the ${selectedProducts.length} selected products?`)) {
+        return;
+      }
+    }
+
+    try {
+      const response = await fetch(apiUrl('/api/products/bulk-delete'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ ids: deleteIds })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to bulk delete products');
+      }
+
+      const result = await response.json();
+      showToast(result.message || 'Products deleted successfully', 'success');
+      setSelectedProductIds([]);
       fetchProducts();
     } catch (err) {
       alert(err.message);
@@ -486,6 +893,13 @@ const Products = () => {
 
   const categories = ['All', ...new Set(products.map(cat => cat.category).filter(Boolean))];
   const subcategories = ['All', ...new Set(products.filter(p => selectedCategory === 'All' || p.category === selectedCategory).map(p => p.subcategory).filter(Boolean))];
+
+  const exportAvailableSubcategories = [...new Set(
+    products
+      .filter(p => exportCategories.includes('All') || exportCategories.length === 0 || exportCategories.includes(p.category))
+      .map(p => p.subcategory)
+      .filter(Boolean)
+  )].sort();
   const searchParam = queryParams.get('search');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
@@ -565,11 +979,11 @@ const Products = () => {
     .filter(p => {
       const selectedLower = selectedCategory.toLowerCase().trim();
       const pCatLower = (p.category || '').toLowerCase().trim();
-      
-      const matchesCategory = selectedCategory === 'All' || 
-                              pCatLower === selectedLower || 
-                              (pCatLower && selectedLower.includes(pCatLower)) || 
-                              (pCatLower && pCatLower.includes(selectedLower.replace(/s$/, '')));
+
+      const matchesCategory = selectedCategory === 'All' ||
+        pCatLower === selectedLower ||
+        (pCatLower && selectedLower.includes(pCatLower)) ||
+        (pCatLower && pCatLower.includes(selectedLower.replace(/s$/, '')));
       const matchesSubcategory = selectedSubcategory === 'All' || p.subcategory === selectedSubcategory;
       const matchesBrand = selectedBrand === 'All' || p.brand === selectedBrand;
       return p.searchScore > 0 && matchesCategory && matchesSubcategory && matchesBrand;
@@ -597,6 +1011,33 @@ const Products = () => {
           return 0;
       }
     });
+
+  const displayProducts = (() => {
+    const collapsed = [];
+    const seen = new Set();
+    
+    const getFamilyKey = (p) => {
+      if (p.subcategory && p.subcategory.toLowerCase().trim() !== 'all') {
+        return `sub_${p.subcategory.toLowerCase().trim()}`;
+      }
+      const getPrefix = (name) => {
+        if (!name) return "";
+        const match = name.match(/^([a-zA-Z\s]+)/);
+        if (match) return match[1].trim().toLowerCase();
+        return name.split(/[\s\-0-9]/)[0].toLowerCase();
+      };
+      return `prefix_${getPrefix(p.name)}_${p.category || ''}`;
+    };
+
+    filteredProducts.forEach(p => {
+      const familyKey = getFamilyKey(p);
+      if (!seen.has(familyKey)) {
+        seen.add(familyKey);
+        collapsed.push(p);
+      }
+    });
+    return collapsed;
+  })();
 
   const [didYouMean, setDidYouMean] = useState('');
   useEffect(() => {
@@ -639,7 +1080,7 @@ const Products = () => {
         observer.unobserve(target);
       }
     };
-  }, [products, filteredProducts, visibleCount]);
+  }, [products, displayProducts, visibleCount]);
 
 
   if (loading) {
@@ -775,37 +1216,291 @@ const Products = () => {
                     <Save size={18} />
                     Bulk Import
                   </button>
+                  <button className="btn btn-secondary export-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#f1f5f9', color: '#0f172a', padding: '0.6rem 1.25rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontWeight: '600' }} onClick={() => { setExportCategories(['All']); setExportSubcategories(['All']); setShowExportModal(true); }}>
+                    <Download size={18} />
+                    Export
+                  </button>
+                  <label className="btn btn-secondary select-all-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#f1f5f9', color: '#0f172a', padding: '0.6rem 1.25rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontWeight: '600', userSelect: 'none', margin: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={displayProducts.length > 0 && displayProducts.every(p => selectedProductIds.includes(p.id))}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: '#ea580c' }}
+                    />
+                    Select All
+                  </label>
                 </div>
 
                 {/* Bulk Import Modal */}
                 {showImportModal && (
-                  <div className="import-modal-overlay" onClick={() => setShowImportModal(false)}>
+                  <div className="import-modal-overlay" onClick={() => { if (!importing) setShowImportModal(false); }}>
                     <div className="import-modal-content" onClick={e => e.stopPropagation()}>
                       <div className="modal-header">
                         <h3>Bulk Product Import</h3>
-                        <button className="close-modal" onClick={() => setShowImportModal(false)}><X size={20} /></button>
+                        <button 
+                          className="close-modal" 
+                          onClick={() => { if (!importing) setShowImportModal(false); }}
+                          disabled={importing}
+                          style={{ cursor: importing ? 'not-allowed' : 'pointer', opacity: importing ? 0.5 : 1 }}
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
+                      <div className="modal-body">
+                        {!importProgress ? (
+                          <>
+                            <p style={{ marginBottom: '1.25rem', color: '#64748b', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                              Manage your inventory efficiently. Download our template, fill in your product details, and upload it back.
+                              <br />
+                              <strong style={{ color: '#0f172a' }}>💡 Smart Update:</strong> Existing products matching by <strong>Product ID</strong>, <strong>SKU</strong>, or <strong>Name</strong> will be updated automatically. Empty Excel cells will not overwrite existing database fields, ensuring no data loss.
+                            </p>
+
+                            <div className="import-options">
+                              <div className="import-option-card" onClick={downloadTemplate}>
+                                <div className="option-icon"><Download size={32} /></div>
+                                <h4>Download Template</h4>
+                                <p>Get a pre-formatted Excel file with all required columns.</p>
+                              </div>
+
+                              <label className="import-option-card" style={{ cursor: 'pointer' }}>
+                                <div className="option-icon"><Upload size={32} /></div>
+                                <h4>Upload Excel</h4>
+                                <p>Select your filled Excel file to start importing products.</p>
+                                <input 
+                                  type="file" 
+                                  accept=".xlsx, .xls" 
+                                  style={{ display: 'none' }} 
+                                  onChange={handleBulkImport} 
+                                />
+                              </label>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="import-progress-container" style={{ padding: '10px 0' }}>
+                            {/* Premium Import Animation */}
+                            <div className="upload-animation-container">
+                              <div className="upload-anim-node excel">
+                                <div className="upload-anim-icon-wrapper">
+                                  <FileSpreadsheet size={28} />
+                                </div>
+                                <span>Excel Sheet</span>
+                              </div>
+
+                              <div className="upload-flow-track">
+                                {importProgress.processed < importProgress.total && (
+                                  <div className="upload-flow-stream"></div>
+                                )}
+                              </div>
+
+                              <div className={`upload-anim-node server ${importProgress.processed < importProgress.total ? 'active' : ''}`}>
+                                <div className="upload-anim-icon-wrapper">
+                                  <Database size={28} />
+                                </div>
+                                <span>Database</span>
+                              </div>
+                            </div>
+
+                            <div className="progress-percentage-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <span style={{ fontWeight: '700', fontSize: '1.1rem', color: '#0f172a' }}>
+                                {importProgress.processed < importProgress.total ? 'Importing Products...' : 'Import Complete'}
+                              </span>
+                              <span style={{ fontWeight: '800', fontSize: '1.25rem', color: '#ea580c' }}>
+                                {importProgress.total > 0 ? Math.round((importProgress.processed / importProgress.total) * 100) : 0}%
+                              </span>
+                            </div>
+
+                            <div className="progress-bar-bg" style={{ background: '#f1f5f9', height: '12px', borderRadius: '6px', overflow: 'hidden', marginBottom: '24px', border: '1px solid #e2e8f0' }}>
+                              <div 
+                                className="progress-bar-fill-animated" 
+                                style={{ 
+                                  width: `${importProgress.total > 0 ? Math.round((importProgress.processed / importProgress.total) * 100) : 0}%`
+                                }} 
+                              />
+                            </div>
+
+                            <div className="import-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
+                              <div className="stat-card" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '0.8rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Total</div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a' }}>{importProgress.total}</div>
+                              </div>
+                              <div className="stat-card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '0.8rem', color: '#166534', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Success</div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#15803d' }}>{importProgress.success}</div>
+                              </div>
+                              <div className="stat-card" style={{ background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '12px', padding: '12px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '0.8rem', color: '#991b1b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Failed</div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#b91c1c' }}>{importProgress.failed}</div>
+                              </div>
+                            </div>
+
+                            {importProgress.processed < importProgress.total ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#475569', fontSize: '0.9rem', marginBottom: '20px', background: '#fafaf9', padding: '12px 16px', borderRadius: '8px', border: '1px solid #f5f5f4' }}>
+                                <Loader2 size={18} style={{ color: '#ea580c', animation: 'spin 1s linear infinite' }} />
+                                <span style={{ fontWeight: '500' }}>
+                                  Uploading products... Processing rows {importProgress.processed + 1} to {Math.min(importProgress.processed + 25, importProgress.total)} of {importProgress.total}
+                                </span>
+                              </div>
+                            ) : (
+                              <div style={{ marginBottom: '20px' }}>
+                                {importProgress.failed === 0 ? (
+                                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px', color: '#15803d', fontSize: '0.9rem', fontWeight: '500' }}>
+                                    🎉 All products imported successfully!
+                                  </div>
+                                ) : (
+                                  <div style={{ background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '8px', padding: '12px', color: '#b45309', fontSize: '0.9rem', fontWeight: '500' }}>
+                                    ⚠️ Imported with {importProgress.failed} failed items. Please download the failed products Excel sheet to inspect and correct the data.
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {importProgress.errors.length > 0 && (
+                              <div style={{ marginBottom: '24px' }}>
+                                <h5 style={{ fontSize: '0.85rem', color: '#334155', fontWeight: '700', marginBottom: '8px' }}>Error Details ({importProgress.errors.length})</h5>
+                                <div style={{ maxHeight: '120px', overflowY: 'auto', background: '#0f172a', color: '#fda4af', fontFamily: 'monospace', fontSize: '0.75rem', padding: '10px 12px', borderRadius: '8px', lineHeight: '1.5' }}>
+                                  {importProgress.errors.map((err, idx) => (
+                                    <div key={idx} style={{ marginBottom: '4px' }}>• {err}</div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="progress-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+                              {importProgress.processed === importProgress.total && failedImportRows.length > 0 && (
+                                <button 
+                                  className="btn btn-secondary" 
+                                  style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '8px', 
+                                    background: '#fee2e2', 
+                                    color: '#b91c1c', 
+                                    border: '1px solid #fca5a5',
+                                    fontWeight: '600',
+                                    padding: '0.6rem 1.2rem',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer'
+                                  }}
+                                  onClick={downloadFailedExcel}
+                                >
+                                  <Download size={16} />
+                                  Download Failed Excel
+                                </button>
+                              )}
+                              
+                              <button 
+                                className="btn"
+                                style={{ 
+                                  background: importProgress.processed === importProgress.total ? '#ea580c' : '#cbd5e1', 
+                                  color: '#fff', 
+                                  fontWeight: '600',
+                                  padding: '0.6rem 1.5rem',
+                                  borderRadius: '8px',
+                                  cursor: importProgress.processed === importProgress.total ? 'pointer' : 'not-allowed'
+                                }}
+                                disabled={importProgress.processed < importProgress.total}
+                                onClick={() => {
+                                  setShowImportModal(false);
+                                  setTimeout(() => {
+                                    setImportProgress(null);
+                                    setFailedImportRows([]);
+                                  }, 300);
+                                }}
+                              >
+                                Close
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Export Modal */}
+                {showExportModal && (
+                  <div className="import-modal-overlay" onClick={() => setShowExportModal(false)}>
+                    <div className="import-modal-content" style={{ maxWidth: '800px' }} onClick={e => e.stopPropagation()}>
+                      <div className="modal-header">
+                        <h3>Export Products to Excel</h3>
+                        <button className="close-modal" onClick={() => setShowExportModal(false)}><X size={20} /></button>
                       </div>
                       <div className="modal-body">
                         <p style={{ marginBottom: '1.25rem', color: '#64748b', fontSize: '0.95rem', lineHeight: '1.5' }}>
-                          Manage your inventory efficiently. Download our template, fill in your product details, and upload it back.
-                          <br />
-                          <strong style={{ color: '#0f172a' }}>💡 Smart Update:</strong> Existing products matching by <strong>Product ID</strong>, <strong>SKU</strong>, or <strong>Name</strong> will be updated automatically. Empty Excel cells will not overwrite existing database fields, ensuring no data loss.
+                          Select categories and subcategories to filter your export. Leave them as "All" to export all products.
                         </p>
-
-                        <div className="import-options">
-                          <div className="import-option-card" onClick={downloadTemplate}>
-                            <div className="option-icon"><Download size={32} /></div>
-                            <h4>Download Template</h4>
-                            <p>Get a pre-formatted Excel file with all required columns.</p>
+                        
+                        <div className="export-filters-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                          {/* Categories Section */}
+                          <div className="export-filter-column">
+                            <h4 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span>Categories</span>
+                              <span style={{ fontSize: '0.8rem', fontWeight: '500', color: '#64748b' }}>({exportCategories.includes('All') ? 'All Selected' : `${exportCategories.length} Selected`})</span>
+                            </h4>
+                            <div className="selection-scrollbox" style={{ border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px', height: '220px', overflowY: 'auto', background: '#f8fafc' }}>
+                              <label className="category-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', margin: '2px 0' }}>
+                                <input 
+                                  type="checkbox" 
+                                  checked={exportCategories.includes('All')}
+                                  onChange={(e) => handleCategoryChange('All', e.target.checked)} 
+                                />
+                                <span style={{ fontWeight: '600' }}>All Categories</span>
+                              </label>
+                              {categories.filter(c => c !== 'All').map(cat => (
+                                <label key={cat} className="category-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', margin: '2px 0' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={exportCategories.includes(cat)} 
+                                    onChange={(e) => handleCategoryChange(cat, e.target.checked)} 
+                                  />
+                                  <span>{cat}</span>
+                                </label>
+                              ))}
+                            </div>
                           </div>
 
-                          <label className="import-option-card">
-                            <div className="option-icon"><Upload size={32} /></div>
-                            <h4>{importing ? 'Importing...' : 'Upload Excel'}</h4>
-                            <p>Select your filled Excel file to start importing products.</p>
-                            <input type="file" accept=".xlsx, .xls" style={{ display: 'none' }} onChange={(e) => { handleBulkImport(e); setShowImportModal(false); }} disabled={importing} />
-                          </label>
+                          {/* Subcategories Section */}
+                          <div className="export-filter-column">
+                            <h4 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span>Subcategories</span>
+                              <span style={{ fontSize: '0.8rem', fontWeight: '500', color: '#64748b' }}>({exportSubcategories.includes('All') ? 'All Selected' : `${exportSubcategories.length} Selected`})</span>
+                            </h4>
+                            <div className="selection-scrollbox" style={{ border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px', height: '220px', overflowY: 'auto', background: '#f8fafc' }}>
+                              <label className="category-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', margin: '2px 0' }}>
+                                <input 
+                                  type="checkbox" 
+                                  checked={exportSubcategories.includes('All')}
+                                  onChange={(e) => handleSubcategoryChange('All', e.target.checked)} 
+                                />
+                                <span style={{ fontWeight: '600' }}>All Subcategories</span>
+                              </label>
+                              {exportAvailableSubcategories.map(sub => (
+                                <label key={sub} className="category-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '6px 8px', borderRadius: '6px', margin: '2px 0' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={exportSubcategories.includes(sub)} 
+                                    onChange={(e) => handleSubcategoryChange(sub, e.target.checked)} 
+                                  />
+                                  <span>{sub}</span>
+                                </label>
+                              ))}
+                              {exportAvailableSubcategories.length === 0 && (
+                                <div style={{ padding: '10px', color: '#64748b', fontSize: '0.85rem', textAlign: 'center', fontStyle: 'italic' }}>
+                                  No subcategories available for selected categories.
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
+
+                        <button 
+                          className="btn btn-primary" 
+                          style={{ width: '100%', padding: '12px', fontSize: '1rem', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+                          onClick={handleExportProducts}
+                        >
+                          <Download size={20} />
+                          Export to Excel
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -912,16 +1607,26 @@ const Products = () => {
             )}
 
             <div className="products-grid-page">
-              {filteredProducts.slice(0, visibleCount).map(product => (
-                <ProductCard key={product.id} product={product} isAdmin={admin} onEdit={handleEditClick} onDelete={handleDeleteProduct} searchTerm={debouncedSearch} />
+              {displayProducts.slice(0, visibleCount).map(product => (
+                <ProductCard 
+                  key={product.id} 
+                  product={product} 
+                  displayName={getProductDisplayName(product)}
+                  isAdmin={admin} 
+                  onEdit={handleEditClick} 
+                  onDelete={handleDeleteProduct} 
+                  searchTerm={debouncedSearch} 
+                  isSelected={selectedProductIds.includes(product.id)}
+                  onSelectToggle={handleSelectToggle}
+                />
               ))}
 
               {/* Observer Target for Infinite Scroll */}
-              {filteredProducts.length > visibleCount && (
+              {displayProducts.length > visibleCount && (
                 <div ref={observerTarget} className="scroll-sentinel" style={{ height: '20px', gridColumn: '1 / -1' }}></div>
               )}
 
-              {filteredProducts.length === 0 && (
+              {displayProducts.length === 0 && (
                 <div className="no-results-container" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
                   <Search size={48} color="#cbd5e1" style={{ marginBottom: '20px' }} />
                   <h3 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '10px' }}>No exact matches found</h3>
@@ -1041,6 +1746,205 @@ const Products = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Product Drawer Overlay */}
+      {selectedDrawerProduct && (
+        <div className="product-drawer-overlay" onClick={() => setSelectedDrawerProduct(null)}>
+          <div className="product-drawer-content" onClick={e => e.stopPropagation()}>
+            <div className="drawer-header">
+              <h3>Product Quick View</h3>
+              <button className="close-modal" onClick={() => setSelectedDrawerProduct(null)}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="drawer-body">
+              <div className="drawer-image-section">
+                <img 
+                  src={resolveImageUrl(selectedDrawerProduct.image)} 
+                  alt={selectedDrawerProduct.name} 
+                  className="drawer-image" 
+                />
+              </div>
+
+              <div className="drawer-details">
+                {selectedDrawerProduct.brand && (
+                  <span className="drawer-brand">{selectedDrawerProduct.brand}</span>
+                )}
+                <h2 className="drawer-title">{selectedDrawerProduct.name}</h2>
+                <span className="drawer-category">
+                  {selectedDrawerProduct.category} {selectedDrawerProduct.subcategory ? `> ${selectedDrawerProduct.subcategory}` : ''}
+                </span>
+                
+                {selectedDrawerProduct.price ? (
+                  <div className="drawer-price">
+                    ₹{selectedDrawerProduct.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </div>
+                ) : (
+                  <div className="drawer-price" style={{ fontSize: '1.2rem', color: '#ea580c' }}>
+                    Price on Request
+                  </div>
+                )}
+              </div>
+
+              {/* Sizes / Variants Selector */}
+              {getProductVariants(selectedDrawerProduct).length > 1 && (
+                <div className="drawer-sizes-section">
+                  <h4 className="drawer-section-title">Available Sizes / Models</h4>
+                  <div className="drawer-sizes-grid">
+                    {getProductVariants(selectedDrawerProduct).map(variant => (
+                      <button
+                        key={variant.id}
+                        className={`drawer-size-btn ${variant.id === selectedDrawerProduct.id ? 'active' : ''}`}
+                        onClick={() => {
+                          setSelectedDrawerProduct(variant);
+                          const existingCartItem = cartItems.find(item => String(item.id) === String(variant.id));
+                          setDrawerQuantity(existingCartItem ? existingCartItem.quantity : 1);
+                        }}
+                        title={variant.name}
+                      >
+                        {getVariantSizeLabel(variant.name, selectedDrawerProduct)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Description / Features */}
+              {selectedDrawerProduct.description && (
+                <div className="drawer-desc-section">
+                  <h4 className="drawer-section-title">Description</h4>
+                  <p style={{ fontSize: '0.85rem', color: '#475569', lineHeight: '1.5', margin: 0 }}>
+                    {selectedDrawerProduct.description}
+                  </p>
+                </div>
+              )}
+
+              {selectedDrawerProduct.features && selectedDrawerProduct.features.length > 0 && (
+                <div className="drawer-features-section">
+                  <h4 className="drawer-section-title">Key Features</h4>
+                  <ul className="drawer-features">
+                    {selectedDrawerProduct.features.slice(0, 3).map((feat, idx) => (
+                      <li key={idx}>{feat}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Drawer Actions */}
+              <div className="drawer-actions-container" style={{ marginTop: 'auto', borderTop: '1px solid #f1f5f9', paddingTop: '20px' }}>
+                {!admin ? (
+                  <div className="drawer-actions">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
+                      <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>Quantity:</span>
+                      <div className="drawer-qty-selector">
+                        <div className="drawer-qty-control">
+                          <button 
+                            className="drawer-qty-btn" 
+                            onClick={() => setDrawerQuantity(Math.max(1, drawerQuantity - 1))}
+                          >
+                            -
+                          </button>
+                          <span className="drawer-qty-val">{drawerQuantity}</span>
+                          <button 
+                            className="drawer-qty-btn" 
+                            onClick={() => setDrawerQuantity(drawerQuantity + 1)}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button 
+                        className="drawer-cart-btn" 
+                        style={{ flex: 1 }}
+                        onClick={() => {
+                          const user = localStorage.getItem('user');
+                          if (!user) {
+                            showToast("Login required to add to cart", "error");
+                            navigate('/login');
+                            return;
+                          }
+                          dispatch(addItem({
+                            id: selectedDrawerProduct.id,
+                            name: selectedDrawerProduct.name,
+                            price: selectedDrawerProduct.price || 0,
+                            image: selectedDrawerProduct.image,
+                            quantity: drawerQuantity,
+                            replace: true
+                          }));
+                          showToast("Added to cart", "success");
+                        }}
+                      >
+                        Add to Cart
+                      </button>
+                      
+                      {selectedDrawerProduct.price && (
+                        <button 
+                          className="drawer-checkout-btn" 
+                          style={{ flex: 1 }}
+                          onClick={() => {
+                            const user = localStorage.getItem('user');
+                            if (!user) {
+                              navigate('/login');
+                              return;
+                            }
+                            dispatch(addItem({
+                              id: selectedDrawerProduct.id,
+                              name: selectedDrawerProduct.name,
+                              price: selectedDrawerProduct.price || 0,
+                              image: selectedDrawerProduct.image,
+                              quantity: drawerQuantity,
+                              replace: true
+                            }));
+                            navigate('/checkout');
+                          }}
+                        >
+                          Buy Now
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', color: '#94a3b8', fontStyle: 'italic', fontSize: '0.9rem' }}>
+                    Admin View - Purchasing Disabled
+                  </div>
+                )}
+                
+                <Link 
+                  to={`/product/${selectedDrawerProduct.slug || selectedDrawerProduct.id}`} 
+                  className="drawer-view-specs"
+                  onClick={() => setSelectedDrawerProduct(null)}
+                >
+                  View Full Specifications & Downloads →
+                </Link>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Bulk Action Bar */}
+      {admin && selectedProductIds.length > 0 && (
+        <div className="floating-bulk-actions-bar">
+          <div className="bulk-actions-content">
+            <span className="selected-count">
+              <strong>{selectedProductIds.length}</strong> products selected
+            </span>
+            <div className="bulk-actions-buttons">
+              <button className="btn btn-outline-light" onClick={() => setSelectedProductIds([])}>
+                Clear Selection
+              </button>
+              <button className="btn btn-danger" onClick={handleBulkDelete}>
+                Delete Selected
+              </button>
             </div>
           </div>
         </div>

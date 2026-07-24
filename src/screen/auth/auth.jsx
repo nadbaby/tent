@@ -435,6 +435,34 @@ const Auth = () => {
     }
   };
 
+  // Helper to register in Firebase and Sync with backend MongoDB
+  const executeRegistration = async (phoneVal) => {
+    // 1. Create in Firebase
+    const credential = await createUserWithEmailAndPassword(auth, email, password);
+    const fbUser = credential.user;
+    await updateProfile(fbUser, { displayName: name });
+
+    // 2. Send Verification Email (Dual-Mode Verification)
+    await sendEmailVerification(fbUser);
+
+    // 3. Sync with MongoDB
+    const idToken = await fbUser.getIdToken();
+    const syncedUser = await syncUserWithBackend(idToken, {
+      name,
+      email: email.trim(),
+      phone: phoneVal ? phoneVal.trim() : undefined,
+      company: company || '',
+      gstNumber: gstNumber || ''
+    });
+
+    if (!syncedUser || syncedUser.error) {
+      throw new Error(syncedUser?.error || "Failed to sync profile with database.");
+    }
+
+    // 4. Sign out Firebase session to prevent automatic login until email is verified
+    await auth.signOut();
+  };
+
   // ─── Firebase: Email/Password Signup ─────────────────────────────────────
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
@@ -456,12 +484,32 @@ const Auth = () => {
     }
 
     setIsLoading(true);
+
+    const trimmedPhone = phone ? phone.trim() : '';
+
+    if (!trimmedPhone) {
+      // Direct registration since phone is optional and not provided
+      try {
+        await executeRegistration(null);
+        setSuccessMsg('Account created successfully! A verification link has been sent to your email. Please click the link to activate your account and log in.');
+        setTimeout(() => {
+          handleModeChange('login');
+        }, 4000);
+      } catch (err) {
+        console.error("Signup failed:", err);
+        setErrorMsg(friendlyError(err.code || err.message));
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // If phone is provided, send OTP verification first
     try {
-      // Send OTP to phone number before creating account
       const res = await fetch(apiUrl('/api/auth/send-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({ phone: trimmedPhone }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -486,10 +534,10 @@ const Auth = () => {
     setErrorMsg('');
     try {
       // 1. Verify OTP first
-      const res = await fetch(apiUrl('/api/auth/verify-otp'), {
+      const res = await fetch(apiUrl('/api/auth/verify-otp-only'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, otp: emailSignupOtp }),
+        body: JSON.stringify({ phone: phone.trim(), otp: emailSignupOtp }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -498,32 +546,8 @@ const Auth = () => {
         return;
       }
 
-      // 2. OTP is valid! Create in Firebase
-      const credential = await createUserWithEmailAndPassword(auth, email, password);
-      const fbUser = credential.user;
-      await updateProfile(fbUser, { displayName: name });
-
-      // 3. Send Verification Email (Dual-Mode Verification)
-      await sendEmailVerification(fbUser);
-
-      // 4. Sync with MongoDB
-      const idToken = await fbUser.getIdToken();
-      const syncedUser = await syncUserWithBackend(idToken, {
-        name,
-        email: email.trim(),
-        phone: phone.trim(),
-        company: company || '',
-        gstNumber: gstNumber || ''
-      });
-
-      if (!syncedUser || syncedUser.error) {
-        setErrorMsg(syncedUser?.error || "Failed to sync profile with database.");
-        setIsLoading(false);
-        return;
-      }
-
-      // 5. Sign out Firebase session to prevent automatic login until email is verified
-      await auth.signOut();
+      // 2. OTP is valid! Create account and sync
+      await executeRegistration(phone);
 
       setSuccessMsg('Phone verified! A verification link has been sent to your email. Please click the link to activate your account and log in.');
       setTimeout(() => {
@@ -849,8 +873,8 @@ const Auth = () => {
                     <input type="email" className="form-input" placeholder="john@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Phone Number</label>
-                    <input type="tel" className="form-input" placeholder="+91XXXXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                    <label className="form-label">Phone Number (Optional)</label>
+                    <input type="tel" className="form-input" placeholder="+91XXXXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Company Name (Optional)</label>

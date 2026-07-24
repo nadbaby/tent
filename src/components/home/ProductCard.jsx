@@ -54,7 +54,7 @@ const highlightText = (text, highlight) => {
   );
 };
 
-const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
+const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm, onCardClick, displayName, isSelected, onSelectToggle }) => {
   const dispatch = useDispatch();
   const cartItems = useSelector((state) => state.cart.items);
   const navigate = useNavigate();
@@ -114,13 +114,30 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
   };
 
   const handleCardClick = () => {
-    navigate(`/product/${product.slug || product.id}`);
+    if (onCardClick) {
+      onCardClick(product);
+    } else {
+      const hasValidSlug = product.slug && 
+                           product.slug.toLowerCase() !== 'sku' && 
+                           product.slug.toLowerCase() !== 'default';
+      navigate(`/product/${hasValidSlug ? product.slug : product.id}`);
+    }
   };
 
   return (
-    <div className={`product-card ${isShaking ? 'shake-animation' : ''}`} onClick={handleCardClick}>
+    <div className={`product-card ${isSelected ? 'admin-selected' : ''} ${isShaking ? 'shake-animation' : ''}`} onClick={handleCardClick}>
       <div className="product-image-container">
-        <div className="product-name-overlay">{highlightText(product.name, searchTerm)}</div>
+        {isAdmin && onSelectToggle && (
+          <div className="admin-select-checkbox-container" onClick={(e) => e.stopPropagation()}>
+            <input
+              type="checkbox"
+              checked={isSelected || false}
+              onChange={() => onSelectToggle(product.id)}
+              className="admin-select-checkbox"
+            />
+          </div>
+        )}
+        <div className="product-name-overlay">{highlightText(displayName || product.name, searchTerm)}</div>
         <ProtectedImage
           src={secureImageUrl}
           alt={product.name}
@@ -165,7 +182,7 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm }) => {
       <div className="product-info">
         <div className="product-meta">
           <p className="product-category">{highlightText(product.category, searchTerm)}</p>
-          {product.sku && <span className="product-sku">SKU: {highlightText(product.sku, searchTerm)}</span>}
+          {product.sku && <span className="product-sku" style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '500' }}>SKU: {highlightText(product.sku, searchTerm)}</span>}
         </div>
 
         {/* Mobile Badges - Visible only on mobile inside info section, ensuring 0% image overlap */}

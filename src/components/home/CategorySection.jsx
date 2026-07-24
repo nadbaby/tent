@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ProtectedImage from '../common/ProtectedImage';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -14,39 +14,42 @@ const categories = [
 ];
 
 const CategorySection = () => {
+  const [activeId, setActiveId] = useState(1);
+
   return (
-    <section className="category-section">
+    <section className="category-section-new">
       <div className="container">
-        <div className="section-header">
-
-
-
-          <div>
-            <h2 className="section-title">Shop by Category</h2>
-            <p className="section-subtitle">Find exactly what you need quickly and efficiently.</p>
-          </div>
+        <div className="cat-header-new">
+          <h2 className="massive-title">Shop by Category.</h2>
+          <p className="subtitle-new">Precision components designed for extreme industrial demands.</p>
         </div>
 
-        <div className="category-grid">
-          {categories.map((cat) => (
-            <Link to={`/products?category=${cat.name}`} key={cat.id} className="category-card">
-              <div className="category-image">
-                <ProtectedImage src={cat.image} alt={cat.name} />
-                <div className="category-overlay"></div>
+        <div className="cat-bento-grid">
+          {categories.map((cat, index) => (
+            <div
+              key={cat.id}
+              className={`bento-card bento-item-${index + 1}`}
+            >
+              <div className="cat-bg-wrapper">
+                <ProtectedImage src={cat.image} alt={cat.name} className="cat-bg-img" />
               </div>
-              <div className="category-content">
-                <h3>{cat.name}</h3>
-                <p>{cat.count}</p>
-                <span className="category-link">View Products <ArrowRight size={16} /></span>
+              <div className="cat-overlay"></div>
+
+              <div className="cat-content">
+                <div className="cat-info">
+                  <h3>{cat.name}</h3>
+                  <p>{cat.count}</p>
+                </div>
+                <Link to={`/products?category=${cat.name}`} className="cat-explore-btn">
+                  Explore <ArrowRight size={18} />
+                </Link>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       </div>
     </section>
   );
 };
-
-
 
 export default CategorySection;

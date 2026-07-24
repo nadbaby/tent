@@ -318,7 +318,7 @@ const Checkout = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token && { 'Authorization': `Bearer ${token}` }) },
         body: JSON.stringify({
-          items: items.map(i => ({ id: i.id, quantity: i.quantity })), // Only send ID and quantity
+          items: items.map(i => ({ id: i.id, quantity: i.quantity, size: i.size })), // Send ID, quantity, and size
           shippingAddress: addressData,
           couponCode: appliedCoupon?.code,
           paymentMethod,
@@ -800,10 +800,15 @@ const Checkout = () => {
                   <h4 className="section-title">Order Items</h4>
                   <div className="review-items-list">
                     {items.map(item => (
-                      <div key={item.id} className="review-item">
+                      <div key={`${item.id}-${item.size || 'default'}`} className="review-item">
                         <img src={resolveImageUrl(item.image)} alt={item.name} />
                         <div className="item-info">
                           <h5>{item.name}</h5>
+                          {item.size && (
+                            <span style={{ fontSize: '0.75rem', color: '#ea580c', display: 'block', margin: '2px 0 4px 0', fontWeight: '600' }}>
+                              Size: {item.size}
+                            </span>
+                          )}
                           <span>{item.quantity} units</span>
                         </div>
                         <div className="item-price">₹{(item.totalPrice || (item.price * item.quantity) || 0).toFixed(2)}</div>
@@ -827,8 +832,15 @@ const Checkout = () => {
               <h3>Order Summary</h3>
               <div className="summary-items">
                 {items.map(item => (
-                  <div key={item.id} className="summary-item-row">
-                    <span>{item.name} x {item.quantity}</span>
+                  <div key={`${item.id}-${item.size || 'default'}`} className="summary-item-row" style={{ alignItems: 'flex-start' }}>
+                    <span>
+                      {item.name} x {item.quantity}
+                      {item.size && (
+                        <small style={{ display: 'block', color: '#ea580c', fontWeight: '600', fontSize: '0.7rem', marginTop: '2px' }}>
+                          Size: {item.size}
+                        </small>
+                      )}
+                    </span>
                     <span>₹{(item.totalPrice || (item.price * item.quantity) || 0).toFixed(2)}</span>
                   </div>
                 ))}
