@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Tag, Truck, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { Tag, ShieldCheck, Sparkles } from 'lucide-react';
 import './PromoMarquee.css';
 
 const PromoMarquee = () => {
@@ -28,14 +28,6 @@ const PromoMarquee = () => {
       suffix: " for FLAT ₹500 OFF on your first order!",
       icon: <Tag size={14} className="promo-icon" />,
       color: "var(--color-accent)"
-    },
-    {
-      badge: "FREE SHIPPING",
-      text: "Free delivery on all orders above ₹39,999!",
-      code: "",
-      suffix: "",
-      icon: <Truck size={14} className="promo-icon" />,
-      color: "#10b981"
     },
     {
       badge: "TRUSTED",
@@ -75,7 +67,7 @@ const PromoMarquee = () => {
       <span className="promo-marquee-text">
         {item.text}
         {item.code && (
-          <span 
+          <span
             className={`promo-copyable-code ${copiedCode === item.code ? 'copied' : ''}`}
             onClick={(e) => copyToClipboard(item.code, e)}
             title="Click to copy code"
