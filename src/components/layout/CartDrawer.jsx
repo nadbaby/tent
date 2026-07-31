@@ -96,20 +96,24 @@ const CartDrawer = ({ isOpen, onClose }) => {
             <div className="cart-items-list">
               {/* Porter Delivery Notice */}
               <div className="porter-cart-notice" style={{
-                background: '#fff7ed',
-                border: '1px solid #ffedd5',
+                background: new Date().getDay() === 0 ? '#f8fafc' : '#fff7ed',
+                border: new Date().getDay() === 0 ? '1px solid #cbd5e1' : '1px solid #ffedd5',
                 borderRadius: '8px',
                 padding: '12px',
                 marginBottom: '16px',
                 fontSize: '0.85rem',
-                color: '#9a3412',
+                color: new Date().getDay() === 0 ? '#475569' : '#9a3412',
                 display: 'flex',
                 gap: '8px',
                 alignItems: 'flex-start'
               }}>
-                <Truck size={16} style={{ color: '#ea580c', flexShrink: 0, marginTop: '2px' }} />
+                <Truck size={16} style={{ color: new Date().getDay() === 0 ? '#64748b' : '#ea580c', flexShrink: 0, marginTop: '2px' }} />
                 <div>
-                  <strong>Fast Local Delivery</strong> is available for Ludhiana customers. Delivery charges depend on distance, product size, product weight and Porter availability.
+                  {new Date().getDay() === 0 ? (
+                    <><strong>Fast Local Delivery (Porter)</strong> is closed on Sundays. Standard delivery remains available for all orders.</>
+                  ) : (
+                    <><strong>Fast Local Delivery</strong> is available for Ludhiana customers. Delivery charges depend on distance, product size, product weight and Porter availability.</>
+                  )}
                 </div>
               </div>
               {items.map((item) => {

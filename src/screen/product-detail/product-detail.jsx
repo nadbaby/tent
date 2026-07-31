@@ -620,13 +620,23 @@ const ProductDetail = () => {
 
               {/* Local delivery info */}
               {isLudhianaUser && (
-                <div className="porter-delivery-alert">
-                  <Truck size={18} className="alert-truck-icon" />
-                  <div className="alert-text-block">
-                    <strong>Urgent Ludhiana Delivery</strong>
-                    <span>Immediate dispatch via Porter local delivery is available on request.</span>
+                new Date().getDay() !== 0 ? (
+                  <div className="porter-delivery-alert">
+                    <Truck size={18} className="alert-truck-icon" />
+                    <div className="alert-text-block">
+                      <strong>Urgent Ludhiana Delivery</strong>
+                      <span>Immediate dispatch via Porter local delivery is available on request.</span>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="porter-delivery-alert" style={{ background: '#f8fafc', borderColor: '#cbd5e1' }}>
+                    <Truck size={18} className="alert-truck-icon" style={{ color: '#64748b' }} />
+                    <div className="alert-text-block">
+                      <strong>Porter Delivery (Closed Today)</strong>
+                      <span>Porter local delivery is unavailable on Sundays. Standard shipping is active.</span>
+                    </div>
+                  </div>
+                )
               )}
               {/* Series Size Selector (Different Products/Sizes in the Series) */}
               {seriesProducts.length > 1 && (

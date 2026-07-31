@@ -1013,8 +1013,7 @@ const Products = () => {
     });
 
   const displayProducts = (() => {
-    const collapsed = [];
-    const seen = new Set();
+    const familyMap = new Map();
     
     const getFamilyKey = (p) => {
       if (p.subcategory && p.subcategory.toLowerCase().trim() !== 'all') {
@@ -1029,13 +1028,46 @@ const Products = () => {
       return `prefix_${getPrefix(p.name)}_${p.category || ''}`;
     };
 
+    // Group all matching products by family/subcategory
     filteredProducts.forEach(p => {
       const familyKey = getFamilyKey(p);
-      if (!seen.has(familyKey)) {
-        seen.add(familyKey);
-        collapsed.push(p);
+      if (!familyMap.has(familyKey)) {
+        familyMap.set(familyKey, [p]);
+      } else {
+        familyMap.get(familyKey).push(p);
       }
     });
+
+    const collapsed = [];
+    familyMap.forEach((variants) => {
+      // Pick the product variant with the minimum positive price
+      let minProduct = variants[0];
+      let minPrice = (minProduct.price && Number(minProduct.price) > 0) ? Number(minProduct.price) : Infinity;
+
+      for (let i = 1; i < variants.length; i++) {
+        const v = variants[i];
+        const vPrice = (v.price && Number(v.price) > 0) ? Number(v.price) : Infinity;
+        if (vPrice < minPrice) {
+          minPrice = vPrice;
+          minProduct = v;
+        }
+      }
+      collapsed.push(minProduct);
+    });
+
+    // Re-apply sorting for the collapsed minimum-price products
+    if (sortBy === 'price-low') {
+      collapsed.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+    } else if (sortBy === 'price-high') {
+      collapsed.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+    } else if (sortBy === 'name-asc') {
+      collapsed.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    } else if (sortBy === 'name-desc') {
+      collapsed.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+    } else if (sortBy === 'newest') {
+      collapsed.sort((a, b) => (b.id || 0) - (a.id || 0));
+    }
+
     return collapsed;
   })();
 

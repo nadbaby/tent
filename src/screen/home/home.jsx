@@ -54,9 +54,98 @@ const Home = () => {
     fetchProducts();
   }, []);
 
-  // Filter or slice products for different sections
-  const featuredProducts = products.filter(p => p.isActive).slice(0, 4);
-  const newArrivals = products.filter(p => p.isActive).reverse().slice(0, 8);
+  // Helper to pick products across different categories & subcategories
+  const getDiverseProducts = (allProducts, targetCount, isReverse = false) => {
+    let active = allProducts.filter(p => p.isActive);
+    if (active.length === 0) return [];
+    if (isReverse) {
+      active = [...active].reverse();
+    }
+
+    // Group products by category
+    const categoriesMap = new Map();
+    active.forEach(p => {
+      const cat = p.category || 'General';
+      if (!categoriesMap.has(cat)) {
+        categoriesMap.set(cat, []);
+      }
+      categoriesMap.get(cat).push(p);
+    });
+
+    const categories = Array.from(categoriesMap.keys());
+    const selected = [];
+    const selectedSubcategories = new Set();
+    const selectedIds = new Set();
+
+    const pickBestCandidate = (list) => {
+      // 1. Try to find featured product
+      const featured = list.find(p => p.isFeatured && !selectedIds.has(p.id));
+      if (featured) return featured;
+
+      // 2. Try to find candidate from unselected subcategory with min price
+      const unselectedSubcatList = list.filter(p => p.subcategory && !selectedSubcategories.has(p.subcategory) && !selectedIds.has(p.id));
+      if (unselectedSubcatList.length > 0) {
+        return unselectedSubcatList.reduce((minP, curP) => {
+          const minVal = (minP.price && Number(minP.price) > 0) ? Number(minP.price) : Infinity;
+          const curVal = (curP.price && Number(curP.price) > 0) ? Number(curP.price) : Infinity;
+          return curVal < minVal ? curP : minP;
+        }, unselectedSubcatList[0]);
+      }
+
+      // 3. Fallback: min price item not yet selected
+      const unselectedList = list.filter(p => !selectedIds.has(p.id));
+      if (unselectedList.length > 0) {
+        return unselectedList.reduce((minP, curP) => {
+          const minVal = (minP.price && Number(minP.price) > 0) ? Number(minP.price) : Infinity;
+          const curVal = (curP.price && Number(curP.price) > 0) ? Number(curP.price) : Infinity;
+          return curVal < minVal ? curP : minP;
+        }, unselectedList[0]);
+      }
+
+      return null;
+    };
+
+    // Pass 1: Pick 1 product from each distinct category
+    for (const cat of categories) {
+      if (selected.length >= targetCount) break;
+      const catProducts = categoriesMap.get(cat);
+      const candidate = pickBestCandidate(catProducts);
+      if (candidate) {
+        selected.push(candidate);
+        selectedIds.add(candidate.id);
+        if (candidate.subcategory) selectedSubcategories.add(candidate.subcategory);
+      }
+    }
+
+    // Pass 2: Round-robin across categories if more products are needed
+    let roundIndex = 0;
+    while (selected.length < targetCount && active.length > selected.length) {
+      const cat = categories[roundIndex % categories.length];
+      const catProducts = categoriesMap.get(cat);
+      const candidate = pickBestCandidate(catProducts);
+      if (candidate) {
+        selected.push(candidate);
+        selectedIds.add(candidate.id);
+        if (candidate.subcategory) selectedSubcategories.add(candidate.subcategory);
+      } else {
+        const remaining = active.find(p => !selectedIds.has(p.id));
+        if (remaining) {
+          selected.push(remaining);
+          selectedIds.add(remaining.id);
+          if (remaining.subcategory) selectedSubcategories.add(remaining.subcategory);
+        } else {
+          break;
+        }
+      }
+      roundIndex++;
+    }
+
+    return selected;
+  };
+
+  // Filter products across different categories
+  const featuredProducts = getDiverseProducts(products, 4, false);
+  const newArrivals = getDiverseProducts(products, 8, true);
 
   return (
     <div className="home-screen">
@@ -110,7 +199,7 @@ const Home = () => {
         )
       )}
 
-      {isLudhianaUser && <PorterDeliverySection />}
+      {isLudhianaUser && new Date().getDay() !== 0 && <PorterDeliverySection />}
       <WhyChooseUsSection />
       <TestimonialsSection />
       <InquirySection />
