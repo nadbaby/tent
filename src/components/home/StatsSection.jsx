@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Globe, Users, Trophy, Box } from 'lucide-react';
 import './StatsSection.css';
 
 const stats = [
-  { id: 1, icon: <Globe size={32} />, value: 250, suffix: "+", label: "Cities Served" },
-  { id: 2, icon: <Users size={32} />, value: 10000, suffix: "+", label: "Regular Clients" },
-  { id: 3, icon: <Box size={32} />, value: 45000, suffix: "+", label: "Products Varieties" },
-  { id: 4, icon: <Trophy size={32} />, value: 20, suffix: "", label: "Years Experience" },
+  { id: 1, value: 250, suffix: "+", label: "Cities Served Across India", desc: "Delivering industrial excellence locally." },
+  { id: 2, value: 10, suffix: "k+", label: "Regular Enterprise Clients", desc: "Trusted by top tier factories." },
+  { id: 3, value: 45, suffix: "k+", label: "Premium Product Varieties", desc: "The largest catalog of bearings & seals." },
+  { id: 4, value: 20, suffix: "+", label: "Years of Engineering Expertise", desc: "Decades of deep industry knowledge." },
 ];
 
 const Counter = ({ end, suffix }) => {
@@ -35,6 +34,8 @@ const Counter = ({ end, suffix }) => {
     const duration = 2000;
     const incrementTime = 30;
     const steps = duration / incrementTime;
+    
+    // Determine raw number part from 'end' if it's passed as a number (currently we pass 10 for 10k+)
     const increment = end / steps;
 
     const timer = setInterval(() => {
@@ -49,28 +50,23 @@ const Counter = ({ end, suffix }) => {
     return () => clearInterval(timer);
   }, [isVisible, end]);
 
-  // Format large numbers like 10000 -> 10k
-  const formattedCount = count >= 1000 ? (count / 1000).toFixed(count % 1000 === 0 ? 0 : 1) + 'k' : count;
-
   return (
-    <div className="stat-value" ref={nodeRef}>
-      {formattedCount}{suffix}
+    <div className="stat-giant-value" ref={nodeRef}>
+      {count}{suffix}
     </div>
   );
 };
 
 const StatsSection = () => {
   return (
-    <section className="stats-section">
+    <section className="stats-brutalist-section">
       <div className="container">
-        <div className="stats-grid">
+        <div className="stats-brutalist-grid">
           {stats.map((stat) => (
-            <div key={stat.id} className="stat-card">
-              <div className="stat-icon">
-                {stat.icon}
-              </div>
+            <div key={stat.id} className="stat-brutalist-card">
               <Counter end={stat.value} suffix={stat.suffix} />
-              <div className="stat-label">{stat.label}</div>
+              <h4 className="stat-brutalist-label">{stat.label}</h4>
+              <p className="stat-brutalist-desc">{stat.desc}</p>
             </div>
           ))}
         </div>

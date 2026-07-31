@@ -74,7 +74,10 @@ export const downloadInvoice = async (order, letterheadUrl = null) => {
           <tbody>
             ${(order.items || []).map(item => `
               <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 15px 12px; font-weight: 600;">${item.name}</td>
+                <td style="padding: 15px 12px; font-weight: 600;">
+                  ${item.name}
+                  ${item.size ? `<div style="font-size: 11px; color: #ea580c; font-weight: bold; margin-top: 4px;">Size: ${item.size}</div>` : ''}
+                </td>
                 <td style="padding: 15px 12px; text-align: center;">${item.quantity}</td>
                 <td style="padding: 15px 12px; text-align: right;">₹${item.price?.toFixed(2) || (item.totalPrice / item.quantity).toFixed(2)}</td>
                 <td style="padding: 15px 12px; text-align: right; font-weight: 700;">₹${item.totalPrice?.toFixed(2)}</td>

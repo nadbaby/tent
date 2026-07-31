@@ -34,12 +34,18 @@ const Chatbot = () => {
   const { showToast } = useToast();
 
   useEffect(() => {
+    const handleOpenChatbot = () => setIsOpen(true);
+    window.addEventListener('open-chatbot', handleOpenChatbot);
+    return () => window.removeEventListener('open-chatbot', handleOpenChatbot);
+  }, []);
+
+  useEffect(() => {
     if (!isTyping) {
       setTypingText(typingPhrases[0]);
       setFadeText(true);
       return;
     }
-    
+
     let index = 0;
     const interval = setInterval(() => {
       setFadeText(false);
@@ -83,10 +89,10 @@ const Chatbot = () => {
   };
 
   const suggestions = [
+    { label: "🛠️ Show all available products", query: "Please show me a list of all the products that have been added to the catalog." },
     { label: "🔍 Search bearings by size", query: "Can you help me search for a bearing if I give you the dimensions?" },
     { label: "📦 Track my order", query: "How can I track my order status?" },
-    { label: "🏢 Contact sales team", query: "What is your customer support phone number and email?" },
-    { label: "⭐ Show top brands", query: "Which bearing brands do you supply?" }
+    { label: "🏢 Contact sales team", query: "What is your customer support phone number and email?" }
   ];
 
   const scrollToBottom = () => {
@@ -118,7 +124,7 @@ const Chatbot = () => {
     // Append user message with 'sent' status
     const newMsgIndex = messages.length;
     setMessages(prev => [...prev, { role: 'user', text: msgText, status: 'sent' }]);
-    
+
     // Set AI status to reading
     setAssistantStatus('reading');
     setIsTyping(true);
@@ -126,7 +132,7 @@ const Chatbot = () => {
     // Wait 600ms to show the sent tick before AI reads it
     await new Promise(resolve => setTimeout(resolve, 600));
     setMessages(prev => prev.map((msg, idx) => idx === newMsgIndex ? { ...msg, status: 'read' } : msg));
-    
+
     // Set AI status to searching
     setAssistantStatus('searching');
 
@@ -150,7 +156,7 @@ const Chatbot = () => {
       let rawText = '';
       try {
         rawText = await response.clone().text();
-      } catch (err) {}
+      } catch (err) { }
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${rawText.substring(0, 50)}...`);
@@ -277,14 +283,14 @@ const Chatbot = () => {
                 {/* Ripple background circles */}
                 <div className="ripple-circle ripple-1"></div>
                 <div className="ripple-circle ripple-2"></div>
-                
+
                 {/* Rotating glowing bearing ring */}
                 <div className="rotating-bearing-ring"></div>
-                
+
                 {/* Circular AI Logo */}
                 <img src={aiAssistantLogo} alt="Fine AI" className="typing-ai-logo" />
               </div>
-              
+
               <div className="typing-indicator-content">
                 <span className={`typing-status-label ${fadeText ? 'fade-in' : ''}`}>
                   {typingText}

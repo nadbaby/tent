@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiUrl } from '../../utils/api';
 import HeroSection from '../../components/home/HeroSection';
-import AuthorizedBrandsSection from '../../components/home/AuthorizedBrandsSection';
 import BrandsSection from '../../components/home/BrandsSection';
 import CategorySection from '../../components/home/CategorySection';
 import ProductSection from '../../components/home/ProductSection';
@@ -16,6 +15,19 @@ import './home.css';
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const userStr = localStorage.getItem('user');
+  let isLudhianaUser = false;
+  if (userStr) {
+    try {
+      const userObj = JSON.parse(userStr);
+      const address = userObj.address || '';
+      const city = userObj.city || '';
+      if (address.toLowerCase().includes('ludhiana') || city.toLowerCase().includes('ludhiana')) {
+        isLudhianaUser = true;
+      }
+    } catch (e) { }
+  }
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -44,19 +56,18 @@ const Home = () => {
 
   // Filter or slice products for different sections
   const featuredProducts = products.filter(p => p.isActive).slice(0, 4);
-  const newArrivals = products.filter(p => p.isActive).reverse().slice(0, 4);
+  const newArrivals = products.filter(p => p.isActive).reverse().slice(0, 8);
 
   return (
     <div className="home-screen">
       <HeroSection />
-      <AuthorizedBrandsSection />
-      <BrandsSection />
       <CategorySection />
+      <BrandsSection />
 
       {loading ? (
-        <section className="product-section bg-alt" style={{ padding: '80px 0' }}>
+        <section className="product-section bg-alt" style={{ padding: '60px 0' }}>
           <div className="container">
-            <div className="section-header" style={{ textAlign: 'center', marginBottom: '40px' }}>
+            <div className="section-header" style={{ textAlign: 'center', marginBottom: '24px' }}>
               <Skeleton type="skeleton-title" style={{ margin: '0 auto 10px', width: '300px' }} />
               <Skeleton type="skeleton-text" style={{ margin: '0 auto', width: '500px' }} />
             </div>
@@ -78,13 +89,13 @@ const Home = () => {
       <StatsSection />
 
       {loading ? (
-        <section className="product-section" style={{ padding: '80px 0' }}>
+        <section className="product-section" style={{ padding: '60px 0' }}>
           <div className="container">
-            <div className="section-header" style={{ textAlign: 'center', marginBottom: '40px' }}>
+            <div className="section-header" style={{ textAlign: 'center', marginBottom: '24px' }}>
               <Skeleton type="skeleton-title" style={{ margin: '0 auto 10px', width: '300px' }} />
               <Skeleton type="skeleton-text" style={{ margin: '0 auto', width: '500px' }} />
             </div>
-            <SkeletonProductGrid count={4} />
+            <SkeletonProductGrid count={8} />
           </div>
         </section>
       ) : (
@@ -99,7 +110,7 @@ const Home = () => {
         )
       )}
 
-      <PorterDeliverySection />
+      {isLudhianaUser && <PorterDeliverySection />}
       <WhyChooseUsSection />
       <TestimonialsSection />
       <InquirySection />

@@ -387,6 +387,11 @@ const Orders = () => {
                       <img src={resolveImageUrl(item.image)} alt={item.name} style={{ width: '60px', height: '60px', borderRadius: '10px', objectFit: 'cover' }} />
                       <div style={{ flex: 1 }}>
                         <h5 style={{ margin: 0, fontSize: '0.95rem' }}>{item.name}</h5>
+                        {item.size && (
+                          <p style={{ margin: '2px 0 0', color: '#ea580c', fontSize: '0.8rem', fontWeight: '600' }}>
+                            Size: {item.size}
+                          </p>
+                        )}
                         <p style={{ margin: '4px 0 0', color: '#86868b', fontSize: '0.85rem' }}>{item.quantity} units</p>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
