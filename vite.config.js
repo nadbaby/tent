@@ -60,6 +60,8 @@ export default defineConfig(({ mode }) => {
           ]
         },
         workbox: {
+          skipWaiting: true,
+          clientsClaim: true,
           // Cache strategies for different resource types
           globPatterns: ['**/*.{js,css,html,ico,svg,woff,woff2}'],
           // Don't precache heavy brand images - they'll be cached at runtime
