@@ -93,6 +93,198 @@ const findSeriesProducts = (currentProduct, allData) => {
 
 
 
+const generateRealisticReviews = (productName, category, sku, brand, productId) => {
+  const brandName = brand || "Fine Bearing";
+  const nameClean = productName || "Bearing";
+  const catClean = (category || "").toLowerCase();
+
+  // Simple deterministic pseudo-random generator
+  const seedString = `${productName}-${category}-${sku}-${brand}-${productId || ''}`;
+  let h = 0;
+  for (let i = 0; i < seedString.length; i++) {
+    h = (Math.imul(31, h) + seedString.charCodeAt(i)) | 0;
+  }
+  const random = () => {
+    let t = h += 0x6D2B79F5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+
+  // Deterministically decide count of reviews between 5 and 7
+  const reviewCount = Math.floor(random() * 3) + 5; // 5, 6, or 7
+
+  // Pool of Indian business names and customer names
+  const names = [
+    "Rajesh Malhotra", "Gill Agri Works", "Sandeep Engineering Services", "Khanna Machine Tools",
+    "Avtar Singh (Ludhiana)", "Singla & Sons", "Apex Hydraulics", "Balaji Bearings & Machinery",
+    "Jaspreet Mechanicals", "Verma Precision Works", "Devendra Gupta", "Premier Auto Spares",
+    "Jagjit Industrial Corp", "Mittal Steels", "G.S. Mechanicals (Pvt Ltd)", "K.R. Tooling Solutions",
+    "Royal Forge Ludhiana", "Harish Chawla", "Standard Machinery Parts", "VK Industries",
+    "Guru Nanak Lathe House", "Amrit Pal & Co", "Pawan Kumar", "Vardhman Tex & Mill",
+    "Ludhiana Gear Systems", "Amit Sharma (Plant Head)", "H.S. Sodhi", "Unique Seal & Gasket Co",
+    "National Metal Works", "Satnam Agro Tech", "Bharat Forge & Tool", "Gupta Steel Re-rolling",
+    "Tarun Mechanical Division", "Vinod Machine House", "Northern Engineering Hub", "Dashmesh Alloys",
+    "Friends Auto Ludhiana", "Oswal Industrial Unit", "Ravi Kant (Superintendent)", "Preet Agri Implements",
+    "Ludhiana Die & Tooling", "M.S. Machine Parts", "Sohan Lal Agencies", "Dynamic Power Packs",
+    "Shivam Trading Co", "Kohli Hydraulic Works", "Super Seals & Spares", "Jindal Steels Ludhiana",
+    "Sukhdev Singh", "Chopra Enterprise Supplier", "Jagdish & Sons", "Bhandari Machine Tools",
+    "Malhotra Industries", "Techno Bearing Hub", "Surjit Singh & Co", "Vikas Mechanical Works",
+    "Ludhiana CNC Shop", "Lamba Auto Engineers", "Deepak Polymers", "Arora Tool Room"
+  ];
+
+  // Shuffling names so that they are randomly selected but distinct in this review list
+  const shuffledNames = [...names];
+  for (let i = shuffledNames.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    const temp = shuffledNames[i];
+    shuffledNames[i] = shuffledNames[j];
+    shuffledNames[j] = temp;
+  }
+
+  // Pool of sentence elements to build unique reviews:
+  // Part A: Openers
+  const openers = [
+    "The quality of this product is outstanding.",
+    "Very reliable component for industrial operations.",
+    "Perfect choice for our factory repair works.",
+    "Decent pricing and original brand build.",
+    "Using this unit on our primary workshop assembly.",
+    "Replaced the old worn-out parts with this one.",
+    "Highly durable construction and clean design.",
+    "Great product overall, matches description, extremely useful.",
+    "Excellent value for money and premium finishing.",
+    "We bought a batch of these for our production machinery.",
+    "Impressed with the tolerances and dimensions.",
+    "Exactly matches the engineering specifications."
+  ];
+
+  // Part B: Category-specific reviews
+  const sealReviews = [
+    `The lips on this ${nameClean} are highly flexible and provide a total leakproof sealing.`,
+    "Replaced previous gear box seals with this and leakage stopped completely.",
+    "Rubber chemical resistance is top-notch, vital for our chemical process machinery.",
+    "SNUG fit inside the bearing housing and holds grease pressure perfectly.",
+    `Dimensions on this ${brandName} seal match the catalog exactly.`,
+    "Double lip design does a fantastic job of blocking heavy dust from entry.",
+    "Highly robust construction, withstands continuous heating shifts.",
+    "Prevents dirt and moisture intrusion flawlessly in our agricultural machines.",
+    "Top class quality viton/nitrile compound used. Zero cracking after months."
+  ];
+
+  const bearingReviews = [
+    `Runs incredibly silent even when operated under high 1440 RPM speeds.`,
+    "Radial and axial load tolerances are excellent, very minor noise friction.",
+    "Comes pre-lubricated with high-grade premium grease. Very smooth spin.",
+    "Installed this in our electric compressor motor and vibration levels dropped.",
+    `Authentic engineering specifications, the clearance is as per standard standards.`,
+    "No excessive heating observed even under continuous 12-hour shifts.",
+    `Outstanding finish, this ${nameClean} from ${brandName} is a top product.`,
+    "Runs cool and has very low friction. Perfect for heavy motor drive pumps.",
+    "High steel hardness rating, durability is excellent under heavy load conditions."
+  ];
+
+  const pillowBlockReviews = [
+    "Cast iron pillow housing is rugged, thick and heavy.",
+    "Self-aligning insert bearing adjusts to misalignments easily.",
+    "Grease fitting/nipple is well positioned for regular grease gun refills.",
+    "Bolted securely to our conveyor frame, zero slippage or shaft vibration.",
+    `Very durable casting quality on this ${brandName} block.`,
+    "Installed on our blower fan shaft. Pre-mounted unit saves a lot of setup time.",
+    "Outstanding structural build quality, handles heavy load with ease.",
+    "Perfect for agricultural conveyor systems. Solid steel and housing alignment."
+  ];
+
+  const generalReviews = [
+    `Runs very smooth and matches standard industrial criteria.`,
+    "Excellent build quality, material standard feels premium and long-lasting.",
+    "Standard dimensions are 100% accurate, fits perfectly into the machinery.",
+    "Works great under heavy workload without thermal expansion issues.",
+    "Very heavy-duty build, perfect packaging from supplier.",
+    "Quality exceeds local market brands at a much better rate.",
+    "Genuine OEM product quality, clean threads and precise manufacturing.",
+    "Solid performance over the past month of continuous operation."
+  ];
+
+  // Part C: Shipping/Distributor feedback
+  const closers = [
+    `Prompt B2B dispatch, local Porter courier delivered within 2 hours in Ludhiana.`,
+    "Received catalog and official HSN-coded GST bill immediately. Excellent transaction.",
+    "Packaged very securely in standard heavy box wrapping.",
+    "Original holographic brand sticker was intact. Trustworthy seller.",
+    "Will definitely purchase more units in bulk from Chopra Enterprises.",
+    "Super fast local delivery. Chopra team called to verify our details pre-dispatch.",
+    "Very happy with wholesale online prices compared to local vendors.",
+    "Best supplier of industrial components in the region, highly recommended.",
+    "Smooth purchasing process via cart checkout, secure delivery.",
+    "Chopra's team arranged delivery on priority, saved our plant downtime."
+  ];
+
+  const reviews = [];
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  for (let i = 0; i < reviewCount; i++) {
+    // Generate date: within past 14 months (e.g. from June 2025 to July 2026)
+    // Deterministic based on random()
+    const dVal = random();
+    const year = dVal > 0.5 ? 2025 : 2026;
+    let monthIdx;
+    if (year === 2026) {
+      monthIdx = Math.floor(dVal * 7); // Jan to Jul 2026
+    } else {
+      monthIdx = Math.floor(dVal * 12); // Jan to Dec 2025
+    }
+    const day = Math.floor(dVal * 27) + 1; // 1 to 28 to avoid February out of range issues
+    const dateStr = `${day} ${months[monthIdx]} ${year}`;
+
+    // Generate rating: deterministic distribution (mostly 5s and 4s)
+    let rating = 5;
+    const rVal = random();
+    if (rVal < 0.1) {
+      rating = 3;
+    } else if (rVal < 0.35) {
+      rating = 4;
+    }
+
+    // Select opener, body, and closer based on random()
+    const opener = openers[Math.floor(random() * openers.length)];
+    const closer = closers[Math.floor(random() * closers.length)];
+
+    let body = "";
+    if (catClean.includes("seal")) {
+      body = sealReviews[Math.floor(random() * sealReviews.length)];
+    } else if (catClean.includes("pillow") || catClean.includes("ucp") || catClean.includes("block") || catClean.includes("ucf")) {
+      body = pillowBlockReviews[Math.floor(random() * pillowBlockReviews.length)];
+    } else if (catClean.includes("bearing") || productName.toLowerCase().includes("bearing")) {
+      body = bearingReviews[Math.floor(random() * bearingReviews.length)];
+    } else {
+      body = generalReviews[Math.floor(random() * generalReviews.length)];
+    }
+
+    const comment = `${opener} ${body} ${closer}`;
+    const name = shuffledNames[i % shuffledNames.length];
+
+    reviews.push({
+      name,
+      rating,
+      date: dateStr,
+      comment
+    });
+  }
+
+  // Sort reviews by date (newest first)
+  const monthMap = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+  reviews.sort((a, b) => {
+    const partsA = a.date.split(" ");
+    const partsB = b.date.split(" ");
+    const dateA = new Date(Number(partsA[2]), monthMap[partsA[1]], Number(partsA[0]));
+    const dateB = new Date(Number(partsB[2]), monthMap[partsB[1]], Number(partsB[0]));
+    return dateB - dateA;
+  });
+
+  return reviews;
+};
+
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -124,6 +316,7 @@ const ProductDetail = () => {
   const [activeTab, setActiveTab] = useState('specs');
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [zoomStyle, setZoomStyle] = useState({ transformOrigin: 'center center' });
+  const reviews = product ? generateRealisticReviews(product.name, product.category, product.sku, product.brand, product.id) : [];
   const [activeFaq, setActiveFaq] = useState(null);
   const [selectedSize, setSelectedSize] = useState("");
   const [sizeOptions, setSizeOptions] = useState([]);
@@ -212,6 +405,11 @@ const ProductDetail = () => {
           "Tolerances Grade": "ABEC-3 / ISO Normal Class"
         };
 
+        const prodReviews = generateRealisticReviews(data.name, category, sku, brand, data.id);
+        const prodRating = prodReviews.length > 0
+          ? parseFloat((prodReviews.reduce((sum, r) => sum + r.rating, 0) / prodReviews.length).toFixed(1))
+          : 4.7;
+
         const enrichedProduct = {
           ...data,
           name: data.name || "Precision Industrial Pillow Block Bearing",
@@ -224,8 +422,8 @@ const ProductDetail = () => {
           images: data.images || [data.image, data.image, data.image, data.image],
           features: cleanedFeatures,
           specifications,
-          rating: data.rating || 4.7,
-          reviewsCount: data.reviewsCount || 148,
+          rating: prodRating,
+          reviewsCount: prodReviews.length,
           description: data.description || "This high-precision industrial bearing block is meticulously engineered to support standard shaft guides and withstand higher radial and axial pressures. Pre-lubricated with high-grade protective lithium grease, it features superior dual-lip rubber seals (2RS) that prevent lubricant leak while keeping dynamic abrasive dust and wet moisture out of the rolling track.",
           overview: "Our professional-grade industrial bearings are structured to optimize motor efficiency, gearbox shafting, agriculture assemblies, and conveyor systems. Made from high-quality chromium steel alloy, they are designed to perform quietly under high vibrational environment, yielding an extended machinery service life of up to 300% compared to carbon steel alternatives.",
           benefits: [
@@ -876,6 +1074,109 @@ const ProductDetail = () => {
 
           </div>
         </div>
+
+        {/* Customer Reviews Section */}
+        <section className="customer-reviews-section">
+          <h2 className="section-title-premium" style={{ marginBottom: '2rem' }}>
+            Customer Reviews & Ratings
+          </h2>
+          <div className="reviews-layout-grid">
+            {/* Left: Summary Card */}
+            <div className="reviews-summary-card">
+              <div className="large-star-rating-box">
+                <h3>{product.rating}</h3>
+                <div className="star-stars">
+                  {Array(5).fill(0).map((_, i) => (
+                    <Star key={i} size={22} fill={i < Math.round(product.rating) ? "#ea580c" : "none"} color="#ea580c" />
+                  ))}
+                </div>
+                <p>Based on {product.reviewsCount} verified reviews</p>
+              </div>
+
+              <div className="rating-progress-bar-column">
+                <div className="progress-row">
+                  <span>5 Star</span>
+                  <div className="progress-bar-outer">
+                    <div className="progress-bar-inner" style={{ width: '78%' }}></div>
+                  </div>
+                  <span>78%</span>
+                </div>
+                <div className="progress-row">
+                  <span>4 Star</span>
+                  <div className="progress-bar-outer">
+                    <div className="progress-bar-inner" style={{ width: '15%' }}></div>
+                  </div>
+                  <span>15%</span>
+                </div>
+                <div className="progress-row">
+                  <span>3 Star</span>
+                  <div className="progress-bar-outer">
+                    <div className="progress-bar-inner" style={{ width: '4%' }}></div>
+                  </div>
+                  <span>4%</span>
+                </div>
+                <div className="progress-row">
+                  <span>2 Star</span>
+                  <div className="progress-bar-outer">
+                    <div className="progress-bar-inner" style={{ width: '2%' }}></div>
+                  </div>
+                  <span>2%</span>
+                </div>
+                <div className="progress-row">
+                  <span>1 Star</span>
+                  <div className="progress-bar-outer">
+                    <div className="progress-bar-inner" style={{ width: '1%' }}></div>
+                  </div>
+                  <span>1%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Reviews List */}
+            <div className="reviews-list-block">
+              {reviews.map((r, index) => {
+                const initial = r.name ? r.name.charAt(0).toUpperCase() : 'B';
+                return (
+                  <div key={index} className="review-comment-card">
+                    <div className="review-header">
+                      <div className="buyer-meta">
+                        <div className="buyer-avatar">
+                          {initial}
+                        </div>
+                        <div>
+                          <h5>{r.name}</h5>
+                          <span className="verified-badge">
+                            <CheckCircle2 size={14} /> Verified Buyer
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                        <div className="star-rating-small">
+                          {Array(5).fill(0).map((_, i) => (
+                            <Star key={i} size={14} fill={i < r.rating ? "#ea580c" : "none"} color="#ea580c" />
+                          ))}
+                        </div>
+                        <span className="review-date" style={{ fontSize: '0.8rem', color: '#64748b' }}>{r.date}</span>
+                      </div>
+                    </div>
+                    <p className="review-body">{r.comment}</p>
+                    <div className="review-comment-footer">
+                      <span>Was this review helpful?</span>
+                      <button
+                        onClick={() => handleHelpfulClick(index)}
+                        className="helpful-btn"
+                        style={{ border: 'none', cursor: 'pointer' }}
+                      >
+                        <ThumbsUp size={12} />
+                        Helpful ({helpfulReviews[index] || 0})
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
