@@ -55,6 +55,7 @@ const Checkout = () => {
     deliveryInstructions: ''
   });
 
+  const isSunday = new Date().getDay() === 0;
   const [deliveryMethod, setDeliveryMethod] = useState('STANDARD');
   const [porterDetails, setPorterDetails] = useState({
     fullAddress: '',
@@ -85,7 +86,7 @@ const Checkout = () => {
       deliveryInstructions: addr.deliveryInstructions || ''
     });
     setSelectedAddressId(addr.id);
-    if (addr.city?.trim().toLowerCase() !== 'ludhiana') {
+    if (addr.city?.trim().toLowerCase() !== 'ludhiana' || isSunday) {
       setDeliveryMethod('STANDARD');
     }
   };
@@ -286,7 +287,7 @@ const Checkout = () => {
       setAddressData(prev => ({ ...prev, state: value, city: '' }));
     } else {
       setAddressData(prev => ({ ...prev, [name]: value }));
-      if (name === 'city' && value?.trim().toLowerCase() !== 'ludhiana') {
+      if (name === 'city' && (value?.trim().toLowerCase() !== 'ludhiana' || isSunday)) {
         setDeliveryMethod('STANDARD');
       }
     }
@@ -563,8 +564,10 @@ const Checkout = () => {
                           </div>
 
                           <div 
-                            className={`courier-option-card ${deliveryMethod === 'PORTER' ? 'selected' : ''}`}
+                            className={`courier-option-card ${deliveryMethod === 'PORTER' ? 'selected' : ''} ${isSunday ? 'disabled-card' : ''}`}
+                            style={isSunday ? { opacity: 0.6, cursor: 'not-allowed', background: '#f8fafc' } : {}}
                             onClick={() => {
+                              if (isSunday) return;
                               setDeliveryMethod('PORTER');
                               setShippingData({
                                 charge: 0,
@@ -589,8 +592,17 @@ const Checkout = () => {
                             <div className="courier-card-header">
                               <div className={`custom-radio-dot ${deliveryMethod === 'PORTER' ? 'active' : ''}`}></div>
                               <span className="courier-name">Fast Local Delivery — Porter</span>
+                              {isSunday && (
+                                <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#dc2626', background: '#fee2e2', padding: '2px 8px', borderRadius: '4px', marginLeft: 'auto' }}>
+                                  Closed on Sundays
+                                </span>
+                              )}
                             </div>
-                            <p className="courier-desc">Recommended for urgent orders within Ludhiana. Your order will be delivered through Porter, subject to availability.</p>
+                            <p className="courier-desc">
+                              {isSunday 
+                                ? "Porter local delivery is unavailable on Sundays. Standard delivery is active." 
+                                : "Recommended for urgent orders within Ludhiana. Your order will be delivered through Porter, subject to availability."}
+                            </p>
                           </div>
                         </div>
                       </div>
