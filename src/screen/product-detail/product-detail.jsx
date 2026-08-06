@@ -319,6 +319,7 @@ const ProductDetail = () => {
   const reviews = product ? generateRealisticReviews(product.name, product.category, product.sku, product.brand, product.id) : [];
   const [activeFaq, setActiveFaq] = useState(null);
   const [selectedSize, setSelectedSize] = useState("");
+  const [selectedVoltage, setSelectedVoltage] = useState("24V");
   const [sizeOptions, setSizeOptions] = useState([]);
 
   // Modal / Interactive States
@@ -351,6 +352,7 @@ const ProductDetail = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       if (!product) setLoading(true);
+      setSelectedVoltage("24V");
       try {
         let dataPromise = fetch(apiUrl(`/api/products/${id}`)).then(res => {
           if (!res.ok) throw new Error('Product not found');
@@ -544,13 +546,19 @@ const ProductDetail = () => {
       }, 600);
       return;
     }
+    const isSolenoidProduct = (product.name || "").toLowerCase().includes("solenoid") || 
+                              (product.category || "").toLowerCase().includes("valve");
+    const finalSize = isSolenoidProduct
+      ? (selectedSize ? `${selectedSize} | Voltage: ${selectedVoltage}` : `Voltage: ${selectedVoltage}`)
+      : selectedSize;
+
     dispatch(addItem({
       id: product.id,
       name: product.name,
       price: product.price || 0,
       image: product.image,
       quantity: quantity,
-      size: selectedSize,
+      size: finalSize,
       replace: true
     }));
     showToast(`${quantity} item(s) added to cart!`, 'success');
@@ -897,6 +905,51 @@ const ProductDetail = () => {
                           className={`series-size-pill ${isCurrent ? 'active' : ''}`}
                         >
                           {displayCode}{boreLabel}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Voltage Selector */}
+              {product && (
+                (product.name || "").toLowerCase().includes("solenoid") || 
+                (product.category || "").toLowerCase().includes("valve")
+              ) && (
+                <div className="voltage-selector-container" style={{ marginBottom: '1.5rem', marginTop: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Select Voltage:
+                    </span>
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '8px'
+                  }}>
+                    {['12V', '24V', '120V', '240V'].map((v) => {
+                      const isSelected = selectedVoltage === v;
+                      return (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setSelectedVoltage(v)}
+                          className={`size-option-pill ${isSelected ? 'active' : ''}`}
+                          style={{
+                            padding: '10px 16px',
+                            borderRadius: '8px',
+                            border: isSelected ? '1px solid #ea580c' : '1px solid #cbd5e1',
+                            background: isSelected ? 'rgba(234, 88, 12, 0.08)' : '#ffffff',
+                            color: isSelected ? '#ea580c' : '#334155',
+                            fontWeight: isSelected ? '700' : '600',
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            boxShadow: isSelected ? '0 2px 8px rgba(234, 88, 12, 0.15)' : '0 1px 3px rgba(0,0,0,0.02)'
+                          }}
+                        >
+                          {v}
                         </button>
                       );
                     })}
