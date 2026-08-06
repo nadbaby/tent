@@ -943,15 +943,6 @@ const Checkout = () => {
                 </div>
               )}
 
-              {shippingData.isFreeShippingApplied && (
-                <div className="free-shipping-applied-alert">
-                  <CheckCircle size={16} /> 
-                  <div className="alert-content">
-                    <strong>FREE SHIPPING!</strong>
-                    <span>{shippingData.freeShippingReason}</span>
-                  </div>
-                </div>
-              )}
 
               {shippingData.apiIntegration && (
                 <div className="api-integration-badge">

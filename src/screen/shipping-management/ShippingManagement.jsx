@@ -137,7 +137,7 @@ const ShippingManagement = () => {
           <Truck size={16} /> Courier Partners
         </button>
         <button className={activeTab === 'rules' ? 'active' : ''} onClick={() => setActiveTab('rules')}>
-          <Settings2 size={16} /> COD & Free Shipping
+          <Settings2 size={16} /> COD Settings
         </button>
         <button className={activeTab === 'slabs' ? 'active' : ''} onClick={() => setActiveTab('slabs')}>
           <Package size={16} /> Weight Slabs
@@ -529,41 +529,7 @@ const ShippingManagement = () => {
               </div>
             </div>
 
-            <div className="config-section">
-              <h3>Free Shipping Eligibility Thresholds</h3>
-              <div className="config-grid">
-                <div className="input-group checkbox-toggle-group">
-                  <label className="checkbox-container">
-                    <input 
-                      type="checkbox" 
-                      checked={config.isFreeShippingEnabled} 
-                      onChange={e => setConfig({...config, isFreeShippingEnabled: e.target.checked})} 
-                    />
-                    <span className="checkmark"></span>
-                    Enable Free Shipping Rules globally
-                  </label>
-                </div>
-                <div className="input-group">
-                  <label>Minimum Order Invoice Value (₹)</label>
-                  <input 
-                    type="number" 
-                    value={config.freeShippingMinOrderValue || 0} 
-                    onChange={e => setConfig({...config, freeShippingMinOrderValue: parseFloat(e.target.value)})}
-                    disabled={!config.isFreeShippingEnabled}
-                  />
-                </div>
-                <div className="input-group full">
-                  <label>Free Shipping Category Whitelists (Comma-separated)</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Bearings, Oil Seals, Accessories"
-                    value={config.freeShippingCategories?.join(', ') || ''} 
-                    onChange={e => setConfig({...config, freeShippingCategories: e.target.value.split(',').map(s => s.trim())})}
-                    disabled={!config.isFreeShippingEnabled}
-                  />
-                </div>
-              </div>
-            </div>
+
 
             <div className="config-section">
               <div className="panel-actions">
@@ -854,11 +820,7 @@ const ShippingManagement = () => {
                 </div>
 
                 <div className="price-breakdown">
-                  {testResult.isFreeShippingApplied && (
-                    <div className="free-shipping-applied-badge">
-                      <CheckCircle size={14} /> FREE SHIPPING ELIGIBLE: {testResult.freeShippingReason}
-                    </div>
-                  )}
+
 
                   <div className="p-row">
                     <span>Base Freight</span>

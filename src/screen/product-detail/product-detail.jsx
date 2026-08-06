@@ -632,8 +632,8 @@ const ProductDetail = () => {
       {/* Top Banner */}
       <div className="promo-top-banner">
         <div className="banner-content">
-          <Truck size={16} />
-          <span>FREE SHIPPING on all industrial orders above ₹999! Use coupon <strong>MEFIRST</strong> for Flat ₹500 OFF.</span>
+          <Award size={16} />
+          <span>Use coupon <strong>MEFIRST</strong> for Flat ₹500 OFF on your first order!</span>
         </div>
       </div>
 
