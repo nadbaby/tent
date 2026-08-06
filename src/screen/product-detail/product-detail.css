@@ -133,8 +133,10 @@
   background-color: var(--color-primary-orange) !important;
 }
 
-.main-image-zoom:hover {
-  transform: scale(2.2);
+@media (hover: hover) {
+  .main-image-zoom:hover {
+    transform: scale(2.2);
+  }
 }
 
 /* Rotation panel */
@@ -1747,6 +1749,27 @@
 }
 
 @media (max-width: 1024px) {
+  .product-gallery {
+    display: contents;
+  }
+
+  .image-card-container {
+    order: 1;
+  }
+
+  .thumbnail-list {
+    order: 2;
+    margin-top: -1.25rem;
+  }
+
+  .product-info-section {
+    order: 3;
+  }
+
+  .gallery-info-addons {
+    order: 4;
+  }
+
   .product-main-content {
     grid-template-columns: 1fr;
     gap: 2.5rem;
