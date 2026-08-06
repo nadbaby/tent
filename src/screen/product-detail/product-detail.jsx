@@ -48,16 +48,6 @@ const findSeriesProducts = (currentProduct, allData) => {
       ? allData.filter(p => p.category === currentCat && p.subcategory === currentSubcat)
       : allData.filter(p => p.category === currentCat);
 
-    // Group Heavy Duty U Ring Rod seals: A152, A154, A157 together, A202 separate
-    if (currentSubcat === "Heavy Duty U Ring Rod") {
-      const isCurrentA202 = (currentProduct.sku || "").toUpperCase().includes("A202");
-      if (isCurrentA202) {
-        baseGroup = baseGroup.filter(p => (p.sku || "").toUpperCase().includes("A202"));
-      } else {
-        baseGroup = baseGroup.filter(p => !(p.sku || "").toUpperCase().includes("A202"));
-      }
-    }
-
     // Group items strictly by their alphabetic prefix (e.g., LMK, LMF, LM, SK)
     const getAlphabeticPrefix = (name) => {
       if (!name) return "";
