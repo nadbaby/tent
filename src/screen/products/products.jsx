@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { apiUrl } from '../../utils/api';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import ProductCard, { resolveImageUrl } from '../../components/home/ProductCard';
-import { Filter, ChevronDown, Search, Grid, List, SlidersHorizontal, Plus, X, Save, Download, Upload, Camera, Loader2, Database, FileSpreadsheet } from 'lucide-react';
+import { Filter, ChevronDown, Search, Grid, List, SlidersHorizontal, Plus, X, Save, Download, Upload, Camera, Loader2, Database, FileSpreadsheet, ArrowLeft, ChevronRight } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addItem } from '../../redux/cartSlice';
 import { useToast } from '../../context/ToastContext';
@@ -38,6 +38,10 @@ const Products = () => {
   // Drawer States
   const [selectedDrawerProduct, setSelectedDrawerProduct] = useState(null);
   const [drawerQuantity, setDrawerQuantity] = useState(1);
+
+  // Category Drawer States
+  const [isCategoryDrawerOpen, setIsCategoryDrawerOpen] = useState(false);
+  const [drawerStep, setDrawerStep] = useState('category'); // 'category' or 'subcategory'
 
   // Get all variants of the product (same subcategory, or same name prefix/base)
   const getProductVariants = (currentProduct) => {
@@ -1183,29 +1187,22 @@ const Products = () => {
               </div>
             </div>
             <div className="filter-group">
-              <h3 className="filter-title">Categories</h3>
-              <div className="category-list">
-                {categories.map(cat => (
-                  <label key={cat} className="category-item">
-                    <input type="radio" name="category" checked={selectedCategory === cat} onChange={() => { setSelectedCategory(cat); setSelectedSubcategory('All'); }} />
-                    <span>{cat}</span>
-                  </label>
-                ))}
-              </div>
+              <h3 className="filter-title">Category</h3>
+              <button 
+                type="button" 
+                className="category-trigger-btn"
+                onClick={() => {
+                  setDrawerStep('category');
+                  setIsCategoryDrawerOpen(true);
+                }}
+              >
+                <span className="category-trigger-text">
+                  {selectedCategory === 'All' ? 'All Categories' : selectedCategory}
+                  {selectedCategory !== 'All' && selectedSubcategory !== 'All' && ` > ${selectedSubcategory}`}
+                </span>
+                <ChevronDown size={16} />
+              </button>
             </div>
-            {subcategories.length > 1 && (
-              <div className="filter-group">
-                <h3 className="filter-title">Subcategories</h3>
-                <div className="category-list">
-                  {subcategories.map(sub => (
-                    <label key={sub} className="category-item">
-                      <input type="radio" name="subcategory" checked={selectedSubcategory === sub} onChange={() => setSelectedSubcategory(sub)} />
-                      <span>{sub}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
             <div className="filter-group">
               <h3 className="filter-title">Brands</h3>
               <div className="category-list">
@@ -1223,6 +1220,17 @@ const Products = () => {
             <div className="toolbar">
               <div className="results-count">Showing <span>{filteredProducts.length}</span> products</div>
               <div className="toolbar-actions">
+                <button 
+                  type="button" 
+                  className="toolbar-filter-btn"
+                  onClick={() => {
+                    setDrawerStep('category');
+                    setIsCategoryDrawerOpen(true);
+                  }}
+                >
+                  <Filter size={16} />
+                  <span>Category</span>
+                </button>
                 <div className="sort-wrapper">
                   <SlidersHorizontal size={16} />
                   <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
@@ -1958,6 +1966,84 @@ const Products = () => {
                 </Link>
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Selection Drawer */}
+      {isCategoryDrawerOpen && (
+        <div className="category-drawer-overlay" onClick={() => {
+          setIsCategoryDrawerOpen(false);
+          setDrawerStep('category');
+        }}>
+          <div className="category-drawer-content" onClick={e => e.stopPropagation()}>
+            <div className="drawer-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {drawerStep === 'subcategory' && (
+                  <button 
+                    type="button" 
+                    className="drawer-back-btn"
+                    onClick={() => setDrawerStep('category')}
+                  >
+                    <ArrowLeft size={20} />
+                  </button>
+                )}
+                <h3>{drawerStep === 'category' ? 'Select Category' : 'Select Subcategory'}</h3>
+              </div>
+              <button 
+                type="button" 
+                className="close-modal" 
+                onClick={() => {
+                  setIsCategoryDrawerOpen(false);
+                  setDrawerStep('category');
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="drawer-body">
+              {drawerStep === 'category' ? (
+                <div className="drawer-category-list">
+                  {categories.map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      className={`drawer-category-item ${selectedCategory === cat ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedCategory(cat);
+                        setSelectedSubcategory('All');
+                        if (cat === 'All') {
+                          setIsCategoryDrawerOpen(false);
+                        } else {
+                          setDrawerStep('subcategory');
+                        }
+                      }}
+                    >
+                      <span>{cat}</span>
+                      {cat !== 'All' && <ChevronRight size={16} />}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="drawer-category-list">
+                  {subcategories.map(sub => (
+                    <button
+                      key={sub}
+                      type="button"
+                      className={`drawer-category-item ${selectedSubcategory === sub ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedSubcategory(sub);
+                        setIsCategoryDrawerOpen(false);
+                        setDrawerStep('category');
+                      }}
+                    >
+                      <span>{sub}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
