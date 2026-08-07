@@ -42,6 +42,7 @@ const Products = () => {
   // Category Drawer States
   const [isCategoryDrawerOpen, setIsCategoryDrawerOpen] = useState(false);
   const [drawerStep, setDrawerStep] = useState('category'); // 'category' or 'subcategory'
+  const hasAutoOpenedRef = useRef(null);
 
   // Get all variants of the product (same subcategory, or same name prefix/base)
   const getProductVariants = (currentProduct) => {
@@ -927,6 +928,15 @@ const Products = () => {
     if (brandParam) setSelectedBrand(brandParam);
   }, [searchParam, categoryParam, subcategoryParam, brandParam, products]);
 
+  // Auto-open drawer to select subcategory if category is pre-selected from URL parameter
+  useEffect(() => {
+    if (categoryParam && categoryParam !== 'All' && hasAutoOpenedRef.current !== categoryParam) {
+      setDrawerStep('subcategory');
+      setIsCategoryDrawerOpen(true);
+      hasAutoOpenedRef.current = categoryParam;
+    }
+  }, [categoryParam]);
+
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
     return () => clearTimeout(timer);
@@ -1192,7 +1202,11 @@ const Products = () => {
                 type="button" 
                 className="category-trigger-btn"
                 onClick={() => {
-                  setDrawerStep('category');
+                  if (selectedCategory && selectedCategory !== 'All') {
+                    setDrawerStep('subcategory');
+                  } else {
+                    setDrawerStep('category');
+                  }
                   setIsCategoryDrawerOpen(true);
                 }}
               >
@@ -1224,7 +1238,11 @@ const Products = () => {
                   type="button" 
                   className="toolbar-filter-btn"
                   onClick={() => {
-                    setDrawerStep('category');
+                    if (selectedCategory && selectedCategory !== 'All') {
+                      setDrawerStep('subcategory');
+                    } else {
+                      setDrawerStep('category');
+                    }
                     setIsCategoryDrawerOpen(true);
                   }}
                 >
