@@ -137,7 +137,7 @@ const About = () => {
             className="hero-text-content"
           >
             <div className="badge-glow-container">
-              <span className="section-badge hero-badge">Since 2001</span>
+              <span className="section-badge hero-badge">Since 1999</span>
             </div>
 
             <h1>
@@ -274,7 +274,7 @@ const About = () => {
           whileInView="whileInView"
           viewport={{ once: true, margin: "-100px" }}
         >
-          <span className="section-subtitle">Since 2001</span>
+          <span className="section-subtitle">Since 1999</span>
           <h2>Who We Are</h2>
           <p>
             Fine Bearing & Oil Seal Store is built on an unwavering commitment to trust,
