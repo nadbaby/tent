@@ -1,0 +1,227 @@
+.category-section-new {
+  padding: 40px 0 80px 0;
+  background-color: #ffffff;
+  /* Clean white */
+  color: #0f172a;
+  position: relative;
+  overflow: hidden;
+}
+
+.cat-header-new {
+  margin-bottom: 40px;
+  position: relative;
+  z-index: 2;
+}
+
+.massive-title {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #0f172a 0%, #475569 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle-new {
+  font-size: 1.1rem;
+  color: #64748b;
+  max-width: 600px;
+}
+
+.cat-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 250px;
+  gap: 20px;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+.bento-card {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.3, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.bento-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.bento-item-1 {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.bento-item-2,
+.bento-item-3,
+.bento-item-4,
+.bento-item-5,
+.bento-item-6 {
+  grid-column: span 1;
+  grid-row: span 1;
+}
+
+.cat-bg-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.cat-bg-img {
+  width: 100%;
+  height: 100%;
+  opacity: 0.9;
+}
+
+.cat-bg-img .actual-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover !important;
+  transition: transform 0.8s cubic-bezier(0.25, 1, 0.3, 1);
+}
+
+.bento-card:hover .cat-bg-img .actual-image {
+  transform: scale(1.03);
+}
+
+.bento-card:hover .cat-bg-img {
+  opacity: 1;
+}
+
+.cat-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.12);
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.5);
+  transition: all 0.7s ease;
+}
+
+.bento-card:hover .cat-overlay {
+  background: rgba(0, 0, 0, 0.18);
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.6);
+}
+
+.cat-content {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 20;
+}
+
+.bento-item-1 .cat-content {
+  padding: 40px;
+}
+
+.cat-info {
+  align-self: flex-start;
+}
+
+.cat-info h3 {
+  font-size: 1.8rem;
+  font-weight: 900;
+  margin: 0;
+  color: #ffffff;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+  letter-spacing: -0.02em;
+}
+
+.bento-item-1 .cat-info h3 {
+  font-size: 2.6rem;
+}
+
+.cat-explore-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 32px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.cat-explore-btn:hover {
+  background: #ea580c;
+  border-color: #ea580c;
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 15px 35px rgba(234, 88, 12, 0.5);
+  color: #ffffff;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.cat-explore-btn svg {
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.3, 1);
+}
+
+.cat-explore-btn:hover svg {
+  transform: translateX(6px);
+}
+
+@media (max-width: 1024px) {
+  .category-section-new {
+    padding: 30px 0 60px 0;
+  }
+
+  .cat-bento-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 260px;
+  }
+
+  .bento-item-1 {
+    grid-column: span 2;
+    grid-row: span 1;
+  }
+
+  .bento-item-6 {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .category-section-new {
+    padding: 20px 0 40px 0;
+  }
+
+  .cat-bento-grid {
+    grid-template-columns: 1fr;
+    grid-auto-rows: 280px;
+  }
+
+  .bento-item-1,
+  .bento-item-6 {
+    grid-column: span 1;
+    grid-row: span 1;
+  }
+
+  .bento-item-1 .cat-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 24px;
+  }
+}

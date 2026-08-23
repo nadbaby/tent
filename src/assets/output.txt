@@ -1,0 +1,6 @@
+wwwe23.png corner pixel: (2, 6, 9)
+wwwe23.png center pixel: (40, 54, 63)
+wwwe24.png corner pixel: (239, 181, 144)
+wwwe24.png center pixel: (47, 48, 50)
+wwwe25.png corner pixel: (233, 233, 231)
+wwwe25.png center pixel: (173, 174, 168)

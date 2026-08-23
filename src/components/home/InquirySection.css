@@ -1,0 +1,113 @@
+.clean-inquiry-section {
+  padding: 60px 0 80px;
+  background-color: #f8fafc;
+}
+
+.clean-inquiry-box {
+  max-width: 800px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 40px 50px;
+  box-shadow: 0 15px 50px rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.clean-inquiry-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.clean-inquiry-header h2 {
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+
+.clean-inquiry-header p {
+  font-size: 1.05rem;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.clean-inquiry-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row-clean {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.clean-inquiry-form input,
+.clean-inquiry-form textarea {
+  width: 100%;
+  background: #f1f5f9;
+  border: 1px solid transparent;
+  padding: 16px 20px;
+  border-radius: 12px;
+  font-size: 1rem;
+  color: #0f172a;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.clean-inquiry-form input::placeholder,
+.clean-inquiry-form textarea::placeholder {
+  color: #94a3b8;
+}
+
+.clean-inquiry-form input:focus,
+.clean-inquiry-form textarea:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: #ea580c;
+  box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.1);
+}
+
+.clean-inquiry-submit {
+  width: 100%;
+  padding: 18px;
+  margin-top: 16px;
+  border-radius: 16px;
+  background-color: #ea580c;
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 20px rgba(234, 88, 12, 0.25);
+}
+
+.clean-inquiry-submit:hover {
+  background-color: #c2410c;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(234, 88, 12, 0.35);
+}
+
+.clean-inquiry-submit svg {
+  transition: transform 0.3s ease;
+}
+
+.clean-inquiry-submit:hover svg {
+  transform: translateX(4px);
+}
+
+@media (max-width: 768px) {
+  .clean-inquiry-box {
+    padding: 40px 30px;
+  }
+  .form-row-clean {
+    grid-template-columns: 1fr;
+  }
+}

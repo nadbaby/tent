@@ -1,0 +1,38 @@
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { FileText } from 'lucide-react';
+import './QuoteFloat.css';
+
+const QuoteFloat = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Hide on pages where it might interfere or is redundant/unnecessary
+  const hiddenPaths = ['/order-success', '/order-failure', '/quote', '/login', '/checkout', '/verify-email'];
+  const isHidden = hiddenPaths.includes(location.pathname) ||
+    location.pathname.startsWith('/product/') ||
+    location.pathname.startsWith('/admin') ||
+    location.pathname.startsWith('/employee-panel');
+
+  if (isHidden) return null;
+
+  return (
+    <button
+      className="quote-float"
+      onClick={() => {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          navigate('/login?redirect=/quote');
+        } else {
+          navigate('/quote');
+        }
+      }}
+      aria-label="Request a Quote"
+    >
+      <div className="quote-tooltip">Request Quote</div>
+      <FileText size={28} />
+    </button>
+  );
+};
+
+export default QuoteFloat;

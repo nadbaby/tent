@@ -1,0 +1,92 @@
+.stats-brutalist-section {
+  padding: 60px 0;
+  background-color: #020617; /* Very deep slate */
+  color: #f8fafc;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stats-brutalist-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 40px 20px;
+}
+
+.stat-brutalist-card {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-left: 20px;
+}
+
+/* Accent Line */
+.stat-brutalist-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 0;
+  width: 4px;
+  background-color: #ea580c;
+  border-radius: 4px;
+}
+
+.stat-giant-value {
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  transition: transform 0.4s ease;
+}
+
+.stat-brutalist-card:hover .stat-giant-value {
+  transform: translateY(-5px);
+  background: linear-gradient(135deg, #ea580c 0%, #ff782b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.stat-brutalist-label {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: #e2e8f0;
+  letter-spacing: -0.01em;
+}
+
+.stat-brutalist-desc {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  line-height: 1.5;
+  max-width: 80%;
+}
+
+@media (max-width: 1024px) {
+  .stats-brutalist-grid {
+    gap: 60px 30px;
+  }
+  .stat-brutalist-desc {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .stats-brutalist-section {
+    padding: 80px 0;
+  }
+  .stats-brutalist-grid {
+    grid-template-columns: 1fr;
+    gap: 60px 0;
+  }
+  .stat-giant-value {
+    font-size: 4.5rem;
+  }
+  .stat-brutalist-label {
+    font-size: 1.35rem;
+  }
+}

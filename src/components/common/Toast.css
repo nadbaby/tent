@@ -1,0 +1,56 @@
+.ios-toast-container {
+  position: fixed;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  z-index: 9999;
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  pointer-events: none;
+}
+
+.ios-toast-container.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.ios-toast {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  padding: 12px 24px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  max-width: 90vw;
+  width: max-content;
+}
+
+.ios-toast-content {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #000000;
+  text-align: center;
+  letter-spacing: -0.01em;
+}
+
+/* Dark mode support if needed */
+@media (prefers-color-scheme: dark) {
+  .ios-toast {
+    background: rgba(30, 30, 30, 0.75);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  .ios-toast-content {
+    color: #ffffff;
+  }
+}
+
+/* Specific Types */
+.ios-toast.error .ios-toast-content {
+  color: #ff3b30; /* iOS Red */
+}
+
+.ios-toast.success .ios-toast-content {
+  color: #34c759; /* iOS Green */
+}

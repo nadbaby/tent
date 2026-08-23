@@ -1,0 +1,17 @@
+1: import React, { useState, useEffect, useRef, useMemo } from 'react';
+130: useEffect(() => {
+294: useEffect(() => {
+512: const fetchProducts = async (overrideParams = {}) => {
+567: useEffect(() => {
+754: fetchProducts(); // Refresh product list
+858: useEffect(() => {
+859: fetchProducts({
+952: fetchProducts();
+1008: fetchProducts();
+1065: fetchProducts();
+1129: fetchProducts();
+1177: useEffect(() => {
+1214: useEffect(() => {
+1263: const filteredProducts = useMemo(() => {
+1296: const displayProducts = useMemo(() => {
+1330: useEffect(() => {

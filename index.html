@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/webp" href="/fine-logo.webp" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fine Bearing & Oil Seal Store</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Fine Bearing" />
+
+  <!-- AI and Search Engine Optimization Metadata -->
+  <meta name="description"
+    content="Fine Bearing & Oil Seal Online Store is India's premium B2B industrial procurement hub specializing in authentic ball bearings, oil seals, motors, V-belts, and hydraulic equipment from top global brands like SKF, FAG, Schaeffler, NSK, and NTN." />
+  <meta name="keywords"
+    content="bearings, oil seals, ball bearings, skf, fag, schaeffler, nsk, ntn, industrial procurement, B2B mechanical parts, hydraulic yuken, loctite, ludhiana" />
+
+  <!-- OpenGraph Metadata for AI and Chatbot previews -->
+  <meta property="og:title" content="Fine Bearing & Oil Seal Store - Authentic Industrial Procurement" />
+  <meta property="og:description"
+    content="Browse and order authentic ball bearings, mechanical seals, electric motors, and lubricants online. Featuring real-time SKU search and transparent shipping." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://finebearingonline.com" />
+  <meta property="og:image" content="https://finebearingonline.com/fine-logo.webp" />
+  <meta property="og:site_name" content="Fine Bearing Online" />
+
+  <!-- JSON-LD Structured Schema for search crawlers, Gemini, GPT, Perplexity, Claude -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Store",
+    "@id": "https://finebearingonline.com/#store",
+    "name": "Fine Bearing & Oil Seal Store",
+    "url": "https://finebearingonline.com",
+    "logo": "https://finebearingonline.com/fine-logo.webp",
+    "description": "Leading B2B industrial procurement platform for ball bearings, oil seals, power transmission, and hydraulic systems.",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Ludhiana",
+      "addressRegion": "Punjab",
+      "addressCountry": "IN"
+    },
+    "sameAs": [
+      "https://github.com/nadbaby/weekend"
+    ],
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://finebearingonline.com/products?search={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+  <!-- <script src="https://www.noupe.com/embed/019e2675d4667f338cf87ce654c1decc2f11.js"></script> -->
+</head>
+
+<body>
+
+
+  <div id="root">
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        background-color: #f8fafc;
+        font-family: 'Inter', sans-serif;
+      }
+
+      .skeleton-loader-container {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        align-items: center;
+        justify-content: flex-start;
+      }
+
+      .skeleton-nav {
+        width: 100%;
+        height: 80px;
+        background: #ffffff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 24px;
+      }
+
+      .skeleton-hero-wrapper {
+        width: 100%;
+        max-width: 1280px;
+        padding: 0 16px;
+        box-sizing: border-box;
+      }
+
+      .skeleton-hero {
+        width: 100%;
+        aspect-ratio: 5 / 1;
+        background: #e2e8f0;
+        border-radius: 20px;
+        animation: initPulse 1.5s infinite;
+      }
+
+      @keyframes initPulse {
+        0% {
+          opacity: 1;
+        }
+
+        50% {
+          opacity: 0.6;
+        }
+
+        100% {
+          opacity: 1;
+        }
+      }
+
+      @media(max-width: 1024px) {
+        .skeleton-hero-wrapper {
+          margin-top: 16px;
+        }
+
+        .skeleton-hero {
+          border-radius: 16px;
+        }
+      }
+
+      @media(max-width: 768px) {
+        .skeleton-hero {
+          aspect-ratio: 5 / 2;
+          border-radius: 12px;
+          margin-bottom: 20px;
+        }
+      }
+    </style>
+    <div class="skeleton-loader-container">
+      <div class="skeleton-nav"></div>
+      <div class="skeleton-hero-wrapper">
+        <div class="skeleton-hero"></div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>
