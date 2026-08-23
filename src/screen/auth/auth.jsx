@@ -196,8 +196,10 @@ const Auth = () => {
       const data = await parseJsonResponse(res);
       if (res.ok) {
         setIsOtpSent(true);
-        setResendTimer(0); // 0 seconds
-        setSuccessMsg('OTP sent successfully!');
+        setResendTimer(0);
+        let msg = 'OTP sent successfully!';
+        if (data.devOtp) msg += ` (Dev mode — OTP: ${data.devOtp})`;
+        setSuccessMsg(msg);
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
       }
@@ -218,7 +220,7 @@ const Auth = () => {
       const res = await fetch(apiUrl('/api/auth/verify-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, otp }),
+        body: JSON.stringify({ phone: String(phone).trim(), otp: String(otp).trim() }),
       });
       const data = await parseJsonResponse(res);
       if (res.ok) {
@@ -276,8 +278,10 @@ const Auth = () => {
       const data = await parseJsonResponse(res);
       if (res.ok) {
         setIsOtpSent(true);
-        setResendTimer(0); // 0 seconds
-        setSuccessMsg('OTP sent successfully!');
+        setResendTimer(0);
+        let msg = 'OTP sent successfully!';
+        if (data.devOtp) msg += ` (Dev mode — OTP: ${data.devOtp})`;
+        setSuccessMsg(msg);
       } else {
         setErrorMsg(data.message || 'Failed to send OTP');
       }
@@ -298,7 +302,7 @@ const Auth = () => {
       const res = await fetch(apiUrl('/api/auth/register-otp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, otp, name, company, gstNumber }),
+        body: JSON.stringify({ phone: String(phone).trim(), otp: String(otp).trim(), name, company, gstNumber }),
       });
       const data = await parseJsonResponse(res);
       if (res.ok) {
