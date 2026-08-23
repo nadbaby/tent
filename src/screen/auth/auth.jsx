@@ -48,6 +48,7 @@ const Auth = () => {
   const [captchaQuestion, setCaptchaQuestion] = useState({ num1: 0, num2: 0 });
   const [captchaAnswer, setCaptchaAnswer] = useState('');
   const [captchaError, setCaptchaError] = useState(false);
+  const [preRegToken, setPreRegToken] = useState(null);
 
   const parseJsonResponse = async (res) => {
     try {
@@ -60,14 +61,18 @@ const Auth = () => {
   };
 
   // ─── Sync User with MongoDB ──────────────────────────────────────────────
-  async function syncUserWithBackend(idToken, extraData = {}) {
+  async function syncUserWithBackend(idToken, extraData = {}, preRegToken = null) {
     try {
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+      };
+      // Include preRegToken if present — backend uses it to verify phone OTP proof
+      if (preRegToken) headers['x-pre-reg-token'] = preRegToken;
+
       const res = await fetch(apiUrl('/api/auth/sync'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
+        headers,
         body: JSON.stringify(extraData)
       });
       const data = await parseJsonResponse(res);
@@ -450,13 +455,13 @@ const Auth = () => {
   };
 
   // Helper to register in Firebase and Sync with backend MongoDB
-  const executeRegistration = async (phoneVal) => {
+  const executeRegistration = async (phoneVal, preRegToken = null) => {
     // 1. Create in Firebase
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     const fbUser = credential.user;
     await updateProfile(fbUser, { displayName: name });
 
-    // 2. Sync with MongoDB
+    // 2. Sync with MongoDB (pass preRegToken so backend can verify phone ownership)
     const idToken = await fbUser.getIdToken();
     const syncedUser = await syncUserWithBackend(idToken, {
       name,
@@ -464,7 +469,7 @@ const Auth = () => {
       phone: phoneVal ? phoneVal.trim() : undefined,
       company: company || '',
       gstNumber: gstNumber || ''
-    });
+    }, preRegToken /* ← passed to x-pre-reg-token header */);
 
     if (!syncedUser || syncedUser.error) {
       throw new Error(syncedUser?.error || "Failed to sync profile with database.");
@@ -559,7 +564,7 @@ const Auth = () => {
     setIsLoading(true);
     setErrorMsg('');
     try {
-      // 1. Verify OTP first using verify-otp-only (works for non-existing signup users)
+      // 1. Verify OTP (non-consuming peek) — backend returns a signed preRegToken
       const res = await fetch(apiUrl('/api/auth/verify-otp-only'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -573,8 +578,11 @@ const Auth = () => {
         return;
       }
 
-      // 2. OTP is valid! Create account and sync
-      const syncedUser = await executeRegistration(phone.trim());
+      // 2. OTP valid — extract the signed preRegToken from the response
+      const preRegToken = data.preRegToken || null;
+
+      // 3. Create account and sync (preRegToken proves phone ownership to the backend)
+      const syncedUser = await executeRegistration(phone.trim(), preRegToken);
 
       let msg = 'Account created successfully! Redirecting...';
       if (syncedUser?.gstNumber) {
