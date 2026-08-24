@@ -774,14 +774,7 @@ const Auth = () => {
                 >
                   Password
                 </button>
-                <button
-                  type="button"
-                  className={`method-btn ${loginMethod === 'link' ? 'active' : ''}`}
-                  onClick={() => { setLoginMethod('link'); setIsOtpSent(false); }}
-                  style={{ flex: 1, padding: '8px', minWidth: '80px', borderRadius: '8px', border: '1px solid #e2e8f0', background: loginMethod === 'link' ? '#1e293b' : 'white', color: loginMethod === 'link' ? 'white' : '#64748b', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}
-                >
-                  Email Link
-                </button>
+
                 <button
                   type="button"
                   className={`method-btn ${loginMethod === 'phone' ? 'active' : ''}`}
@@ -814,36 +807,6 @@ const Auth = () => {
                   <button type="submit" className="btn-submit" disabled={isLoading}>
                     {isLoading ? 'Logging in…' : <><span>Log In</span><ArrowRight size={18} className="btn-icon" /></>}
                   </button>
-                </form>
-              ) : loginMethod === 'link' ? (
-                <form onSubmit={handleEmailLinkSend}>
-                  <div className="form-group">
-                    <label className="form-label">Email Address</label>
-                    <input
-                      type="email"
-                      className="form-input"
-                      placeholder="john@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      disabled={isEmailLinkSent}
-                    />
-                  </div>
-                  {!isEmailLinkSent && renderSpamProtection()}
-                  {isEmailLinkSent ? (
-                    <div className="auth-alert auth-alert-success" style={{ marginBottom: '1.5rem' }}>
-                      Check your email! We sent a secure login link to <strong>{email}</strong>.
-                    </div>
-                  ) : (
-                    <button type="submit" className="btn-submit" disabled={isLoading}>
-                      {isLoading ? 'Sending Link…' : <><span>Send Login Link</span><ArrowRight size={18} className="btn-icon" /></>}
-                    </button>
-                  )}
-                  {isEmailLinkSent && (
-                    <button type="button" onClick={() => setIsEmailLinkSent(false)} className="btn-submit" style={{ background: '#64748b' }}>
-                      Change Email
-                    </button>
-                  )}
                 </form>
               ) : (
                 <form onSubmit={isOtpSent ? handleVerifyOtp : handleSendOtp}>
@@ -924,7 +887,7 @@ const Auth = () => {
                     <input type="email" className="form-input" placeholder="john@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Phone Number (Optional)</label>
+                    <label className="form-label">Phone Number</label>
                     <input type="tel" className="form-input" placeholder="+91XXXXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} />
                   </div>
                   <div className="form-group">
