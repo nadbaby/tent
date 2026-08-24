@@ -58,7 +58,7 @@ export const downloadInvoice = async (order, letterheadUrl = null) => {
             <p style="margin: 0; font-weight: 800; font-size: 16px;">Fine Bearing & Oil Seal Store</p>
             <p style="margin: 3px 0; color: #475569;">Link Rd. Dholewal, Ludhiana</p>
             <p style="margin: 3px 0; color: #475569;">Punjab, India - 141003</p>
-            <p style="margin: 3px 0; color: #475569;">GSTIN: 03ABCDE1234F1Z5</p>
+            <p style="margin: 3px 0; color: #475569;">GSTIN: 03AAIFF3105H1ZZ</p>
           </div>
         </div>
 
