@@ -27,6 +27,8 @@ const AnalyticsDashboard = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [searchTxn, setSearchTxn] = useState('');
+  const [txnStart, setTxnStart] = useState('');
+  const [txnEnd, setTxnEnd] = useState('');
 
   const fetchAnalytics = async () => {
     setLoading(true);
@@ -44,6 +46,8 @@ const AnalyticsDashboard = () => {
       if (searchTxn) {
         queryParams.append('searchTxn', searchTxn);
       }
+      if (txnStart) queryParams.append('txnStart', txnStart);
+      if (txnEnd) queryParams.append('txnEnd', txnEnd);
       const res = await fetch(apiUrl(`/api/admin/analytics?${queryParams}`), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -59,7 +63,7 @@ const AnalyticsDashboard = () => {
 
   useEffect(() => {
     fetchAnalytics();
-  }, [days, startDate, endDate, searchTxn]);
+  }, [days, startDate, endDate, searchTxn, txnStart, txnEnd]);
 
   if (loading) return (
     <div className="analytics-loading-screen">
@@ -255,13 +259,29 @@ const AnalyticsDashboard = () => {
       <div className="chart-container large" style={{ marginTop: '24px' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', gap: '12px' }}>
           <h3 style={{ margin: 0 }}>Recent Transactions</h3>
-          <input
-            type="text"
-            placeholder="Search Order ID or Customer..."
-            value={searchTxn}
-            onChange={(e) => setSearchTxn(e.target.value)}
-            style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', minWidth: '250px', outline: 'none' }}
-          />
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>From:</span>
+            <input
+              type="datetime-local"
+              value={txnStart}
+              onChange={e => setTxnStart(e.target.value)}
+              style={{ padding: '6px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.85rem', outline: 'none' }}
+            />
+            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>To:</span>
+            <input
+              type="datetime-local"
+              value={txnEnd}
+              onChange={e => setTxnEnd(e.target.value)}
+              style={{ padding: '6px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.85rem', outline: 'none' }}
+            />
+            <input
+              type="text"
+              placeholder="Search Order ID or Customer..."
+              value={searchTxn}
+              onChange={(e) => setSearchTxn(e.target.value)}
+              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', minWidth: '220px', outline: 'none', marginLeft: '8px' }}
+            />
+          </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
           {data.recentPayments?.map(txn => {
