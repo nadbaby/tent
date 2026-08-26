@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area
@@ -20,6 +21,7 @@ import './AnalyticsDashboard.css';
 const COLORS = ['#ea580c', '#f97316', '#fb923c', '#fdba74', '#fed7aa'];
 
 const AnalyticsDashboard = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -345,6 +347,16 @@ const AnalyticsDashboard = () => {
           {(!data.recentPayments || data.recentPayments.length === 0) && (
             <div style={{ padding: '20px', color: '#64748b', gridColumn: '1 / -1' }}>No recent payments.</div>
           )}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px' }}>
+          <button
+            onClick={() => navigate('/admin/payments')}
+            style={{ padding: '10px 32px', backgroundColor: '#ea580c', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 6px rgba(234, 88, 12, 0.2)', transition: 'all 0.2s' }}
+            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#c2410c'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#ea580c'; e.currentTarget.style.transform = 'translateY(0)' }}
+          >
+            See More Payments <ArrowUpRight size={18} />
+          </button>
         </div>
       </div>
 
