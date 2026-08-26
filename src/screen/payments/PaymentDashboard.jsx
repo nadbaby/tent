@@ -8,7 +8,7 @@ import { NavLink } from 'react-router-dom';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer
 } from 'recharts';
-import { toast } from 'react-hot-toast';
+
 import { SkeletonStatsGrid, SkeletonTable, Skeleton } from '../../components/common/Skeleton/Skeleton';
 import './payment-dashboard.css';
 
