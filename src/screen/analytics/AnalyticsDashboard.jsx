@@ -27,6 +27,7 @@ const AnalyticsDashboard = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [searchTxn, setSearchTxn] = useState('');
+  const [txnDays, setTxnDays] = useState('-1');
   const [txnStart, setTxnStart] = useState('');
   const [txnEnd, setTxnEnd] = useState('');
 
@@ -46,8 +47,11 @@ const AnalyticsDashboard = () => {
       if (searchTxn) {
         queryParams.append('searchTxn', searchTxn);
       }
-      if (txnStart) queryParams.append('txnStart', txnStart);
-      if (txnEnd) queryParams.append('txnEnd', txnEnd);
+      if (txnDays !== undefined) queryParams.append('txnDays', txnDays);
+      if (txnDays === 'custom') {
+        if (txnStart) queryParams.append('txnStart', txnStart);
+        if (txnEnd) queryParams.append('txnEnd', txnEnd);
+      }
       const res = await fetch(apiUrl(`/api/admin/analytics?${queryParams}`), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -63,7 +67,7 @@ const AnalyticsDashboard = () => {
 
   useEffect(() => {
     fetchAnalytics();
-  }, [days, startDate, endDate, searchTxn, txnStart, txnEnd]);
+  }, [days, startDate, endDate, searchTxn, txnDays, txnStart, txnEnd]);
 
   if (loading) return (
     <div className="analytics-loading-screen">
@@ -260,27 +264,62 @@ const AnalyticsDashboard = () => {
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', gap: '12px' }}>
           <h3 style={{ margin: 0 }}>Recent Transactions</h3>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>From:</span>
-            <input
-              type="datetime-local"
-              value={txnStart}
-              onChange={e => setTxnStart(e.target.value)}
-              style={{ padding: '6px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.85rem', outline: 'none' }}
-            />
-            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>To:</span>
-            <input
-              type="datetime-local"
-              value={txnEnd}
-              onChange={e => setTxnEnd(e.target.value)}
-              style={{ padding: '6px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.85rem', outline: 'none' }}
-            />
+            {txnDays === 'custom' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', padding: '6px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                <span style={{ fontSize: '0.85rem', color: '#64748b' }}>From:</span>
+                <input
+                  type="datetime-local"
+                  value={txnStart}
+                  onChange={e => setTxnStart(e.target.value)}
+                  style={{ border: 'none', background: 'transparent', outline: 'none', color: '#475569', fontSize: '0.85rem' }}
+                />
+                <span style={{ fontSize: '0.85rem', color: '#64748b' }}>To:</span>
+                <input
+                  type="datetime-local"
+                  value={txnEnd}
+                  onChange={e => setTxnEnd(e.target.value)}
+                  style={{ border: 'none', background: 'transparent', outline: 'none', color: '#475569', fontSize: '0.85rem' }}
+                />
+              </div>
+            )}
+            <select
+              value={txnDays}
+              onChange={(e) => setTxnDays(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                backgroundColor: '#fff',
+                fontSize: '0.9rem',
+                color: '#475569',
+                fontWeight: '600',
+                outline: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+              }}
+            >
+              <option value="0">Today</option>
+              <option value="7">Last 7 Days</option>
+              <option value="30">Last 30 Days</option>
+              <option value="90">Last 3 Months</option>
+              <option value="365">Last 1 Year</option>
+              <option value="-1">All Time</option>
+              <option value="custom">Custom Date Range</option>
+            </select>
             <input
               type="text"
               placeholder="Search Order ID or Customer..."
               value={searchTxn}
               onChange={(e) => setSearchTxn(e.target.value)}
-              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', minWidth: '220px', outline: 'none', marginLeft: '8px' }}
+              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', minWidth: '220px', outline: 'none', marginLeft: '4px' }}
             />
+            <button
+              className="btn-refresh"
+              onClick={fetchAnalytics}
+              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            >
+              <RefreshCw size={16} />
+            </button>
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
