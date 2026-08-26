@@ -36,6 +36,7 @@ const TermsOfService = lazy(() => import('./screen/legal/TermsOfService'));
 const VerifyEmail = lazy(() => import('./screen/auth/VerifyEmail'));
 const ShippingManagement = lazy(() => import('./screen/shipping-management/ShippingManagement'));
 const AnalyticsDashboard = lazy(() => import('./screen/analytics/AnalyticsDashboard'));
+const PaymentDashboard = lazy(() => import('./screen/payments/PaymentDashboard'));
 
 import CartSync from './components/common/CartSync';
 import PWAInstallPrompt from './components/common/PWAInstallPrompt';
@@ -138,6 +139,7 @@ const AppLayout = () => {
               <Route path="/admin/tickets" element={<AdminTickets />} />
               <Route path="/admin/shipping" element={<ShippingManagement />} />
               <Route path="/admin/analytics" element={<AnalyticsDashboard />} />
+              <Route path="/admin/payments" element={<PaymentDashboard />} />
               <Route path="/wishlist" element={<WishlistPage />} />
             </Routes>
           </Suspense>
