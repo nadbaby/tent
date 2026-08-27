@@ -233,11 +233,9 @@ const Navbar = () => {
                 <div className="nav-item">
                   <NavLink to="/employee-panel" className={({ isActive }) => `nav-link${isActive ? ' nav-link-active' : ''}`}>Management</NavLink>
                 </div>
-                {currentUser.role?.toLowerCase() === 'admin' && (
-                  <div className="nav-item">
-                    <NavLink to="/admin/analytics" className={({ isActive }) => `nav-link${isActive ? ' nav-link-active' : ''}`}>Analytics</NavLink>
-                  </div>
-                )}
+                <div className="nav-item">
+                  <NavLink to="/admin/analytics" className={({ isActive }) => `nav-link${isActive ? ' nav-link-active' : ''}`}>Analytics</NavLink>
+                </div>
               </>
             )}
           </div>
@@ -507,9 +505,7 @@ const Navbar = () => {
             {currentUser && (['employee', 'manager', 'staff', 'admin'].includes(currentUser.role?.toLowerCase())) && (
               <>
                 <Link to="/employee-panel" onClick={() => setMobileMenuOpen(false)}>Management</Link>
-                {currentUser.role?.toLowerCase() === 'admin' && (
-                  <Link to="/admin/analytics" onClick={() => setMobileMenuOpen(false)}>Business Analytics</Link>
-                )}
+                <Link to="/admin/analytics" onClick={() => setMobileMenuOpen(false)}>Business Analytics</Link>
               </>
             )}
           </div>
