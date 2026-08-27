@@ -68,7 +68,7 @@ const Footer = () => {
       <div className="footer-bottom">
         <div className="container bottom-content">
           <p>&copy; {new Date().getFullYear()} All rights reserved.</p>
-          <p className="made-with-love">Made with ❤️ by DANS</p>
+          <p className="made-with-love">Made with ❤️ by nad.baby</p>
           <div className="legal-links">
             <Link to="/privacy-policy">Privacy Policy</Link>
             <Link to="/terms-of-service">Terms of Service</Link>
