@@ -15,7 +15,8 @@ import {
   ShoppingCart, Heart, Share2, ChevronRight, Star, Plus, Minus,
   CheckCircle2, AlertCircle, Truck, ShieldCheck, RotateCcw, FileText,
   Maximize2, PlayCircle, RotateCw, Download, GitCompare, HelpCircle,
-  Award, ShieldAlert, Lock, ChevronDown, Check, UserCheck, ThumbsUp
+  Award, ShieldAlert, Lock, ChevronDown, Check, UserCheck, ThumbsUp,
+  ZoomIn, ZoomOut, ChevronLeft, X, Move
 } from 'lucide-react';
 
 let globalProductsCache = null;
@@ -289,10 +290,14 @@ const ProductDetail = () => {
   const [sizeOptions, setSizeOptions] = useState([]);
 
   // Modal / Interactive States
-  const [is360Active, setIs360Active] = useState(false);
-  const [rotationAngle, setRotationAngle] = useState(0);
   const [isVideoActive, setIsVideoActive] = useState(false);
   const [isFullscreenActive, setIsFullscreenActive] = useState(false);
+  const [modalZoomScale, setModalZoomScale] = useState(1.0);
+  const [modalPan, setModalPan] = useState({ x: 0, y: 0 });
+  const [modalRotation, setModalRotation] = useState(0);
+  const [isDraggingModal, setIsDraggingModal] = useState(false);
+  const [dragStartModal, setDragStartModal] = useState({ x: 0, y: 0 });
+  const [isHoveringMain, setIsHoveringMain] = useState(false);
   const [showRatingBreakdown, setShowRatingBreakdown] = useState(false);
   const [showAllFeatures, setShowAllFeatures] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
@@ -303,6 +308,10 @@ const ProductDetail = () => {
 
   // Refs
   const specsRef = useRef(null);
+  const panTargetRef = useRef({ x: 0, y: 0 });
+  const panCurrentRef = useRef({ x: 0, y: 0 });
+  const animFrameRef = useRef(null);
+  const isHoveringRef = useRef(false);
 
   // Sync quantity with cart
   useEffect(() => {
@@ -451,17 +460,202 @@ const ProductDetail = () => {
     window.scrollTo(0, 0);
   }, [id]);
 
-  // Gallery zoom mouse effect
-  const handleMouseMove = (e) => {
-    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - left) / width) * 100;
-    const y = ((e.clientY - top) / height) * 100;
-    setZoomStyle({ transformOrigin: `${x}% ${y}%` });
+  // Cleanup LERP pan animation loop on unmount
+  useEffect(() => {
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    };
+  }, []);
+
+  // Gallery LERP physics inertia smooth pan effect
+  const animatePanLoop = () => {
+    if (!isHoveringRef.current) return;
+
+    // Smooth LERP (0.12 factor provides silky inertia physics acceleration/deceleration)
+    panCurrentRef.current.x += (panTargetRef.current.x - panCurrentRef.current.x) * 0.12;
+    panCurrentRef.current.y += (panTargetRef.current.y - panCurrentRef.current.y) * 0.12;
+
+    setZoomStyle({
+      transform: `scale(2.4) translate3d(${panCurrentRef.current.x.toFixed(2)}px, ${panCurrentRef.current.y.toFixed(2)}px, 0)`,
+      transformOrigin: 'center center'
+    });
+
+    animFrameRef.current = requestAnimationFrame(animatePanLoop);
   };
 
-  const handleMouseLeave = () => {
-    setZoomStyle({ transformOrigin: 'center center' });
+  const handleMainMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const scale = 2.4;
+    const panX = ((rect.width / 2) - x) * (scale - 1) / scale;
+    const panY = ((rect.height / 2) - y) * (scale - 1) / scale;
+
+    panTargetRef.current = { x: panX, y: panY };
   };
+
+  const handleMainMouseEnter = (e) => {
+    setIsHoveringMain(true);
+    isHoveringRef.current = true;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const scale = 2.4;
+    const panX = ((rect.width / 2) - x) * (scale - 1) / scale;
+    const panY = ((rect.height / 2) - y) * (scale - 1) / scale;
+
+    panTargetRef.current = { x: panX, y: panY };
+    panCurrentRef.current = { x: panX, y: panY };
+
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    animFrameRef.current = requestAnimationFrame(animatePanLoop);
+  };
+
+  const handleMainMouseLeave = () => {
+    setIsHoveringMain(false);
+    isHoveringRef.current = false;
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+
+    setZoomStyle({
+      transform: 'scale(1) translate3d(0px, 0px, 0)',
+      transformOrigin: 'center center'
+    });
+  };
+
+  // HD Lightbox Professional Zoom Handlers
+  const handleOpenLightbox = (index = selectedImageIndex) => {
+    setSelectedImageIndex(index);
+    setModalZoomScale(1.0);
+    setModalPan({ x: 0, y: 0 });
+    setModalRotation(0);
+    setIsFullscreenActive(true);
+  };
+
+  const handleCloseLightbox = () => {
+    setIsFullscreenActive(false);
+    setModalZoomScale(1.0);
+    setModalPan({ x: 0, y: 0 });
+    setModalRotation(0);
+    setIsDraggingModal(false);
+  };
+
+  const handleModalZoomIn = (e) => {
+    if (e) e.stopPropagation();
+    setModalZoomScale(prev => Math.min(4.0, +(prev + 0.5).toFixed(1)));
+  };
+
+  const handleModalZoomOut = (e) => {
+    if (e) e.stopPropagation();
+    setModalZoomScale(prev => {
+      const next = Math.max(1.0, +(prev - 0.5).toFixed(1));
+      if (next === 1.0) setModalPan({ x: 0, y: 0 });
+      return next;
+    });
+  };
+
+  const handleModalResetZoom = (e) => {
+    if (e) e.stopPropagation();
+    setModalZoomScale(1.0);
+    setModalPan({ x: 0, y: 0 });
+    setModalRotation(0);
+  };
+
+  const handleModalRotate = (e) => {
+    if (e) e.stopPropagation();
+    setModalRotation(prev => (prev + 90) % 360);
+  };
+
+  const handleModalPrevImage = (e) => {
+    if (e) e.stopPropagation();
+    if (!product || !product.images) return;
+    setSelectedImageIndex(prev => (prev - 1 + product.images.length) % product.images.length);
+    setModalZoomScale(1.0);
+    setModalPan({ x: 0, y: 0 });
+  };
+
+  const handleModalNextImage = (e) => {
+    if (e) e.stopPropagation();
+    if (!product || !product.images) return;
+    setSelectedImageIndex(prev => (prev + 1) % product.images.length);
+    setModalZoomScale(1.0);
+    setModalPan({ x: 0, y: 0 });
+  };
+
+  const handleModalWheel = (e) => {
+    if (!isFullscreenActive) return;
+    e.preventDefault();
+    if (e.deltaY < 0) {
+      setModalZoomScale(prev => Math.min(4.0, +(prev + 0.25).toFixed(2)));
+    } else {
+      setModalZoomScale(prev => {
+        const next = Math.max(1.0, +(prev - 0.25).toFixed(2));
+        if (next === 1.0) setModalPan({ x: 0, y: 0 });
+        return next;
+      });
+    }
+  };
+
+  const handleModalMouseDown = (e) => {
+    if (modalZoomScale <= 1.0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingModal(true);
+    setDragStartModal({ x: e.clientX - modalPan.x, y: e.clientY - modalPan.y });
+  };
+
+  const handleModalMouseMove = (e) => {
+    if (!isDraggingModal || modalZoomScale <= 1.0) return;
+    e.preventDefault();
+    setModalPan({
+      x: e.clientX - dragStartModal.x,
+      y: e.clientY - dragStartModal.y
+    });
+  };
+
+  const handleModalMouseUp = () => {
+    setIsDraggingModal(false);
+  };
+
+  const handleModalDoubleClick = (e) => {
+    e.stopPropagation();
+    if (modalZoomScale > 1.0) {
+      setModalZoomScale(1.0);
+      setModalPan({ x: 0, y: 0 });
+    } else {
+      setModalZoomScale(2.5);
+    }
+  };
+
+  useEffect(() => {
+    if (!isFullscreenActive) return;
+    const originalStyle = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        handleCloseLightbox();
+      } else if (e.key === 'ArrowLeft') {
+        handleModalPrevImage();
+      } else if (e.key === 'ArrowRight') {
+        handleModalNextImage();
+      } else if (e.key === '+' || e.key === '=') {
+        handleModalZoomIn();
+      } else if (e.key === '-') {
+        handleModalZoomOut();
+      } else if (e.key === 'r' || e.key === 'R') {
+        handleModalRotate();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalStyle;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFullscreenActive, product?.images?.length]);
 
   const handleViewCatalogue = () => {
     if (!product || !product.catalogue) return;
@@ -607,44 +801,35 @@ const ProductDetail = () => {
               {/* Main image wrapper */}
               <div
                 className="main-image-wrapper"
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
+                onMouseMove={handleMainMouseMove}
+                onMouseEnter={handleMainMouseEnter}
+                onMouseLeave={handleMainMouseLeave}
+                onClick={() => handleOpenLightbox(selectedImageIndex)}
+                title="Click for HD Zoom & Fullscreen Lightbox"
               >
-                {!is360Active ? (
-                  <ProtectedImage
-                    src={resolveImageUrl(product.images[selectedImageIndex])}
-                    alt={product.name}
-                    className="main-image main-image-zoom font-orange-bg"
-                    style={{ ...zoomStyle, backgroundColor: '#ffffff' }}
-                  />
-                ) : (
-                  <div className="gallery-rotation-viewer" style={{ backgroundColor: '#ffffff' }}>
-                    <ProtectedImage
-                      src={resolveImageUrl(product.images[0])}
-                      alt="Rotation view"
-                      className="main-image"
-                      style={{ filter: `hue-rotate(${rotationAngle}deg)`, backgroundColor: '#ffffff' }}
-                    />
-                    <div className="rotation-control-overlay">
-                      <span className="rotation-label">Drag slider to rotate 360°</span>
-                      <input
-                        type="range"
-                        min="0"
-                        max="360"
-                        value={rotationAngle}
-                        onChange={(e) => setRotationAngle(Number(e.target.value))}
-                        className="rotation-slider"
-                      />
-                    </div>
-                  </div>
-                )}
+                <ProtectedImage
+                  src={resolveImageUrl(product.images[selectedImageIndex])}
+                  alt={product.name}
+                  className="main-image main-image-pan"
+                  style={{ ...zoomStyle, backgroundColor: '#ffffff' }}
+                />
 
-                {/* Overlaid Badges */}
-
+                <div className="zoom-hint-badge">
+                  <ZoomIn size={14} />
+                  <span>Click to Enlarge</span>
+                </div>
               </div>
 
-              {/* Special interactive buttons bar */}
-
+              {/* Gallery Interactive Toolbar */}
+              <div className="gallery-interactive-bar">
+                <button
+                  type="button"
+                  className={`interaction-btn ${isFullscreenActive ? 'active' : ''}`}
+                  onClick={() => handleOpenLightbox(selectedImageIndex)}
+                >
+                  <Maximize2 size={16} /> Enlarge HD View
+                </button>
+              </div>
             </div>
 
             {/* Thumbnail list */}
@@ -652,8 +837,8 @@ const ProductDetail = () => {
               {product.images.map((img, index) => (
                 <div
                   key={index}
-                  className={`thumbnail-item ${selectedImageIndex === index && !is360Active && !isVideoActive ? 'active' : ''}`}
-                  onClick={() => { setSelectedImageIndex(index); setIs360Active(false); setIsVideoActive(false); }}
+                  className={`thumbnail-item ${selectedImageIndex === index && !isVideoActive ? 'active' : ''}`}
+                  onClick={() => { setSelectedImageIndex(index); setIsVideoActive(false); }}
                   style={{ backgroundColor: '#ffffff' }}
                 >
                   <ProtectedImage src={resolveImageUrl(img)} alt={`Thumbnail ${index + 1}`} style={{ backgroundColor: '#ffffff' }} />
@@ -1155,14 +1340,149 @@ const ProductDetail = () => {
 
       {/* Visual Overlay Modals */}
       {isFullscreenActive && (
-        <div className="fullscreen-overlay-modal" onClick={() => setIsFullscreenActive(false)}>
-          <button className="close-fullscreen-overlay">Close ×</button>
-          <img
-            src={resolveImageUrl(product.images[selectedImageIndex])}
-            alt="Fullscreen preview"
-            className="fullscreen-image-target"
-            style={{ backgroundColor: '#EA580C' }}
-          />
+        <div className="pro-lightbox-overlay" onClick={handleCloseLightbox}>
+          {/* Lightbox Header Bar */}
+          <div className="pro-lightbox-header" onClick={(e) => e.stopPropagation()}>
+            <div className="pro-lightbox-title-block">
+              <h3 className="pro-lightbox-title">{product.name}</h3>
+              <span className="pro-lightbox-counter">
+                Image {selectedImageIndex + 1} of {product.images.length}
+              </span>
+            </div>
+
+            <div className="pro-lightbox-toolbar">
+              <button
+                type="button"
+                className="lightbox-tool-btn"
+                onClick={handleModalZoomOut}
+                disabled={modalZoomScale <= 1.0}
+                title="Zoom Out (-)"
+              >
+                <ZoomOut size={18} />
+              </button>
+
+              <span className="lightbox-scale-pill">
+                {Math.round(modalZoomScale * 100)}%
+              </span>
+
+              <button
+                type="button"
+                className="lightbox-tool-btn"
+                onClick={handleModalZoomIn}
+                disabled={modalZoomScale >= 4.0}
+                title="Zoom In (+)"
+              >
+                <ZoomIn size={18} />
+              </button>
+
+              <button
+                type="button"
+                className="lightbox-tool-btn"
+                onClick={handleModalResetZoom}
+                title="Reset View (R)"
+              >
+                <RotateCcw size={17} />
+              </button>
+
+              <button
+                type="button"
+                className="lightbox-tool-btn"
+                onClick={handleModalRotate}
+                title="Rotate 90°"
+              >
+                <RotateCw size={17} />
+              </button>
+
+              <div className="toolbar-divider"></div>
+
+              <button
+                type="button"
+                className="lightbox-close-btn"
+                onClick={handleCloseLightbox}
+                title="Close Lightbox (Esc)"
+              >
+                <X size={22} />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Zoom Viewport */}
+          <div
+            className="pro-lightbox-viewport"
+            onWheel={handleModalWheel}
+            onMouseDown={handleModalMouseDown}
+            onMouseMove={handleModalMouseMove}
+            onMouseUp={handleModalMouseUp}
+            onMouseLeave={handleModalMouseUp}
+            onDoubleClick={handleModalDoubleClick}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              cursor: modalZoomScale > 1.0 ? (isDraggingModal ? 'grabbing' : 'grab') : 'zoom-in'
+            }}
+          >
+            <div
+              className="pro-lightbox-canvas"
+              style={{
+                transform: `translate3d(${modalPan.x}px, ${modalPan.y}px, 0) scale(${modalZoomScale}) rotate(${modalRotation}deg)`,
+                transition: isDraggingModal ? 'none' : 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+              }}
+            >
+              <ProtectedImage
+                src={resolveImageUrl(product.images[selectedImageIndex])}
+                alt={`HD Preview ${selectedImageIndex + 1}`}
+                className="pro-lightbox-image"
+                style={{ backgroundColor: 'transparent' }}
+              />
+            </div>
+
+            {/* Navigation Arrows */}
+            {product.images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="pro-lightbox-nav prev-arrow"
+                  onClick={handleModalPrevImage}
+                  title="Previous Image (←)"
+                >
+                  <ChevronLeft size={28} />
+                </button>
+
+                <button
+                  type="button"
+                  className="pro-lightbox-nav next-arrow"
+                  onClick={handleModalNextImage}
+                  title="Next Image (→)"
+                >
+                  <ChevronRight size={28} />
+                </button>
+              </>
+            )}
+
+            {/* Interactive Floating Hint Bar */}
+            <div className="pro-lightbox-hint-bar">
+              <span>Scroll wheel to zoom</span> • <span>Drag to pan</span> • <span>Double click to toggle 2.5x</span> • <span>Arrow keys for next/prev</span>
+            </div>
+          </div>
+
+          {/* Bottom Thumbnail Strip */}
+          {product.images.length > 1 && (
+            <div className="pro-lightbox-thumbnails" onClick={(e) => e.stopPropagation()}>
+              {product.images.map((img, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`pro-lightbox-thumb ${selectedImageIndex === idx ? 'active' : ''}`}
+                  onClick={() => {
+                    setSelectedImageIndex(idx);
+                    setModalZoomScale(1.0);
+                    setModalPan({ x: 0, y: 0 });
+                  }}
+                >
+                  <ProtectedImage src={resolveImageUrl(img)} alt={`Thumb ${idx + 1}`} style={{ backgroundColor: 'transparent' }} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

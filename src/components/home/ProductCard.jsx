@@ -265,6 +265,7 @@ const ProductCard = ({ product, isAdmin, onEdit, onDelete, searchTerm, onCardCli
           </div>
         </div>
       </div>
+
     </div>
   );
 };
