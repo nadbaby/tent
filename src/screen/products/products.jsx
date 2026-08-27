@@ -1429,13 +1429,17 @@ const Products = () => {
 
                         {/* 'All' category option */}
                         <div className="tree-category-block">
-                          <label className={`premium-category-row cat-card-all ${selectedCategory === 'All' ? 'selected' : ''}`}>
+                          <div
+                            className={`premium-category-row cat-card-all ${selectedCategory === 'All' ? 'selected' : ''}`}
+                            onClick={handleSelectAllCategories}
+                            style={{ cursor: 'pointer' }}
+                          >
                             <div className="premium-checkbox-wrapper">
                               <input
                                 type="checkbox"
                                 className="hidden-checkbox"
                                 checked={selectedCategory === 'All'}
-                                onChange={handleSelectAllCategories}
+                                readOnly
                               />
                               <div className="custom-checkbox">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="check-icon"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -1443,7 +1447,7 @@ const Products = () => {
                             </div>
                             <span className="premium-category-name" title="All Categories">All Categories</span>
                             <Sparkles size={16} className="all-cats-sparkle" />
-                          </label>
+                          </div>
                         </div>
 
                         {/* Dynamic categories tree list */}
@@ -1456,13 +1460,13 @@ const Products = () => {
                           return (
                             <div key={cat} className="tree-category-block">
                               <div className={`premium-category-row ${design.containerClass} ${selectedCategory === cat ? 'selected' : ''}`}>
-                                <label className="premium-row-clickable-area">
+                                <div className="premium-row-clickable-area" onClick={(e) => { e.preventDefault(); handleCategorySelect(cat); }}>
                                   <div className="premium-checkbox-wrapper">
                                     <input
                                       type="checkbox"
                                       className="hidden-checkbox"
                                       checked={selectedCategory === cat}
-                                      onChange={() => handleCategorySelect(cat)}
+                                      readOnly
                                     />
                                     <div className="custom-checkbox">
                                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="check-icon"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -1478,7 +1482,7 @@ const Products = () => {
                                     })()}
                                   </div>
                                   <span className="premium-category-name" title={cat}>{cat}</span>
-                                </label>
+                                </div>
 
                                 {hasSubcategories && (
                                   <button
@@ -1495,13 +1499,18 @@ const Products = () => {
                               {hasSubcategories && isExpanded && (
                                 <div className="premium-subcategories-list slide-down">
                                   {subcats.map(sub => (
-                                    <label key={sub} className={`premium-subcategory-row ${selectedSubcategory === sub ? 'selected' : ''}`}>
+                                    <div
+                                      key={sub}
+                                      className={`premium-subcategory-row ${selectedSubcategory === sub ? 'selected' : ''}`}
+                                      onClick={(e) => { e.preventDefault(); handleSubcategorySelect(cat, sub); }}
+                                      style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px 8px' }}
+                                    >
                                       <div className="premium-checkbox-wrapper">
                                         <input
                                           type="checkbox"
                                           className="hidden-checkbox"
                                           checked={selectedSubcategory === sub}
-                                          onChange={() => handleSubcategorySelect(cat, sub)}
+                                          readOnly
                                         />
                                         <div className="custom-checkbox small">
                                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="check-icon"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -1517,7 +1526,7 @@ const Products = () => {
                                         })()}
                                       </div>
                                       <span className="premium-category-name sub" title={sub}>{sub}</span>
-                                    </label>
+                                    </div>
                                   ))}
                                 </div>
                               )}
