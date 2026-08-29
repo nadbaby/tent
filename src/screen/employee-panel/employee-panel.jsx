@@ -3,6 +3,8 @@ import { apiUrl } from '../../utils/api';
 import { printInvoice } from '../../utils/printInvoice';
 import { Search, Edit2, Save, X, CreditCard, Users, Shield, Package, RefreshCw, Filter, Download, Calendar, MapPin, Eye, FileText, ChevronRight, AlertCircle, Clock, Truck, CheckCircle, Info, Megaphone, DollarSign, LifeBuoy } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { messaging } from '../../firebase';
+import { getToken, onMessage } from 'firebase/messaging';
 import { Skeleton, SkeletonTable, SkeletonStatsGrid } from '../../components/common/Skeleton/Skeleton';
 import './employee-panel.css';
 
@@ -33,6 +35,32 @@ const OrderOperationsDashboard = () => {
 
   useEffect(() => {
     fetchOrders();
+
+    // Initialize FCM and store token
+    if (messaging) {
+      Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+          getToken(messaging).then((currentToken) => {
+            if (currentToken) {
+              fetch(apiUrl('/api/admin/employees/fcm-token'), {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ token: currentToken })
+              }).catch(console.error);
+            }
+          }).catch(console.error);
+        }
+      });
+
+      const unsubscribe = onMessage(messaging, (payload) => {
+        console.log('Foreground push notification received.', payload);
+        fetchOrders(); // Refresh orders in real-time
+      });
+      return () => unsubscribe();
+    }
   }, []);
 
   // fetchProducts is now handled dynamically after fetching orders

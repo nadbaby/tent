@@ -1602,9 +1602,11 @@ const Products = () => {
 
           <main className="products-main">
             <div className="toolbar">
-              <div className="results-count">
-                Showing <span>{displayProducts.length}</span> products{isBackgroundLoading ? ' (loading more...)' : ''}
-              </div>
+              {displayProducts.length > 0 && (
+                <div className="results-count">
+                  Showing <span>{displayProducts.length}</span> products{isBackgroundLoading ? ' (loading more...)' : ''}
+                </div>
+              )}
               <div className="toolbar-actions">
                 <button
                   type="button"
