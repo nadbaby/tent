@@ -3,40 +3,59 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import ErrorBoundary from './components/common/ErrorBoundary';
-const HomePage = lazy(() => import('./screen/home/home'));
-const ProductsPage = lazy(() => import('./screen/products/products'));
-const BrandsPage = lazy(() => import('./screen/brands/brands'));
-const AuthPage = lazy(() => import('./screen/auth/auth'));
-const OrderSuccessPage = lazy(() => import('./screen/order-success/order-success'));
-const OrderFailurePage = lazy(() => import('./screen/order-failure/order-failure'));
-const OrdersPage = lazy(() => import('./screen/orders/orders'));
-const ContactPage = lazy(() => import('./screen/contact/contact'));
-const OrderOperationsDashboard = lazy(() => import('./screen/employee-panel/employee-panel'));
-const StaffOperationsDashboard = lazy(() => import('./screen/employee-management/employee-management'));
-const CustomerOperationsDashboard = lazy(() => import('./screen/user-management/user-management'));
-const TodaysOrdersDashboard = lazy(() => import('./screen/todays-orders/todays-orders'));
-const AboutPage = lazy(() => import('./screen/about/about'));
-const RequestQuotePage = lazy(() => import('./screen/request-quote/request-quote'));
-const LegalPage = lazy(() => import('./screen/legal/legal'));
-const ProductDetailPage = lazy(() => import('./screen/product-detail/product-detail'));
+const lazyWithRetry = (componentImport) =>
+  lazy(async () => {
+    const pageHasBeenRefreshed = JSON.parse(
+      window.sessionStorage.getItem('page-has-been-refreshed') || 'false'
+    );
+    try {
+      const component = await componentImport();
+      window.sessionStorage.setItem('page-has-been-refreshed', 'false');
+      return component;
+    } catch (error) {
+      if (!pageHasBeenRefreshed) {
+        window.sessionStorage.setItem('page-has-been-refreshed', 'true');
+        window.location.reload();
+        return { default: () => null };
+      }
+      throw error;
+    }
+  });
+
+const HomePage = lazyWithRetry(() => import('./screen/home/home'));
+const ProductsPage = lazyWithRetry(() => import('./screen/products/products'));
+const BrandsPage = lazyWithRetry(() => import('./screen/brands/brands'));
+const AuthPage = lazyWithRetry(() => import('./screen/auth/auth'));
+const OrderSuccessPage = lazyWithRetry(() => import('./screen/order-success/order-success'));
+const OrderFailurePage = lazyWithRetry(() => import('./screen/order-failure/order-failure'));
+const OrdersPage = lazyWithRetry(() => import('./screen/orders/orders'));
+const ContactPage = lazyWithRetry(() => import('./screen/contact/contact'));
+const OrderOperationsDashboard = lazyWithRetry(() => import('./screen/employee-panel/employee-panel'));
+const StaffOperationsDashboard = lazyWithRetry(() => import('./screen/employee-management/employee-management'));
+const CustomerOperationsDashboard = lazyWithRetry(() => import('./screen/user-management/user-management'));
+const TodaysOrdersDashboard = lazyWithRetry(() => import('./screen/todays-orders/todays-orders'));
+const AboutPage = lazyWithRetry(() => import('./screen/about/about'));
+const RequestQuotePage = lazyWithRetry(() => import('./screen/request-quote/request-quote'));
+const LegalPage = lazyWithRetry(() => import('./screen/legal/legal'));
+const ProductDetailPage = lazyWithRetry(() => import('./screen/product-detail/product-detail'));
 import WhatsAppFloat from './components/common/WhatsAppFloat';
 import QuoteFloat from './components/common/QuoteFloat';
 import Chatbot from './components/common/Chatbot';
 import ScrollToTop from './components/common/ScrollToTop';
 import MobileCartPopup from './components/common/MobileCartPopup';
-const CheckoutPage = lazy(() => import('./screen/checkout/checkout'));
-const WishlistPage = lazy(() => import('./screen/wishlist/wishlist'));
-const UserTickets = lazy(() => import('./screen/tickets/UserTickets'));
-const TicketCreate = lazy(() => import('./screen/tickets/TicketCreate'));
-const TicketDetail = lazy(() => import('./screen/tickets/TicketDetail'));
-const AdminTickets = lazy(() => import('./screen/tickets/AdminTickets'));
-const Profile = lazy(() => import('./screen/profile/profile'));
-const PrivacyPolicy = lazy(() => import('./screen/legal/PrivacyPolicy'));
-const TermsOfService = lazy(() => import('./screen/legal/TermsOfService'));
-const VerifyEmail = lazy(() => import('./screen/auth/VerifyEmail'));
-const ShippingManagement = lazy(() => import('./screen/shipping-management/ShippingManagement'));
-const AnalyticsDashboard = lazy(() => import('./screen/analytics/AnalyticsDashboard'));
-const PaymentDashboard = lazy(() => import('./screen/payments/PaymentDashboard'));
+const CheckoutPage = lazyWithRetry(() => import('./screen/checkout/checkout'));
+const WishlistPage = lazyWithRetry(() => import('./screen/wishlist/wishlist'));
+const UserTickets = lazyWithRetry(() => import('./screen/tickets/UserTickets'));
+const TicketCreate = lazyWithRetry(() => import('./screen/tickets/TicketCreate'));
+const TicketDetail = lazyWithRetry(() => import('./screen/tickets/TicketDetail'));
+const AdminTickets = lazyWithRetry(() => import('./screen/tickets/AdminTickets'));
+const Profile = lazyWithRetry(() => import('./screen/profile/profile'));
+const PrivacyPolicy = lazyWithRetry(() => import('./screen/legal/PrivacyPolicy'));
+const TermsOfService = lazyWithRetry(() => import('./screen/legal/TermsOfService'));
+const VerifyEmail = lazyWithRetry(() => import('./screen/auth/VerifyEmail'));
+const ShippingManagement = lazyWithRetry(() => import('./screen/shipping-management/ShippingManagement'));
+const AnalyticsDashboard = lazyWithRetry(() => import('./screen/analytics/AnalyticsDashboard'));
+const PaymentDashboard = lazyWithRetry(() => import('./screen/payments/PaymentDashboard'));
 
 import CartSync from './components/common/CartSync';
 import PWAInstallPrompt from './components/common/PWAInstallPrompt';

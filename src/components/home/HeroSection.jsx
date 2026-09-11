@@ -2,20 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './HeroSection.css';
-import wwwe28 from '../../assets/wwwe28.webp';
+import wwwe227 from '../../assets/wwwe227.webp';
 import wwwe24 from '../../assets/wwwe24.webp';
 import wwwe25 from '../../assets/wwwe25.webp';
 
 const heroSlides = [
   {
     id: 1,
-    image: wwwe28,
+    image: wwwe227,
     category: "Bearings",
     link: "/products?category=Bearings"
   },
   {
     id: 2,
     image: wwwe24,
+
     category: "CNC Machine Spares",
     link: "/products?category=CNC Machine Spares"
   },

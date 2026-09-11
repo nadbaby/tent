@@ -17,13 +17,35 @@ class ErrorBoundary extends React.Component {
         });
     }
 
+    handleReset = () => {
+        this.setState({ hasError: false, error: null, errorInfo: null });
+        window.location.reload();
+    };
+
     render() {
         if (this.state.hasError) {
             return (
                 <div style={{ padding: '20px', background: '#fee2e2', color: '#991b1b', border: '5px solid #ef4444', borderRadius: '8px', zIndex: 999999, position: 'relative', margin: '20px' }}>
                     <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>Oops! Application Crashed 🚨</h2>
                     <p style={{ marginTop: '10px' }}>Please take a screenshot of this error and send it to the developer:</p>
-                    <details style={{ whiteSpace: 'pre-wrap', marginTop: '15px', background: '#f87171', color: 'white', padding: '10px', borderRadius: '4px' }} open>
+                    <button
+                        onClick={this.handleReset}
+                        style={{
+                            marginTop: '12px',
+                            marginBottom: '12px',
+                            padding: '10px 18px',
+                            backgroundColor: '#dc2626',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            fontSize: '14px'
+                        }}
+                    >
+                        🔄 Refresh & Try Again
+                    </button>
+                    <details style={{ whiteSpace: 'pre-wrap', marginTop: '10px', background: '#f87171', color: 'white', padding: '10px', borderRadius: '4px' }} open>
                         <summary style={{ fontWeight: 'bold', cursor: 'pointer' }}>Error Details</summary>
                         <strong>{this.state.error && this.state.error.toString()}</strong>
                         <br />
