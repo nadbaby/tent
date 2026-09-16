@@ -1182,6 +1182,40 @@ const Products = () => {
       alert(err.message);
     }
   };
+  const handleDeleteCategoryOrSubcategory = async (name, type) => {
+    const itemsToDelete = type === 'category'
+      ? products.filter(p => p.category === name)
+      : products.filter(p => p.category === selectedCategory && p.subcategory === name);
+
+    if (itemsToDelete.length === 0) return;
+
+    if (!window.confirm(`Are you sure you want to completely delete "${name}" and all of its ${itemsToDelete.length} products? This cannot be undone.`)) return;
+
+    const deleteIds = itemsToDelete.map(p => p.id);
+    const token = getAuthToken();
+
+    try {
+      const response = await fetch(apiUrl('/api/products/bulk-delete'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ ids: deleteIds })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to bulk delete products');
+      }
+
+      const result = await response.json();
+      showToast(result.message || 'Deleted successfully', 'success');
+      fetchProducts();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
 
   const handleBulkDelete = async () => {
@@ -2121,6 +2155,8 @@ const Products = () => {
                     <SubcategoryCard
                       key={cat.name}
                       subcategory={cat}
+                      isAdmin={admin}
+                      onDelete={(name) => handleDeleteCategoryOrSubcategory(name, 'category')}
                       onClick={(name) => {
                         setSelectedCategory(name);
                         setSearchParams(prev => {
@@ -2163,6 +2199,8 @@ const Products = () => {
                         <SubcategoryCard
                           key={sub.name}
                           subcategory={sub}
+                          isAdmin={admin}
+                          onDelete={(name) => handleDeleteCategoryOrSubcategory(name, 'subcategory')}
                           onClick={(name) => {
                             setSelectedSubcategory(name);
                             setSearchParams(prev => {

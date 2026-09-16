@@ -1,13 +1,14 @@
 import React from 'react';
 import { resolveImageUrl } from '../home/ProductCard';
+import { Trash2 } from 'lucide-react';
 
-const SubcategoryCard = ({ subcategory, onClick }) => {
+const SubcategoryCard = ({ subcategory, onClick, isAdmin, isSelected, onSelect, onDelete }) => {
     const imageUrl = resolveImageUrl(subcategory.image);
 
     return (
         <div
             className="subcategory-card"
-            onClick={() => onClick(subcategory.name)}
+            onClick={() => onClick && onClick(subcategory.name)}
             style={{
                 background: '#fff',
                 borderRadius: '16px',
@@ -19,7 +20,8 @@ const SubcategoryCard = ({ subcategory, onClick }) => {
                 flexDirection: 'column',
                 height: '100%',
                 minHeight: '220px',
-                border: '1px solid #e2e8f0'
+                border: isSelected ? '2px solid #ea580c' : '1px solid #e2e8f0',
+                position: 'relative'
             }}
             onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-6px)';
@@ -42,9 +44,32 @@ const SubcategoryCard = ({ subcategory, onClick }) => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     overflow: 'hidden',
-                    padding: '24px'
+                    padding: '24px',
+                    position: 'relative'
                 }}
             >
+                {isAdmin && (
+                    <div className="admin-actions-overlay" style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '8px', zIndex: 10 }}>
+                        {onSelect && (
+                            <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => { e.stopPropagation(); onSelect(subcategory.name); }}
+                                style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#ea580c' }}
+                            />
+                        )}
+                        {onDelete && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onDelete(subcategory.name); }}
+                                className="subcat-delete-btn"
+                                style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#ef4444', padding: '6px', borderRadius: '6px', cursor: 'pointer', display: 'flex' }}
+                                title="Delete Subcategory"
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                        )}
+                    </div>
+                )}
                 <img
                     src={imageUrl}
                     alt={subcategory.name}
