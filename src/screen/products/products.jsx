@@ -3,7 +3,7 @@ import { apiUrl } from '../../utils/api';
 import { useLocation, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import ProductCard, { resolveImageUrl } from '../../components/home/ProductCard';
 import ProtectedImage from '../../components/common/ProtectedImage';
-import { Filter, ChevronDown, Search, Grid, List, SlidersHorizontal, Plus, X, Save, Download, Upload, Camera, Loader2, Database, FileSpreadsheet, ArrowLeft, ChevronLeft, ChevronRight, Disc, Workflow, Zap, Boxes, Component, Layers, Box, Sparkles, Droplet, Thermometer, Shield, Settings2, Maximize2, Minus, ShoppingCart } from 'lucide-react';
+import { Filter, ChevronDown, Search, Grid, List, SlidersHorizontal, Plus, X, Save, Download, Upload, Camera, Loader2, Database, FileSpreadsheet, ArrowLeft, ChevronLeft, ChevronRight, Disc, Workflow, Zap, Boxes, Component, Layers, Box, Sparkles, Droplet, Thermometer, Shield, Settings2, Maximize2, Minus, ShoppingCart, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addItem } from '../../redux/cartSlice';
 import { useToast } from '../../context/ToastContext';
@@ -1688,6 +1688,16 @@ const Products = () => {
                     />
                     Select All
                   </label>
+                  {selectedProductIds.length > 0 && (
+                    <button
+                      className="btn btn-danger mass-delete-btn"
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: '#fef2f2', color: '#ef4444', padding: '0.6rem 1.25rem', borderRadius: '8px', border: '1px solid #fca5a5', fontWeight: 'bold' }}
+                      onClick={handleBulkDelete}
+                    >
+                      <Trash2 size={18} />
+                      Delete Selected ({selectedProductIds.length})
+                    </button>
+                  )}
                 </div>
 
                 {/* Bulk Import Modal */}
