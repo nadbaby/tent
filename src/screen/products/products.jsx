@@ -476,7 +476,7 @@ const Products = () => {
         "Height (cm)": p.dimensions?.height || "",
         "Technical PDF Catalogue": p.catalogue || "",
         "Main Image URL": p.image || "",
-        "Additional Images": Array.isArray(p.images) ? p.images.join(", ") : "",
+        "Additional Images": Array.isArray(p.images) ? p.images.map(img => (typeof img === 'string' ? img : img.url)).filter(Boolean).join(", ") : "",
         "Keywords (comma separated)": p.keywords || "",
         "HSN Code": p.hsnCode || "",
         "Description": p.description || "",
@@ -486,6 +486,37 @@ const Products = () => {
 
       const XLSX = await import('xlsx');
       const ws = XLSX.utils.json_to_sheet(dataToExport);
+
+      // Convert image URLs into clickable hyperlinks
+      // Remove any embedded image objects by explicitly not creating them or cleaning up properties
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      const headerRow = range.s.r;
+      const urlColumns = [];
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cellRef = XLSX.utils.encode_cell({ c: C, r: headerRow });
+        const cell = ws[cellRef];
+        if (cell && (cell.v === "Main Image URL" || cell.v === "Technical PDF Catalogue" || cell.v === "Additional Images")) {
+          urlColumns.push(C);
+        }
+      }
+
+      for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+        urlColumns.forEach(C => {
+          const cellRef = XLSX.utils.encode_cell({ c: C, r: R });
+          const cell = ws[cellRef];
+          if (cell && cell.v && typeof cell.v === 'string' && cell.v.includes('http')) {
+            // If comma-separated (like Additional Images), we optionally linkify the first, or in Excel just leave as string
+            // But we will linkify if it's just one URL (Main Image / Catalogue)
+            if (cell.v.startsWith('http') && !cell.v.includes(',')) {
+              cell.l = { Target: cell.v, Tooltip: cell.v };
+            }
+          }
+        });
+      }
+
+      if (ws['!images']) delete ws['!images'];
+      if (ws['!drawing']) delete ws['!drawing'];
+
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Products Export");
       XLSX.writeFile(wb, "Products_Export.xlsx");
@@ -1680,7 +1711,7 @@ const Products = () => {
                             <p style={{ marginBottom: '1.25rem', color: '#64748b', fontSize: '0.95rem', lineHeight: '1.5' }}>
                               Manage your inventory efficiently. Download our template, fill in your product details, and upload it back.
                               <br />
-                              <strong style={{ color: '#0f172a' }}>💡 Smart Update:</strong> Existing products matching by <strong>Product ID</strong>, <strong>SKU</strong>, or <strong>Name</strong> will be updated automatically. Empty Excel cells will not overwrite existing database fields, ensuring no data loss.
+                              <strong style={{ color: '#0f172a' }}>💡 Smart Update:</strong> Existing products matching by <strong>Product ID</strong> or <strong>SKU</strong> will be updated automatically. Empty Excel cells will not overwrite existing database fields, ensuring no data loss.
                             </p>
 
                             <div className="import-options">
