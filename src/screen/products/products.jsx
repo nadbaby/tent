@@ -1183,25 +1183,27 @@ const Products = () => {
     }
   };
   const handleDeleteCategoryOrSubcategory = async (name, type) => {
-    const itemsToDelete = type === 'category'
-      ? products.filter(p => p.category === name)
-      : products.filter(p => p.category === selectedCategory && p.subcategory === name);
+    const countText = type === 'category'
+      ? availableCategories.find(c => c.name === name)?.count
+      : availableSeries.find(s => s.name === name)?.count;
 
-    if (itemsToDelete.length === 0) return;
+    const countString = countText ? ` (${countText} products)` : '';
 
-    if (!window.confirm(`Are you sure you want to completely delete "${name}" and all of its ${itemsToDelete.length} products? This cannot be undone.`)) return;
+    if (!window.confirm(`Are you sure you want to completely delete "${name}"${countString}? This cannot be undone.`)) return;
 
-    const deleteIds = itemsToDelete.map(p => p.id);
     const token = getAuthToken();
 
     try {
-      const response = await fetch(apiUrl('/api/products/bulk-delete'), {
+      const response = await fetch(apiUrl('/api/products/bulk-delete-by-group'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ ids: deleteIds })
+        body: JSON.stringify({
+          category: type === 'category' ? name : selectedCategory,
+          subcategory: type === 'subcategory' ? name : undefined
+        })
       });
 
       if (!response.ok) {
@@ -1211,7 +1213,9 @@ const Products = () => {
 
       const result = await response.json();
       showToast(result.message || 'Deleted successfully', 'success');
+
       fetchProducts();
+      window.location.reload(); // Reload to refresh sidebar category metadata
     } catch (err) {
       alert(err.message);
     }
