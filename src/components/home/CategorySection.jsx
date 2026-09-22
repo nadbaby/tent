@@ -30,7 +30,7 @@ const CategorySection = () => {
 
 
         <div className="cat-bento-grid">
-          {categories.map((cat, index) => (
+          {categories.map((cat, index) => ( 
             <div
               key={cat.id}
               className={`bento-card bento-item-${index + 1}`}
